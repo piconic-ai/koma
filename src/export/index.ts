@@ -91,19 +91,26 @@ export async function exportPngSequence(
   onProgress?: (p: ExportProgress) => void,
   options: PngSequenceOptions = {},
 ): Promise<Blob> {
-  const { fps, renderOpts, timeline } = setupRender(spec, options)
-  const dt = 1000 / fps
+  const renderOpts: RenderOptions = {
+    ...DEFAULT_RENDER_OPTIONS,
+    ...options.render,
+  }
   const tokensByFrame = await preloadTokens(spec)
+  const timeline = buildTimeline(spec)
   const canvas = document.createElement('canvas')
   canvas.width = renderOpts.width
   canvas.height = renderOpts.height
-  const total = Math.max(1, Math.ceil(timeline.totalDurationMs / dt))
+  const total = spec.frames.length
   const zip = new ZipWriter()
   const pad = String(total).length
+
+  // Render each frame's hold state (t = start of that frame's hold
+  // segment). Hold segments are at indices 0, 2, 4, ... in the timeline.
+  let elapsed = 0
   for (let i = 0; i < total; i++) {
     renderToCanvas(canvas, {
       timeline,
-      elapsedMs: i * dt,
+      elapsedMs: elapsed,
       tokensByFrame,
       frames: spec.frames,
       options: renderOpts,
@@ -111,6 +118,10 @@ export async function exportPngSequence(
     const bytes = await canvasToPngBytes(canvas)
     zip.add(`frame_${String(i + 1).padStart(pad, '0')}.png`, bytes)
     onProgress?.({ current: i + 1, total })
+    // Advance past this hold + next transition to reach the next hold.
+    const holdSeg = timeline.segments[i * 2]
+    const transSeg = timeline.segments[i * 2 + 1]
+    elapsed += holdSeg.durationMs + (transSeg?.durationMs ?? 0)
   }
   return zip.finalize()
 }
