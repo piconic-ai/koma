@@ -1,0 +1,44 @@
+{
+  "name": "koma",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "concurrently -k -n build,uno,server -c blue,magenta,green \"bf build --watch\" \"unocss --watch\" \"npx wrangler dev --live-reload\"",
+    "build": "bf build && unocss",
+    "deploy": "bf build && unocss && npx wrangler deploy",
+    "watch": "concurrently -k -n build,uno -c blue,magenta \"bf build --watch\" \"unocss --watch\"",
+    "test": "vitest run"
+  },
+  "dependencies": {
+    "@barefootjs/cli": "https://pkg.pr.new/piconic-ai/barefootjs/@barefootjs/cli@1541",
+    "@barefootjs/client": "https://pkg.pr.new/piconic-ai/barefootjs/@barefootjs/client@1541",
+    "@barefootjs/hono": "https://pkg.pr.new/piconic-ai/barefootjs/@barefootjs/hono@1541",
+    "@barefootjs/jsx": "https://pkg.pr.new/piconic-ai/barefootjs/@barefootjs/jsx@1541",
+    "@barefootjs/shared": "https://pkg.pr.new/piconic-ai/barefootjs/@barefootjs/shared@1541",
+    "hono": "^4.6.0"
+  },
+  "devDependencies": {
+    "@unocss/cli": "^66.0.0",
+    "@unocss/preset-wind4": "^66.0.0",
+    "unocss": "^66.0.0",
+    "@cloudflare/workers-types": "^4.20250101.0",
+    "@barefootjs/test": "https://pkg.pr.new/piconic-ai/barefootjs/@barefootjs/test@1541",
+    "concurrently": "^9.0.0",
+    "typescript": "^5.6.0",
+    "vitest": "^2.0.0"
+  },
+  "overrides": {
+    "@barefootjs/cli": "https://pkg.pr.new/piconic-ai/barefootjs/@barefootjs/cli@1541",
+    "@barefootjs/client": "https://pkg.pr.new/piconic-ai/barefootjs/@barefootjs/client@1541",
+    "@barefootjs/hono": "https://pkg.pr.new/piconic-ai/barefootjs/@barefootjs/hono@1541",
+    "@barefootjs/jsx": "https://pkg.pr.new/piconic-ai/barefootjs/@barefootjs/jsx@1541",
+    "@barefootjs/shared": "https://pkg.pr.new/piconic-ai/barefootjs/@barefootjs/shared@1541",
+    "@barefootjs/streaming": "https://pkg.pr.new/piconic-ai/barefootjs/@barefootjs/streaming@1541",
+    "@barefootjs/test": "https://pkg.pr.new/piconic-ai/barefootjs/@barefootjs/test@1541",
+    "@barefootjs/form": "https://pkg.pr.new/piconic-ai/barefootjs/@barefootjs/form@1541",
+    "@barefootjs/chart": "https://pkg.pr.new/piconic-ai/barefootjs/@barefootjs/chart@1541",
+    "@barefootjs/xyflow": "https://pkg.pr.new/piconic-ai/barefootjs/@barefootjs/xyflow@1541",
+    "@barefootjs/go-template": "https://pkg.pr.new/piconic-ai/barefootjs/@barefootjs/go-template@1541",
+    "@barefootjs/mojolicious": "https://pkg.pr.new/piconic-ai/barefootjs/@barefootjs/mojolicious@1541"
+  }
+}

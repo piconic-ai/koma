@@ -1,0 +1,24 @@
+{
+  "version": 1,
+  "generatedAt": "2026-05-23T13:58:56.316Z",
+  "components": [
+    {
+      "name": "button",
+      "title": "Button",
+      "category": "input",
+      "description": "Button Component A versatile button component with multiple visual variants and sizes. Inspired by shadcn/ui with CSS variable theming support.",
+      "tags": [
+        "aria"
+      ],
+      "stateful": false
+    },
+    {
+      "name": "slot",
+      "title": "Slot",
+      "category": "display",
+      "description": "Slot Component A polymorphic component that merges its props with its child element. Inspired by @radix-ui/react-slot. This enables the `asChild` pattern used by components like Button and Badge.",
+      "tags": [],
+      "stateful": false
+    }
+  ]
+}

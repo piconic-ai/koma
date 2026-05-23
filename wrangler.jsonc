@@ -1,0 +1,12 @@
+{
+  "$schema": "node_modules/wrangler/config-schema.json",
+  "name": "koma",
+  "main": "server.tsx",
+  "compatibility_date": "2025-01-01",
+  // Static assets (CSS, generated client JS, manifest) are served
+  // directly by Workers Assets. The Worker script handles everything
+  // else — SSR, API routes, etc.
+  "assets": {
+    "directory": "./public"
+  }
+}
