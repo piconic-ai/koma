@@ -183,6 +183,32 @@ main {
   font: inherit;
 }
 
+.koma-app-header-right {
+  display: inline-flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.koma-export-btn {
+  padding: 6px 12px;
+  border-radius: var(--radius);
+  border: 1px solid var(--border);
+  background: var(--primary);
+  color: var(--primary-foreground);
+  font: inherit;
+  cursor: pointer;
+  min-width: 110px;
+}
+
+.koma-export-btn:hover:not([disabled]) {
+  filter: brightness(1.05);
+}
+
+.koma-export-btn[disabled] {
+  opacity: 0.7;
+  cursor: progress;
+}
+
 .koma-app-grid {
   display: grid;
   grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
