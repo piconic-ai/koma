@@ -52,8 +52,8 @@ export type Transition = {
 }
 
 export type TimelineSegment =
-  | { type: 'hold'; frame: Frame; durationMs: number }
-  | { type: 'transition'; transition: Transition }
+  | { type: 'hold'; durationMs: number; frame: Frame }
+  | { type: 'transition'; durationMs: number; transition: Transition }
 
 export type Timeline = {
   segments: TimelineSegment[]

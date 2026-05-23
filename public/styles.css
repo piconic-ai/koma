@@ -92,3 +92,39 @@ main {
 /* placeholders consumed by the player */
 .koma-line[data-role='add']    { /* fade-in driven inline */ }
 .koma-line[data-role='remove'] { /* fade-out driven inline */ }
+
+/* ────────────────────────────────────────────────────────────
+   koma player — preview stage + transport controls
+   ──────────────────────────────────────────────────────────── */
+.koma-player {
+  display: inline-flex;
+  flex-direction: column;
+  gap: 14px;
+  align-items: stretch;
+}
+
+.koma-stage {
+  display: flex;
+  justify-content: center;
+}
+
+.koma-controls {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 8px 4px;
+}
+
+.koma-scrub {
+  flex: 1 1 auto;
+  min-width: 200px;
+  accent-color: var(--primary);
+}
+
+.koma-counter {
+  font-family: 'JetBrains Mono', ui-monospace, Menlo, monospace;
+  font-size: 14px;
+  opacity: 0.7;
+  min-width: 48px;
+  text-align: right;
+}

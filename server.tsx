@@ -1,21 +1,40 @@
 import { Hono } from 'hono'
 import { renderer } from './renderer'
-import { FrameView } from '@/components/FrameView'
+import { Player } from '@/components/Player'
+import type { Spec } from './src/model/types'
 
 const app = new Hono()
 
 app.use('*', renderer)
 
-const SAMPLE_CODE = `function greet(name: string) {
+const SAMPLE: Spec = {
+  language: 'ts',
+  frames: [
+    {
+      id: 'f1',
+      code: `function greet() {`,
+    },
+    {
+      id: 'f2',
+      code: `function greet(name: string) {
+  return \`Hello, \${name}!\`
+}`,
+    },
+    {
+      id: 'f3',
+      code: `function greet(name: string) {
   return \`Hello, \${name}!\`
 }
 
-console.log(greet('koma'))`
+console.log(greet('koma'))`,
+    },
+  ],
+}
 
 app.get('/', (c) =>
   c.render(
     <main>
-      <FrameView code={SAMPLE_CODE} language="ts" />
+      <Player spec={SAMPLE} />
     </main>,
     { title: 'koma — code into frames' },
   ),
