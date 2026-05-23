@@ -8,8 +8,8 @@ import {
   onMount,
 } from '@barefootjs/client'
 import { Button } from '@/components/ui/button'
-import { buildTimeline } from '../src/model/timeline'
-import type { Frame, LineRole, Spec } from '../src/model/types'
+import { buildTimeline, collapseTransitions } from '../src/model/timeline'
+import type { Frame, LineRole, Spec, Timeline } from '../src/model/types'
 import {
   getStageState,
   styleForLine,
@@ -25,7 +25,15 @@ interface PlayerProps {
 }
 
 export function Player(props: PlayerProps) {
-  const timeline = createMemo(() => buildTimeline(props.spec))
+  // `prefers-reduced-motion: reduce` collapses every transition to a
+  // hard cut. We re-check via matchMedia rather than baking the answer
+  // at SSR time because the server can't observe the user setting.
+  const [reduceMotion, setReduceMotion] = createSignal(false)
+
+  const timeline = createMemo<Timeline>(() => {
+    const base = buildTimeline(props.spec)
+    return reduceMotion() ? collapseTransitions(base) : base
+  })
 
   const [elapsedMs, setElapsedMs] = createSignal(0)
   const [playing, setPlaying] = createSignal(false)
@@ -50,6 +58,35 @@ export function Player(props: PlayerProps) {
 
   onMount(() => {
     for (const f of props.spec.frames) ensureTokens(f, props.spec.language)
+
+    // Subscribe to the reduced-motion media query.
+    if (typeof window !== 'undefined' && 'matchMedia' in window) {
+      const mql = window.matchMedia('(prefers-reduced-motion: reduce)')
+      setReduceMotion(mql.matches)
+      const onChange = () => setReduceMotion(mql.matches)
+      mql.addEventListener('change', onChange)
+      onCleanup(() => mql.removeEventListener('change', onChange))
+    }
+
+    // Keyboard shortcuts: Space toggles play/pause, ←/→ steps frames.
+    const onKey = (e: KeyboardEvent) => {
+      // Skip if focus is inside an editable element — typing in the
+      // textarea shouldn't fire global shortcuts.
+      const tag = (e.target as HTMLElement | null)?.tagName
+      if (tag === 'TEXTAREA' || tag === 'INPUT' || tag === 'SELECT') return
+      if (e.key === ' ' || e.code === 'Space') {
+        e.preventDefault()
+        togglePlay()
+      } else if (e.key === 'ArrowRight') {
+        e.preventDefault()
+        stepFrame(1)
+      } else if (e.key === 'ArrowLeft') {
+        e.preventDefault()
+        stepFrame(-1)
+      }
+    }
+    window.addEventListener('keydown', onKey)
+    onCleanup(() => window.removeEventListener('keydown', onKey))
   })
 
   createEffect(() => {
@@ -122,6 +159,27 @@ export function Player(props: PlayerProps) {
     const v = Number((e.currentTarget as HTMLInputElement).value)
     setPlaying(false)
     setElapsedMs(v)
+  }
+
+  // Snap elapsed to the start of frame `currentFrameIndex() + dir`.
+  // Used by the keyboard arrow shortcuts.
+  const stepFrame = (dir: 1 | -1) => {
+    const t = timeline()
+    const frames = props.spec.frames
+    const target = Math.max(
+      0,
+      Math.min(frames.length - 1, currentFrameIndex() + dir),
+    )
+    // Sum durations of every segment up to (but not including) the
+    // target frame's hold segment. With holds at indices 0, 2, 4, ...
+    // the hold for frame `k` starts at segment index `2k`.
+    const targetSegIdx = target * 2
+    let acc = 0
+    for (let i = 0; i < targetSegIdx && i < t.segments.length; i++) {
+      acc += t.segments[i].durationMs
+    }
+    setPlaying(false)
+    setElapsedMs(acc)
   }
 
   const stage = createMemo(() => getStageState(timeline(), elapsedMs()))
@@ -201,6 +259,9 @@ export function Player(props: PlayerProps) {
           {currentFrameIndex() + 1}/{frameCount()}
         </span>
       </div>
+      <p className="koma-shortcut-hint">
+        Space play/pause · ← → step frame
+      </p>
     </div>
   )
 }
