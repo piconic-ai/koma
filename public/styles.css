@@ -246,7 +246,10 @@ main {
 .koma-editors {
   display: flex;
   flex-direction: column;
-  gap: 16px;
+  gap: 0;
+  background: #0d1117;
+  border-radius: 8px;
+  overflow: hidden;
 }
 
 .koma-preview {
@@ -256,44 +259,39 @@ main {
   justify-content: center;
 }
 
-/* per-frame editor card */
+/* per-frame editor — borderless, compact (4-koma manga style) */
 .koma-frame-editor {
-  display: flex;
-  flex-direction: column;
-  gap: 8px;
-  padding: 12px;
-  background: var(--card);
-  border: 1px solid var(--border);
-  border-radius: var(--radius);
+  position: relative;
 }
 
-.koma-frame-header {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 8px;
-}
-
-.koma-frame-label {
-  font-size: 13px;
-  font-weight: 600;
-  color: var(--muted-foreground, currentColor);
-}
-
-.koma-frame-actions {
+.koma-frame-toolbar {
+  position: absolute;
+  top: 4px;
+  right: 4px;
   display: inline-flex;
-  gap: 4px;
+  gap: 2px;
+  opacity: 0;
+  transition: opacity 0.15s;
+  z-index: 1;
+}
+
+.koma-frame-editor:hover .koma-frame-toolbar,
+.koma-frame-editor:focus-within .koma-frame-toolbar {
+  opacity: 1;
 }
 
 .koma-iconbtn {
-  width: 28px;
-  height: 28px;
-  border-radius: 6px;
-  border: 1px solid var(--border);
-  background: var(--background);
-  color: var(--foreground);
-  font-size: 14px;
+  width: 24px;
+  height: 24px;
+  border-radius: 4px;
+  border: none;
+  background: rgba(255, 255, 255, 0.08);
+  color: #c9d1d9;
+  font-size: 12px;
   cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
 }
 
 .koma-iconbtn[disabled] {
@@ -308,42 +306,39 @@ main {
 
 .koma-code-input {
   width: 100%;
-  min-height: 140px;
+  min-height: 80px;
   padding: 12px 14px;
-  border: 1px solid var(--border);
-  border-radius: var(--radius);
+  border: none;
+  border-radius: 0;
   background: #0d1117;
   color: #c9d1d9;
   font-family: 'JetBrains Mono', 'Fira Code', ui-monospace, Menlo, monospace;
   font-size: 14px;
   line-height: 1.6;
-  resize: vertical;
+  resize: none;
   tab-size: 2;
   white-space: pre;
   overflow-wrap: normal;
   overflow-x: auto;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+}
+
+.koma-frame-editor:last-of-type .koma-code-input {
+  border-bottom: none;
 }
 
 .koma-code-input:focus {
   outline: 2px solid var(--ring);
-  outline-offset: -1px;
-}
-
-.koma-frame-options {
-  font-size: 13px;
-}
-
-.koma-frame-options summary {
-  cursor: pointer;
-  padding: 4px 0;
-  color: var(--muted-foreground, currentColor);
+  outline-offset: -2px;
 }
 
 .koma-frame-options-grid {
   display: grid;
   grid-template-columns: 1fr 1fr;
   gap: 12px;
-  padding-top: 8px;
+  padding: 8px 14px;
+  background: #161b22;
+  font-size: 13px;
 }
 
 .koma-frame-options-grid label {
@@ -362,15 +357,22 @@ main {
 }
 
 .koma-add-frame {
-  padding: 10px 12px;
-  border-radius: var(--radius);
-  border: 1px dashed var(--border);
-  background: transparent;
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  border: 1px solid var(--border);
+  background: var(--background);
   color: var(--foreground);
   cursor: pointer;
-  font: inherit;
+  font-size: 20px;
+  line-height: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin: 8px auto;
 }
 
 .koma-add-frame:hover {
-  background: color-mix(in oklch, var(--accent) 20%, transparent);
+  background: var(--accent);
+  color: var(--accent-foreground);
 }
