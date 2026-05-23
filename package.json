@@ -3,10 +3,11 @@
   "private": true,
   "type": "module",
   "scripts": {
-    "dev": "concurrently -k -n build,uno,server -c blue,magenta,green \"bf build --watch\" \"unocss --watch\" \"npx wrangler dev --live-reload\"",
-    "build": "bf build && unocss",
-    "deploy": "bf build && unocss && npx wrangler deploy",
+    "dev": "concurrently -k -n build,uno,export,server -c blue,magenta,yellow,green \"bf build --watch\" \"unocss --watch\" \"node scripts/build-export-bundle.mjs\" \"npx wrangler dev --live-reload\"",
+    "build": "bf build && unocss && node scripts/build-export-bundle.mjs",
+    "deploy": "bf build && unocss && node scripts/build-export-bundle.mjs && npx wrangler deploy",
     "watch": "concurrently -k -n build,uno -c blue,magenta \"bf build --watch\" \"unocss --watch\"",
+    "build:export": "node scripts/build-export-bundle.mjs",
     "test": "vitest run"
   },
   "dependencies": {

@@ -189,6 +189,12 @@ main {
   gap: 12px;
 }
 
+.koma-export-group {
+  display: inline-flex;
+  gap: 6px;
+  align-items: center;
+}
+
 .koma-export-btn {
   padding: 6px 12px;
   border-radius: var(--radius);
@@ -197,7 +203,11 @@ main {
   color: var(--primary-foreground);
   font: inherit;
   cursor: pointer;
-  min-width: 110px;
+}
+
+.koma-export-btn-secondary {
+  background: var(--card);
+  color: var(--foreground);
 }
 
 .koma-export-btn:hover:not([disabled]) {
@@ -207,6 +217,15 @@ main {
 .koma-export-btn[disabled] {
   opacity: 0.7;
   cursor: progress;
+}
+
+.koma-export-status {
+  font-size: 13px;
+  font-family: 'JetBrains Mono', ui-monospace, Menlo, monospace;
+  padding: 6px 12px;
+  border-radius: var(--radius);
+  background: var(--muted, var(--card));
+  color: var(--muted-foreground, var(--foreground));
 }
 
 .koma-app-grid {
