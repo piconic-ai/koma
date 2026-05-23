@@ -13,45 +13,74 @@ import type { TokenLine } from '../render/highlighter'
 export type RenderOptions = {
   width: number
   height: number
-  background: string
+  outerBackground: string
+  codeBackground: string
+  codeWidth: number
   fontFamily: string
   fontSize: number
   lineHeight: number
   paddingX: number
   paddingY: number
   windowChromeHeight: number
+  cornerRadius: number
 }
 
 export const DEFAULT_RENDER_OPTIONS: RenderOptions = {
   width: 1080,
   height: 1080,
-  background: '#0d1117',
+  outerBackground: '#1a1b26',
+  codeBackground: '#0d1117',
+  codeWidth: 900,
   fontFamily:
     "'JetBrains Mono', 'Fira Code', ui-monospace, SFMono-Regular, Menlo, monospace",
   fontSize: 28,
   lineHeight: 1.6,
-  paddingX: 56,
-  paddingY: 56,
-  windowChromeHeight: 56,
+  paddingX: 40,
+  paddingY: 40,
+  windowChromeHeight: 48,
+  cornerRadius: 16,
+}
+
+function roundRect(
+  ctx: CanvasRenderingContext2D,
+  x: number,
+  y: number,
+  w: number,
+  h: number,
+  r: number,
+) {
+  ctx.beginPath()
+  ctx.moveTo(x + r, y)
+  ctx.lineTo(x + w - r, y)
+  ctx.quadraticCurveTo(x + w, y, x + w, y + r)
+  ctx.lineTo(x + w, y + h - r)
+  ctx.quadraticCurveTo(x + w, y + h, x + w - r, y + h)
+  ctx.lineTo(x + r, y + h)
+  ctx.quadraticCurveTo(x, y + h, x, y + h - r)
+  ctx.lineTo(x, y + r)
+  ctx.quadraticCurveTo(x, y, x + r, y)
+  ctx.closePath()
 }
 
 function drawWindowChrome(
   ctx: CanvasRenderingContext2D,
+  windowX: number,
+  windowY: number,
+  windowW: number,
   opts: RenderOptions,
 ) {
-  // Title bar background
   ctx.fillStyle = '#161b22'
-  ctx.fillRect(0, 0, opts.width, opts.windowChromeHeight)
-  // Three traffic-light dots
-  const cy = opts.windowChromeHeight / 2
+  roundRect(ctx, windowX, windowY, windowW, opts.windowChromeHeight, 0)
+  ctx.fill()
+  const cy = windowY + opts.windowChromeHeight / 2
   const dots: Array<{ x: number; color: string }> = [
-    { x: 28, color: '#ff5f57' },
-    { x: 56, color: '#febc2e' },
-    { x: 84, color: '#28c840' },
+    { x: windowX + 24, color: '#ff5f57' },
+    { x: windowX + 48, color: '#febc2e' },
+    { x: windowX + 72, color: '#28c840' },
   ]
   for (const dot of dots) {
     ctx.beginPath()
-    ctx.arc(dot.x, cy, 10, 0, Math.PI * 2)
+    ctx.arc(dot.x, cy, 8, 0, Math.PI * 2)
     ctx.fillStyle = dot.color
     ctx.fill()
   }
@@ -95,19 +124,37 @@ export function renderToCanvas(
     | null
   if (!ctx) return
 
-  // Background
-  ctx.fillStyle = opts.background
-  ctx.fillRect(0, 0, opts.width, opts.height)
+  const c = ctx as CanvasRenderingContext2D
+
+  // Outer background
+  c.fillStyle = opts.outerBackground
+  c.fillRect(0, 0, opts.width, opts.height)
+
+  // Code window — centered, fixed width
+  const windowW = Math.min(opts.codeWidth, opts.width - 40)
+  const windowH = opts.height - 80
+  const windowX = (opts.width - windowW) / 2
+  const windowY = (opts.height - windowH) / 2
+
+  // Draw rounded-rect code background
+  c.fillStyle = opts.codeBackground
+  roundRect(c, windowX, windowY, windowW, windowH, opts.cornerRadius)
+  c.fill()
+
+  // Clip to the rounded rect so chrome + text don't bleed
+  c.save()
+  roundRect(c, windowX, windowY, windowW, windowH, opts.cornerRadius)
+  c.clip()
 
   // Chrome
-  drawWindowChrome(ctx as CanvasRenderingContext2D, opts)
+  drawWindowChrome(c, windowX, windowY, windowW, opts)
 
   // Code
-  ctx.font = `${opts.fontSize}px ${opts.fontFamily}`
-  ctx.textBaseline = 'top'
+  c.font = `${opts.fontSize}px ${opts.fontFamily}`
+  c.textBaseline = 'top'
 
-  const startX = opts.paddingX
-  const startY = opts.windowChromeHeight + opts.paddingY
+  const startX = windowX + opts.paddingX
+  const startY = windowY + opts.windowChromeHeight + opts.paddingY
   const lineGap = opts.fontSize * opts.lineHeight
 
   const pos = locateInTimeline(inputs.timeline, inputs.elapsedMs)
@@ -118,20 +165,12 @@ export function renderToCanvas(
       inputs.tokensByFrame.get(seg.frame.id) ??
       seg.frame.code.split('\n').map(line => [{ content: line }])
     for (let i = 0; i < tokens.length; i++) {
-      drawTokenLine(
-        ctx as CanvasRenderingContext2D,
-        tokens[i],
-        startX,
-        startY + i * lineGap,
-        opts.fontSize,
-      )
+      drawTokenLine(c, tokens[i], startX, startY + i * lineGap, opts.fontSize)
     }
+    c.restore()
     return
   }
 
-  // Transition: blend per-line opacity / translate, using token
-  // colors from the destination frame for keep/add lines and the
-  // source frame for remove lines.
   const fromTokens = inputs.tokensByFrame.get(seg.transition.fromFrameId)
   const toTokens = inputs.tokensByFrame.get(seg.transition.toFrameId)
   const progress = pos.segmentProgress
@@ -144,14 +183,15 @@ export function renderToCanvas(
       role.type === 'remove'
         ? fromTokens?.[role.fromIndex] ?? [{ content: role.line }]
         : toTokens?.[role.toIndex] ?? [{ content: role.line }]
-    ctx.globalAlpha = style.opacity
+    c.globalAlpha = style.opacity
     drawTokenLine(
-      ctx as CanvasRenderingContext2D,
+      c,
       lineTokens,
       startX,
       startY + i * lineGap + style.translateY,
       opts.fontSize,
     )
   }
-  ctx.globalAlpha = 1
+  c.globalAlpha = 1
+  c.restore()
 }
