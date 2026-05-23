@@ -89,9 +89,14 @@ main {
   min-height: 1.6em;
 }
 
-/* placeholders consumed by the player */
-.koma-line[data-role='add']    { /* fade-in driven inline */ }
-.koma-line[data-role='remove'] { /* fade-out driven inline */ }
+.koma-cursor {
+  color: #58a6ff;
+  animation: koma-blink 0.6s step-end infinite;
+}
+
+@keyframes koma-blink {
+  50% { opacity: 0; }
+}
 
 /* ────────────────────────────────────────────────────────────
    koma player — preview stage + transport controls

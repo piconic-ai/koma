@@ -7,7 +7,7 @@
 
 import { locateInTimeline } from '../model/timeline'
 import type { Frame, Timeline } from '../model/types'
-import { styleForLine } from '../render/playback'
+import { typingForLine } from '../render/playback'
 import type { TokenLine } from '../render/highlighter'
 
 export type RenderOptions = {
@@ -171,27 +171,27 @@ export function renderToCanvas(
     return
   }
 
-  const fromTokens = inputs.tokensByFrame.get(seg.transition.fromFrameId)
-  const toTokens = inputs.tokensByFrame.get(seg.transition.toFrameId)
   const progress = pos.segmentProgress
+  let drawY = 0
 
   for (let i = 0; i < seg.transition.lines.length; i++) {
     const role = seg.transition.lines[i]
-    const style = styleForLine(role, progress)
-    if (style.opacity <= 0) continue
-    const lineTokens: TokenLine =
-      role.type === 'remove'
-        ? fromTokens?.[role.fromIndex] ?? [{ content: role.line }]
-        : toTokens?.[role.toIndex] ?? [{ content: role.line }]
-    c.globalAlpha = style.opacity
-    drawTokenLine(
-      c,
-      lineTokens,
-      startX,
-      startY + i * lineGap + style.translateY,
-      opts.fontSize,
-    )
+    const typing = typingForLine(role, progress)
+    if (!typing.visible) continue
+    const text =
+      typing.visibleChars === -1
+        ? role.line
+        : role.line.substring(0, typing.visibleChars)
+    if (text.length > 0) {
+      c.fillStyle = '#c9d1d9'
+      c.fillText(text, startX, startY + drawY * lineGap)
+    }
+    if (typing.showCursor) {
+      const cursorX = startX + c.measureText(text).width
+      c.fillStyle = '#58a6ff'
+      c.fillText('|', cursorX, startY + drawY * lineGap)
+    }
+    drawY++
   }
-  c.globalAlpha = 1
   c.restore()
 }

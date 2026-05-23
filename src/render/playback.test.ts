@@ -1,7 +1,7 @@
 import { describe, expect, test } from 'vitest'
 import { buildTimeline } from '../model/timeline'
 import { DEFAULTS, type Spec } from '../model/types'
-import { getStageState, styleForLine } from './playback'
+import { getStageState, styleForLine, typingForLine } from './playback'
 
 const spec: Spec = {
   language: 'ts',
@@ -39,27 +39,33 @@ describe('getStageState', () => {
 })
 
 describe('styleForLine', () => {
-  test('keep is always fully visible and not translated', () => {
+  test('keep is always fully visible', () => {
     expect(
       styleForLine({ type: 'keep', line: 'x', fromIndex: 0, toIndex: 0 }, 0.3),
     ).toEqual({ opacity: 1, translateY: 0 })
   })
+})
 
-  test('add interpolates from 0 to full visibility', () => {
-    const at0 = styleForLine({ type: 'add', line: 'x', toIndex: 0 }, 0)
-    const at1 = styleForLine({ type: 'add', line: 'x', toIndex: 0 }, 1)
-    expect(at0.opacity).toBe(0)
-    expect(at0.translateY).toBeGreaterThan(0)
-    expect(at1.opacity).toBe(1)
-    expect(at1.translateY).toBe(0)
+describe('typingForLine', () => {
+  test('keep shows all characters', () => {
+    const t = typingForLine({ type: 'keep', line: 'hello', fromIndex: 0, toIndex: 0 }, 0.5)
+    expect(t.visibleChars).toBe(-1)
+    expect(t.visible).toBe(true)
   })
 
-  test('remove fades out and slides up', () => {
-    const at0 = styleForLine({ type: 'remove', line: 'x', fromIndex: 0 }, 0)
-    const at1 = styleForLine({ type: 'remove', line: 'x', fromIndex: 0 }, 1)
-    expect(at0.opacity).toBe(1)
-    expect(at0.translateY).toBeCloseTo(0, 6)
-    expect(at1.opacity).toBe(0)
-    expect(at1.translateY).toBeLessThan(0)
+  test('remove erases characters in the first 30%', () => {
+    const at0 = typingForLine({ type: 'remove', line: 'hello', fromIndex: 0 }, 0)
+    expect(at0.visibleChars).toBe(5)
+    expect(at0.visible).toBe(true)
+    const atEnd = typingForLine({ type: 'remove', line: 'hello', fromIndex: 0 }, 0.3)
+    expect(atEnd.visible).toBe(false)
+  })
+
+  test('add types characters after 30%', () => {
+    const early = typingForLine({ type: 'add', line: 'hello', toIndex: 0 }, 0.1)
+    expect(early.visible).toBe(false)
+    const at1 = typingForLine({ type: 'add', line: 'hello', toIndex: 0 }, 1)
+    expect(at1.visibleChars).toBe(5)
+    expect(at1.visible).toBe(true)
   })
 })
