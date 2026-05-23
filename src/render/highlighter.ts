@@ -31,7 +31,15 @@ export const KOMA_THEME = 'github-dark'
 let highlighterPromise: Promise<Highlighter> | null = null
 
 async function loadHighlighter(): Promise<Highlighter> {
-  const { createHighlighter } = await import('shiki')
+  // Use esm.sh so the browser can resolve Shiki + its WASM dependencies
+  // without us needing a client-side bundler. The version is pinned so
+  // we don't get surprised by a major bump. The same module loads as a
+  // regular import in Node for tests.
+  const shikiUrl = 'https://esm.sh/shiki@4.1.0'
+  // eslint-disable-next-line @typescript-eslint/ban-ts-comment
+  // @ts-ignore -- URL import resolved at runtime by the browser
+  const mod = await import(/* @vite-ignore */ shikiUrl)
+  const { createHighlighter } = mod as { createHighlighter: typeof import('shiki').createHighlighter }
   return createHighlighter({
     themes: [KOMA_THEME],
     langs: [

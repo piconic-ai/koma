@@ -2,6 +2,10 @@
 public/components/
 public/.buildcache.json
 public/.bfemit.json
+public/.dev/
+
+# Playwright MCP scratch
+.playwright-mcp/
 
 # Wrangler local state (dev session, worker logs)
 .wrangler/

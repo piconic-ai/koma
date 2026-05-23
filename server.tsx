@@ -1,6 +1,6 @@
 import { Hono } from 'hono'
 import { renderer } from './renderer'
-import { Player } from '@/components/Player'
+import { App } from '@/components/App'
 import type { Spec } from './src/model/types'
 
 const app = new Hono()
@@ -33,9 +33,7 @@ console.log(greet('koma'))`,
 
 app.get('/', (c) =>
   c.render(
-    <main>
-      <Player spec={SAMPLE} />
-    </main>,
+    <App initialSpec={SAMPLE} />,
     { title: 'koma — code into frames' },
   ),
 )
