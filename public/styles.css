@@ -4,6 +4,7 @@ html, body {
   font-family: var(--font-sans);
   background: var(--background);
   color: var(--foreground);
+  overflow-x: hidden;
 }
 
 * {
@@ -44,14 +45,13 @@ main {
    stay deliberately flat; the code is the centerpiece.
    ──────────────────────────────────────────────────────────── */
 .koma-frame {
-  display: inline-block;
+  display: block;
   text-align: left;
   background: #0d1117;
   border-radius: 12px;
   box-shadow: 0 24px 60px rgba(0, 0, 0, 0.35);
   overflow: hidden;
-  min-width: 360px;
-  max-width: 100%;
+  width: 100%;
   font-family: 'JetBrains Mono', 'Fira Code', ui-monospace, SFMono-Regular, Menlo, monospace;
 }
 
@@ -76,12 +76,12 @@ main {
 
 .koma-code {
   margin: 0;
-  padding: 24px 28px;
-  font-size: 18px;
+  padding: 16px 20px;
+  font-size: 16px;
   line-height: 1.6;
   color: #c9d1d9;
   white-space: pre;
-  overflow-x: auto;
+  overflow: hidden;
 }
 
 .koma-line {
@@ -97,15 +97,21 @@ main {
    koma player — preview stage + transport controls
    ──────────────────────────────────────────────────────────── */
 .koma-player {
-  display: inline-flex;
+  display: flex;
   flex-direction: column;
   gap: 14px;
   align-items: stretch;
+  width: 100%;
 }
 
 .koma-stage {
   display: flex;
   justify-content: center;
+  align-items: center;
+  background: #1a1b26;
+  border-radius: 12px;
+  padding: 20px;
+  overflow: hidden;
 }
 
 .koma-controls {
@@ -117,7 +123,7 @@ main {
 
 .koma-scrub {
   flex: 1 1 auto;
-  min-width: 200px;
+  min-width: 0;
   accent-color: var(--primary);
 }
 
@@ -235,6 +241,7 @@ main {
   padding: 24px;
   flex: 1 1 auto;
   align-items: start;
+  max-width: 100%;
 }
 
 @media (max-width: 900px) {
@@ -255,8 +262,8 @@ main {
 .koma-preview {
   position: sticky;
   top: 80px;
-  display: flex;
-  justify-content: center;
+  min-width: 0;
+  overflow: hidden;
 }
 
 /* per-frame editor — borderless, compact (4-koma manga style) */
