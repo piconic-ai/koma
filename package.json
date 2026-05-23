@@ -15,16 +15,18 @@
     "@barefootjs/hono": "https://pkg.pr.new/piconic-ai/barefootjs/@barefootjs/hono@1541",
     "@barefootjs/jsx": "https://pkg.pr.new/piconic-ai/barefootjs/@barefootjs/jsx@1541",
     "@barefootjs/shared": "https://pkg.pr.new/piconic-ai/barefootjs/@barefootjs/shared@1541",
+    "@types/diff": "^7.0.2",
+    "diff": "^9.0.0",
     "hono": "^4.6.0"
   },
   "devDependencies": {
+    "@barefootjs/test": "https://pkg.pr.new/piconic-ai/barefootjs/@barefootjs/test@1541",
+    "@cloudflare/workers-types": "^4.20250101.0",
     "@unocss/cli": "^66.0.0",
     "@unocss/preset-wind4": "^66.0.0",
-    "unocss": "^66.0.0",
-    "@cloudflare/workers-types": "^4.20250101.0",
-    "@barefootjs/test": "https://pkg.pr.new/piconic-ai/barefootjs/@barefootjs/test@1541",
     "concurrently": "^9.0.0",
     "typescript": "^5.6.0",
+    "unocss": "^66.0.0",
     "vitest": "^2.0.0"
   },
   "overrides": {
