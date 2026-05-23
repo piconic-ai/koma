@@ -9,7 +9,9 @@ import {
 } from '@barefootjs/client'
 import { Button } from '@/components/ui/button'
 import { buildTimeline, collapseTransitions } from '../src/model/timeline'
-import type { Frame, LineRole, Spec, Timeline } from '../src/model/types'
+import type { Frame, Spec, Timeline } from '../src/model/types'
+import type { LineRole } from '../src/model/types'
+import type { LineStyle } from '../src/render/playback'
 import {
   getStageState,
   styleForLine,
@@ -230,8 +232,17 @@ export function Player(props: PlayerProps) {
           />
         ) : (
           <TransitionStage
-            lines={(stage() as { lines: LineRole[] }).lines}
-            progress={(stage() as { progress: number }).progress}
+            styledLines={
+              (() => {
+                const s = stage()
+                if (s.kind !== 'transition') return []
+                const p = s.progress
+                return s.lines.map(role => ({
+                  role,
+                  style: styleForLine(role, p),
+                }))
+              })()
+            }
           />
         )}
       </div>
@@ -266,6 +277,8 @@ export function Player(props: PlayerProps) {
   )
 }
 
+type StyledLine = { role: LineRole; style: LineStyle }
+
 function HoldStage(props: { tokens: TokenLine[] }) {
   return (
     <div className="koma-frame">
@@ -293,7 +306,7 @@ function HoldStage(props: { tokens: TokenLine[] }) {
   )
 }
 
-function TransitionStage(props: { lines: LineRole[]; progress: number }) {
+function TransitionStage(props: { styledLines: StyledLine[] }) {
   return (
     <div className="koma-frame">
       <div className="koma-titlebar">
@@ -302,21 +315,18 @@ function TransitionStage(props: { lines: LineRole[]; progress: number }) {
         <span className="koma-dot koma-dot-green" />
       </div>
       <pre className="koma-code">
-        {props.lines.map((role, i) => {
-          const style = styleForLine(role, props.progress)
-          return (
-            <div
-              key={i}
-              className="koma-line"
-              style={{
-                opacity: String(style.opacity),
-                transform: `translateY(${style.translateY}px)`,
-              }}
-            >
-              <span>{role.line.length === 0 ? ' ' : role.line}</span>
-            </div>
-          )
-        })}
+        {props.styledLines.map((item, i) => (
+          <div
+            key={i}
+            className="koma-line"
+            style={{
+              opacity: String(item.style.opacity),
+              transform: `translateY(${item.style.translateY}px)`,
+            }}
+          >
+            <span>{item.role.line.length === 0 ? ' ' : item.role.line}</span>
+          </div>
+        ))}
       </pre>
     </div>
   )
