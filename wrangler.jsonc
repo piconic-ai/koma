@@ -6,7 +6,13 @@
   // Static assets (CSS, generated client JS, manifest) are served
   // directly by Workers Assets. The Worker script handles everything
   // else — SSR, API routes, etc.
+  "workers_dev": false,
   "assets": {
     "directory": "./public"
-  }
+  },
+  // Custom domain — requires piconic.ai to be on Cloudflare DNS.
+  // Cloudflare auto-provisions the CNAME and TLS certificate.
+  "routes": [
+    { "pattern": "koma.piconic.ai", "custom_domain": true }
+  ]
 }
