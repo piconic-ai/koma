@@ -34,22 +34,53 @@ export type LineStyle = {
   translateY: number // px
 }
 
-const ADD_TRANSLATE_PX = 8
-const REMOVE_TRANSLATE_PX = -8
-
 export function styleForLine(role: LineRole, progress: number): LineStyle {
   switch (role.type) {
     case 'keep':
       return { opacity: 1, translateY: 0 }
     case 'add':
-      return {
-        opacity: progress,
-        translateY: (1 - progress) * ADD_TRANSLATE_PX,
-      }
+      return { opacity: progress > 0 ? 1 : 0, translateY: 0 }
     case 'remove':
-      return {
-        opacity: 1 - progress,
-        translateY: progress * REMOVE_TRANSLATE_PX,
-      }
+      return { opacity: progress < 1 ? 1 : 0, translateY: 0 }
+  }
+}
+
+// Ultra-fast typing: characters appear/disappear one by one.
+// Remove lines erase in the first 30% of the transition,
+// add lines type in the remaining 70%.
+export type TypingState = {
+  visibleChars: number // -1 = show all
+  showCursor: boolean
+  visible: boolean
+}
+
+const ERASE_PHASE = 0.3
+
+export function typingForLine(role: LineRole, progress: number): TypingState {
+  if (role.type === 'keep') {
+    return { visibleChars: -1, showCursor: false, visible: true }
+  }
+  if (role.type === 'remove') {
+    if (progress >= ERASE_PHASE) {
+      return { visibleChars: 0, showCursor: false, visible: false }
+    }
+    const p = progress / ERASE_PHASE
+    const total = role.line.length
+    return {
+      visibleChars: Math.max(0, Math.ceil(total * (1 - p))),
+      showCursor: total > 0,
+      visible: true,
+    }
+  }
+  // add
+  if (progress < ERASE_PHASE) {
+    return { visibleChars: 0, showCursor: false, visible: false }
+  }
+  const p = (progress - ERASE_PHASE) / (1 - ERASE_PHASE)
+  const total = role.line.length
+  return {
+    visibleChars: Math.floor(total * p),
+    showCursor: total > 0 && p < 1,
+    visible: true,
   }
 }
