@@ -3,10 +3,11 @@
   "private": true,
   "type": "module",
   "scripts": {
-    "dev": "concurrently -k -n build,uno,server -c blue,magenta,green \"bf build --watch\" \"unocss --watch\" \"npx wrangler dev --live-reload\"",
-    "build": "bf build && unocss",
-    "deploy": "bf build && unocss && npx wrangler deploy",
+    "dev": "concurrently -k -n build,uno,export,server -c blue,magenta,yellow,green \"bf build --watch\" \"unocss --watch\" \"node scripts/build-export-bundle.mjs\" \"npx wrangler dev --live-reload\"",
+    "build": "bf build && unocss && node scripts/build-export-bundle.mjs",
+    "deploy": "bf build && unocss && node scripts/build-export-bundle.mjs && npx wrangler deploy",
     "watch": "concurrently -k -n build,uno -c blue,magenta \"bf build --watch\" \"unocss --watch\"",
+    "build:export": "node scripts/build-export-bundle.mjs",
     "test": "vitest run"
   },
   "dependencies": {
@@ -18,13 +19,14 @@
     "hono": "^4.6.0"
   },
   "devDependencies": {
+    "@barefootjs/test": "https://pkg.pr.new/piconic-ai/barefootjs/@barefootjs/test@1541",
+    "shiki": "^4.1.0",
+    "@cloudflare/workers-types": "^4.20250101.0",
     "@unocss/cli": "^66.0.0",
     "@unocss/preset-wind4": "^66.0.0",
-    "unocss": "^66.0.0",
-    "@cloudflare/workers-types": "^4.20250101.0",
-    "@barefootjs/test": "https://pkg.pr.new/piconic-ai/barefootjs/@barefootjs/test@1541",
     "concurrently": "^9.0.0",
     "typescript": "^5.6.0",
+    "unocss": "^66.0.0",
     "vitest": "^2.0.0"
   },
   "overrides": {

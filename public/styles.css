@@ -6,12 +6,12 @@ html, body {
   color: var(--foreground);
 }
 
+* {
+  box-sizing: border-box;
+}
+
 main {
-  display: grid;
-  place-items: center;
   min-height: 100vh;
-  padding: 2rem;
-  text-align: center;
 }
 
 .counter {
@@ -36,4 +36,341 @@ main {
   display: flex;
   gap: 0.5rem;
   justify-content: center;
+}
+
+/* ────────────────────────────────────────────────────────────
+   koma frame — the visual representation of a single Frame in
+   the preview and in the exported video. Background and chrome
+   stay deliberately flat; the code is the centerpiece.
+   ──────────────────────────────────────────────────────────── */
+.koma-frame {
+  display: inline-block;
+  text-align: left;
+  background: #0d1117;
+  border-radius: 12px;
+  box-shadow: 0 24px 60px rgba(0, 0, 0, 0.35);
+  overflow: hidden;
+  min-width: 360px;
+  max-width: 100%;
+  font-family: 'JetBrains Mono', 'Fira Code', ui-monospace, SFMono-Regular, Menlo, monospace;
+}
+
+.koma-titlebar {
+  display: flex;
+  gap: 8px;
+  padding: 12px 16px;
+  background: #161b22;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+}
+
+.koma-dot {
+  display: inline-block;
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+}
+
+.koma-dot-red    { background: #ff5f57; }
+.koma-dot-yellow { background: #febc2e; }
+.koma-dot-green  { background: #28c840; }
+
+.koma-code {
+  margin: 0;
+  padding: 24px 28px;
+  font-size: 18px;
+  line-height: 1.6;
+  color: #c9d1d9;
+  white-space: pre;
+  overflow-x: auto;
+}
+
+.koma-line {
+  display: block;
+  min-height: 1.6em;
+}
+
+/* placeholders consumed by the player */
+.koma-line[data-role='add']    { /* fade-in driven inline */ }
+.koma-line[data-role='remove'] { /* fade-out driven inline */ }
+
+/* ────────────────────────────────────────────────────────────
+   koma player — preview stage + transport controls
+   ──────────────────────────────────────────────────────────── */
+.koma-player {
+  display: inline-flex;
+  flex-direction: column;
+  gap: 14px;
+  align-items: stretch;
+}
+
+.koma-stage {
+  display: flex;
+  justify-content: center;
+}
+
+.koma-controls {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 8px 4px;
+}
+
+.koma-scrub {
+  flex: 1 1 auto;
+  min-width: 200px;
+  accent-color: var(--primary);
+}
+
+.koma-counter {
+  font-family: 'JetBrains Mono', ui-monospace, Menlo, monospace;
+  font-size: 14px;
+  opacity: 0.7;
+  min-width: 48px;
+  text-align: right;
+}
+
+.koma-shortcut-hint {
+  margin: 0;
+  font-size: 12px;
+  opacity: 0.5;
+  text-align: center;
+}
+
+/* ────────────────────────────────────────────────────────────
+   koma app shell — header + two-column grid (editors / preview).
+   The preview sticks while the editor list scrolls.
+   ──────────────────────────────────────────────────────────── */
+.koma-app {
+  display: flex;
+  flex-direction: column;
+  min-height: 100vh;
+}
+
+.koma-app-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  padding: 16px 24px;
+  border-bottom: 1px solid var(--border);
+  position: sticky;
+  top: 0;
+  z-index: 10;
+  background: var(--background);
+}
+
+.koma-app-title {
+  margin: 0;
+  font-size: 20px;
+  font-weight: 700;
+  letter-spacing: 0.02em;
+}
+
+.koma-lang-label {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 14px;
+  color: var(--muted-foreground, currentColor);
+}
+
+.koma-lang-select {
+  padding: 6px 10px;
+  border-radius: var(--radius);
+  border: 1px solid var(--border);
+  background: var(--card);
+  color: var(--foreground);
+  font: inherit;
+}
+
+.koma-app-header-right {
+  display: inline-flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.koma-export-group {
+  display: inline-flex;
+  gap: 6px;
+  align-items: center;
+}
+
+.koma-export-btn {
+  padding: 6px 12px;
+  border-radius: var(--radius);
+  border: 1px solid var(--border);
+  background: var(--primary);
+  color: var(--primary-foreground);
+  font: inherit;
+  cursor: pointer;
+}
+
+.koma-export-btn-secondary {
+  background: var(--card);
+  color: var(--foreground);
+}
+
+.koma-export-btn:hover:not([disabled]) {
+  filter: brightness(1.05);
+}
+
+.koma-export-btn[disabled] {
+  opacity: 0.7;
+  cursor: progress;
+}
+
+.koma-export-status {
+  font-size: 13px;
+  font-family: 'JetBrains Mono', ui-monospace, Menlo, monospace;
+  padding: 6px 12px;
+  border-radius: var(--radius);
+  background: var(--muted, var(--card));
+  color: var(--muted-foreground, var(--foreground));
+}
+
+.koma-app-grid {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+  gap: 24px;
+  padding: 24px;
+  flex: 1 1 auto;
+  align-items: start;
+}
+
+@media (max-width: 900px) {
+  .koma-app-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+.koma-editors {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.koma-preview {
+  position: sticky;
+  top: 80px;
+  display: flex;
+  justify-content: center;
+}
+
+/* per-frame editor card */
+.koma-frame-editor {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 12px;
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+}
+
+.koma-frame-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.koma-frame-label {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--muted-foreground, currentColor);
+}
+
+.koma-frame-actions {
+  display: inline-flex;
+  gap: 4px;
+}
+
+.koma-iconbtn {
+  width: 28px;
+  height: 28px;
+  border-radius: 6px;
+  border: 1px solid var(--border);
+  background: var(--background);
+  color: var(--foreground);
+  font-size: 14px;
+  cursor: pointer;
+}
+
+.koma-iconbtn[disabled] {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
+.koma-iconbtn-danger:hover:not([disabled]) {
+  background: color-mix(in oklch, var(--destructive) 20%, var(--background));
+  border-color: var(--destructive);
+}
+
+.koma-code-input {
+  width: 100%;
+  min-height: 140px;
+  padding: 12px 14px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  background: #0d1117;
+  color: #c9d1d9;
+  font-family: 'JetBrains Mono', 'Fira Code', ui-monospace, Menlo, monospace;
+  font-size: 14px;
+  line-height: 1.6;
+  resize: vertical;
+  tab-size: 2;
+  white-space: pre;
+  overflow-wrap: normal;
+  overflow-x: auto;
+}
+
+.koma-code-input:focus {
+  outline: 2px solid var(--ring);
+  outline-offset: -1px;
+}
+
+.koma-frame-options {
+  font-size: 13px;
+}
+
+.koma-frame-options summary {
+  cursor: pointer;
+  padding: 4px 0;
+  color: var(--muted-foreground, currentColor);
+}
+
+.koma-frame-options-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+  padding-top: 8px;
+}
+
+.koma-frame-options-grid label {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.koma-frame-options-grid input {
+  padding: 6px 8px;
+  border-radius: 6px;
+  border: 1px solid var(--border);
+  background: var(--background);
+  color: var(--foreground);
+  font: inherit;
+}
+
+.koma-add-frame {
+  padding: 10px 12px;
+  border-radius: var(--radius);
+  border: 1px dashed var(--border);
+  background: transparent;
+  color: var(--foreground);
+  cursor: pointer;
+  font: inherit;
+}
+
+.koma-add-frame:hover {
+  background: color-mix(in oklch, var(--accent) 20%, transparent);
 }
