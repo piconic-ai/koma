@@ -41,8 +41,6 @@ export type Mp4ExportOptions = CommonExportOptions & {
   bitrate?: number
 }
 
-export type PngSequenceOptions = CommonExportOptions
-
 async function preloadTokens(spec: Spec): Promise<Map<string, TokenLine[]>> {
   const map = new Map<string, TokenLine[]>()
   await Promise.all(
@@ -74,8 +72,6 @@ function setupRender(spec: Spec, options: CommonExportOptions) {
   return { fps, renderOpts, timeline }
 }
 
-// ── PNG sequence ──────────────────────────────────────────────────
-
 function canvasToPngBytes(canvas: HTMLCanvasElement): Promise<Uint8Array> {
   return new Promise((resolve, reject) => {
     canvas.toBlob(async blob => {
@@ -88,50 +84,9 @@ function canvasToPngBytes(canvas: HTMLCanvasElement): Promise<Uint8Array> {
   })
 }
 
-export async function exportPngSequence(
-  spec: Spec,
-  onProgress?: (p: ExportProgress) => void,
-  options: PngSequenceOptions = {},
-): Promise<Blob> {
-  const renderOpts: RenderOptions = {
-    ...DEFAULT_RENDER_OPTIONS,
-    ...options.render,
-    height: options.render?.height ?? heightForFrames(spec.frames),
-  }
-  const tokensByFrame = await preloadTokens(spec)
-  const timeline = buildTimeline(spec)
-  const canvas = document.createElement('canvas')
-  canvas.width = renderOpts.width
-  canvas.height = renderOpts.height
-  const total = spec.frames.length
-  const zip = new ZipWriter()
-  const pad = String(total).length
+// ── MP4 (internal) ───────────────────────────────────────────────
 
-  // Render each frame's hold state (t = start of that frame's hold
-  // segment). Hold segments are at indices 0, 2, 4, ... in the timeline.
-  let elapsed = 0
-  for (let i = 0; i < total; i++) {
-    renderToCanvas(canvas, {
-      timeline,
-      elapsedMs: elapsed,
-      tokensByFrame,
-      frames: spec.frames,
-      options: renderOpts,
-    })
-    const bytes = await canvasToPngBytes(canvas)
-    zip.add(`frame_${String(i + 1).padStart(pad, '0')}.png`, bytes)
-    onProgress?.({ current: i + 1, total })
-    // Advance past this hold + next transition to reach the next hold.
-    const holdSeg = timeline.segments[i * 2]
-    const transSeg = timeline.segments[i * 2 + 1]
-    elapsed += holdSeg.durationMs + (transSeg?.durationMs ?? 0)
-  }
-  return zip.finalize()
-}
-
-// ── MP4 ───────────────────────────────────────────────────────────
-
-export function isMp4ExportSupported(): boolean {
+function isMp4ExportSupported(): boolean {
   return (
     typeof window !== 'undefined' &&
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -158,7 +113,7 @@ async function loadMuxer(): Promise<MuxerModule> {
   return mod as MuxerModule
 }
 
-export async function exportMp4(
+async function exportMp4(
   spec: Spec,
   onProgress?: (p: ExportProgress) => void,
   options: Mp4ExportOptions = {},
@@ -306,6 +261,7 @@ export async function exportAll(
   const renderOpts: RenderOptions = {
     ...DEFAULT_RENDER_OPTIONS,
     ...options.render,
+    height: options.render?.height ?? heightForFrames(spec.frames),
   }
   const tokensByFrame = await preloadTokens(spec)
   const timeline = buildTimeline(spec)
