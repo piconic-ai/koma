@@ -397,14 +397,16 @@ main {
 .koma-timeline-wrapper {
   display: flex;
   align-items: center;
-  gap: 8px;
+  gap: 6px;
   margin-top: 8px;
 }
 
 .koma-timeline-wrapper .koma-timeline {
-  flex: 1 1 auto;
+  flex: 0 0 auto;
+  width: 100%;
   margin-top: 0;
   position: relative;
+  transition: width 0.1s ease-out;
 }
 
 .koma-timeline-edge {

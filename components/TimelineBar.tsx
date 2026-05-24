@@ -120,7 +120,6 @@ export function TimelineBar(props: TimelineBarProps) {
         edgeHandle.removeEventListener('pointermove', onMove)
         edgeHandle.removeEventListener('pointerup', onUp)
         edgeHandle.setAttribute('data-state', 'idle')
-        bar.style.width = ''
       }
 
       edgeHandle.addEventListener('pointermove', onMove)
