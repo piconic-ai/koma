@@ -395,33 +395,40 @@ main {
 
 
 .koma-timeline-wrapper {
+  display: flex;
+  align-items: center;
+  gap: 8px;
   margin-top: 8px;
 }
 
 .koma-timeline-wrapper .koma-timeline {
-  margin-top: 0;
-}
-
-.koma-timeline-duration {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  margin-top: 4px;
-}
-
-.koma-timeline-scale {
   flex: 1 1 auto;
-  min-width: 0;
-  accent-color: var(--primary);
-  height: 4px;
+  margin-top: 0;
+  position: relative;
+}
+
+.koma-timeline-edge {
+  position: absolute;
+  top: 0;
+  right: -4px;
+  width: 8px;
+  height: 100%;
+  cursor: ew-resize;
+  z-index: 3;
+  border-radius: 0 6px 6px 0;
+}
+
+.koma-timeline-edge:hover,
+.koma-timeline-edge[data-state="drag"] {
+  background: var(--ring);
 }
 
 .koma-timeline-total {
   font-size: 12px;
   font-family: 'JetBrains Mono', ui-monospace, Menlo, monospace;
   color: var(--muted-foreground);
-  min-width: 36px;
-  text-align: right;
+  white-space: nowrap;
+  flex-shrink: 0;
 }
 
 .koma-add-frame {
