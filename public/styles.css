@@ -334,8 +334,7 @@ main {
 }
 
 .koma-code-input:focus {
-  outline: 2px solid var(--ring);
-  outline-offset: -2px;
+  outline: none;
 }
 
 .koma-frame-options-grid {
