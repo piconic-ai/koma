@@ -21,53 +21,64 @@ interface TimelineBarProps {
 
 export function TimelineBar(props: TimelineBarProps) {
   const handleMount = (el: HTMLElement) => {
-    createEffect(() => {
+    const applySizes = () => {
       const frames = props.frames
       const totalHold = frames.reduce((sum, f) => sum + holdOf(f), 0)
-      const segments = el.querySelectorAll('[data-timeline-segment]') as NodeListOf<HTMLElement>
-
-      segments.forEach((seg, i) => {
+      const panels = el.querySelectorAll('[data-timeline-panel]') as NodeListOf<HTMLElement>
+      panels.forEach((panel, i) => {
+        if (!frames[i]) return
         const pct = (holdOf(frames[i]) / totalHold) * 100
-        seg.style.flexBasis = `${pct}%`
-        seg.style.flexGrow = '0'
-        seg.style.flexShrink = '0'
+        panel.style.flexBasis = `${pct}%`
+        panel.style.flexGrow = '0'
+        panel.style.flexShrink = '0'
       })
+    }
+
+    createEffect(() => {
+      void props.frames.map(f => f.hold)
+      void props.frames.map(f => f.code)
+      void props.frames.length
+      applySizes()
     })
-  }
 
-  const handleDrag = (handleIndex: number, e: MouseEvent) => {
-    e.preventDefault()
-    const bar = (e.currentTarget as HTMLElement).closest('.koma-timeline') as HTMLElement
-    if (!bar) return
-    const barRect = bar.getBoundingClientRect()
-    const frames = props.frames
-    const totalHold = frames.reduce((sum, f) => sum + holdOf(f), 0)
+    el.addEventListener('pointerdown', (e: PointerEvent) => {
+      const handle = (e.target as HTMLElement).closest('[data-timeline-handle]') as HTMLElement | null
+      if (!handle) return
+      e.preventDefault()
+      handle.setPointerCapture(e.pointerId)
+      handle.setAttribute('data-state', 'drag')
 
-    const onMove = (ev: MouseEvent) => {
-      const ratio = Math.max(0, Math.min(1, (ev.clientX - barRect.left) / barRect.width))
-      const cursorMs = ratio * totalHold
-      let acc = 0
-      for (let k = 0; k < handleIndex; k++) {
-        acc += holdOf(frames[k])
+      const handleIndex = Number(handle.getAttribute('data-timeline-handle'))
+      const frames = props.frames
+      const totalHold = frames.reduce((sum, f) => sum + holdOf(f), 0)
+      const barRect = el.getBoundingClientRect()
+
+      const onMove = (ev: PointerEvent) => {
+        const ratio = Math.max(0, Math.min(1, (ev.clientX - barRect.left) / barRect.width))
+        const cursorMs = ratio * totalHold
+        let acc = 0
+        for (let k = 0; k < handleIndex; k++) acc += holdOf(frames[k])
+        const combined = holdOf(frames[handleIndex]) + holdOf(frames[handleIndex + 1])
+        const minHold = 200
+        let newThis = Math.round(cursorMs - acc)
+        newThis = Math.max(minHold, Math.min(combined - minHold, newThis))
+        const newNext = combined - newThis
+
+        props.onLayout([
+          { id: frames[handleIndex].id, hold: newThis },
+          { id: frames[handleIndex + 1].id, hold: newNext },
+        ])
       }
-      const combined = holdOf(frames[handleIndex]) + holdOf(frames[handleIndex + 1])
-      const minHold = 200
-      let newThis = Math.round(cursorMs - acc)
-      newThis = Math.max(minHold, Math.min(combined - minHold, newThis))
-      const newNext = combined - newThis
 
-      props.onLayout([
-        { id: frames[handleIndex].id, hold: newThis },
-        { id: frames[handleIndex + 1].id, hold: newNext },
-      ])
-    }
+      const onUp = () => {
+        handle.removeEventListener('pointermove', onMove)
+        handle.removeEventListener('pointerup', onUp)
+        handle.setAttribute('data-state', 'idle')
+      }
 
-    const onUp = () => {
-      document.removeEventListener('mousemove', onMove)
-      document.removeEventListener('mouseup', onUp)
-    }
-    document.addEventListener('mousemove', onMove)
-    document.addEventListener('mouseup', onUp)
+      handle.addEventListener('pointermove', onMove)
+      handle.addEventListener('pointerup', onUp)
+    })
   }
 
   return (
@@ -75,15 +86,16 @@ export function TimelineBar(props: TimelineBarProps) {
       {props.frames.map((frame, i) => (
         <div
           key={frame.id}
-          className="koma-timeline-segment"
-          data-timeline-segment
+          data-timeline-panel
           data-key={frame.id}
+          className="koma-timeline-segment"
         >
           <span className="koma-timeline-label">{i + 1}</span>
           {i < props.frames.length - 1 && (
             <div
+              data-timeline-handle={i}
+              data-state="idle"
               className="koma-timeline-handle"
-              onMouseDown={(e: MouseEvent) => handleDrag(i, e)}
             />
           )}
         </div>

@@ -351,6 +351,7 @@ main {
 
 /* timeline bar */
 .koma-timeline {
+  display: flex;
   height: 28px;
   border-radius: 6px;
   border: 1px solid var(--border);
@@ -359,9 +360,11 @@ main {
 }
 
 .koma-timeline-segment {
+  position: relative;
   display: flex;
   align-items: center;
   justify-content: center;
+  min-width: 20px;
   background: var(--secondary);
   user-select: none;
 }
@@ -373,21 +376,23 @@ main {
   pointer-events: none;
 }
 
-.koma-timeline-resizable-handle {
-  width: 1px;
-  background: var(--border);
-  position: relative;
-  display: flex;
-  align-items: center;
-  justify-content: center;
+.koma-timeline-handle {
+  position: absolute;
+  top: 0;
+  right: -4px;
+  width: 8px;
+  height: 100%;
   cursor: col-resize;
+  z-index: 2;
+  background: transparent;
+  transition: background 0.1s;
 }
 
-.koma-timeline-resizable-handle::after {
-  content: '';
-  position: absolute;
-  inset: 0 -3px;
+.koma-timeline-handle:hover,
+.koma-timeline-handle[data-state="drag"] {
+  background: var(--ring);
 }
+
 
 .koma-timeline-resizable-handle[data-resize-handle-state="hover"],
 .koma-timeline-resizable-handle[data-resize-handle-state="drag"] {
