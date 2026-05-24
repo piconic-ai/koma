@@ -159,11 +159,6 @@ export function Player(props: PlayerProps) {
     setPlaying(p => !p)
   }
 
-  const rewind = () => {
-    setPlaying(false)
-    setElapsedMs(0)
-  }
-
   const onScrub = (e: Event) => {
     const v = Number((e.currentTarget as HTMLInputElement).value)
     setPlaying(false)
@@ -226,14 +221,7 @@ export function Player(props: PlayerProps) {
       </div>
       <div className="koma-controls">
         <Button onClick={togglePlay} size="sm">
-          {elapsedMs() >= timeline().totalDurationMs
-            ? 'Replay'
-            : playing()
-              ? 'Pause'
-              : 'Play'}
-        </Button>
-        <Button onClick={rewind} size="sm" variant="ghost">
-          Rewind
+          {playing() ? 'Pause' : 'Play'}
         </Button>
         <input
           type="range"
