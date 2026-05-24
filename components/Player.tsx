@@ -37,12 +37,17 @@ export function Player(props: PlayerProps) {
     new Map(),
   )
 
+  const highlightedCode = new Map<string, string>()
+
   const ensureTokens = (frame: Frame, language: Spec['language']) => {
-    if (tokensByFrame().has(frame.id)) return
+    const prev = highlightedCode.get(frame.id)
+    if (prev === `${language}:${frame.code}`) return
+    highlightedCode.set(frame.id, `${language}:${frame.code}`)
     const seeded = new Map(tokensByFrame())
     seeded.set(frame.id, plainTokens(frame.code))
     setTokensByFrame(seeded)
     void highlight(frame.code, language).then(tokens => {
+      if (highlightedCode.get(frame.id) !== `${language}:${frame.code}`) return
       const next = new Map(tokensByFrame())
       next.set(frame.id, tokens)
       setTokensByFrame(next)
@@ -94,7 +99,11 @@ export function Player(props: PlayerProps) {
 
   createEffect(() => {
     const language = props.spec.language
-    for (const f of props.spec.frames) ensureTokens(f, language)
+    const frames = props.spec.frames
+    for (const f of frames) {
+      void f.code
+      ensureTokens(f, language)
+    }
   })
 
   const stage = createMemo(() => getStageState(timeline(), elapsedMs()))
@@ -148,6 +157,7 @@ export function Player(props: PlayerProps) {
   createEffect(() => {
     void props.spec.frames.length
     void props.spec.language
+    for (const f of props.spec.frames) void f.code
     setPlaying(false)
     setElapsedMs(0)
   })
