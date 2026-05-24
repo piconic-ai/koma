@@ -383,7 +383,7 @@ main {
   width: 3px !important;
   min-width: 3px !important;
   flex: 0 0 3px !important;
-  background: var(--border) !important;
+  background: var(--ring) !important;
   cursor: col-resize;
 }
 
@@ -433,17 +433,20 @@ main {
 .koma-timeline-edge {
   position: absolute;
   top: 0;
-  right: -4px;
-  width: 8px;
+  right: 0;
+  width: 6px;
   height: 100%;
   cursor: ew-resize;
   z-index: 3;
-  border-radius: 0 6px 6px 0;
+  background: var(--ring);
+  border-radius: 0 5px 5px 0;
+  opacity: 0.5;
+  transition: opacity 0.1s;
 }
 
 .koma-timeline-edge:hover,
 .koma-timeline-edge[data-state="drag"] {
-  background: var(--ring);
+  opacity: 1;
 }
 
 .koma-timeline-total {
