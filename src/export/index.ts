@@ -296,6 +296,60 @@ export async function exportMp4(
   return new Blob([target.buffer], { type: 'video/mp4' })
 }
 
+// ── Combined export (MP4 + PNGs in one zip) ──────────────────────
+
+export async function exportAll(
+  spec: Spec,
+  onProgress?: (p: ExportProgress) => void,
+  options: Mp4ExportOptions = {},
+): Promise<Blob> {
+  const renderOpts: RenderOptions = {
+    ...DEFAULT_RENDER_OPTIONS,
+    ...options.render,
+  }
+  const tokensByFrame = await preloadTokens(spec)
+  const timeline = buildTimeline(spec)
+  const canvas = document.createElement('canvas')
+  canvas.width = renderOpts.width
+  canvas.height = renderOpts.height
+
+  const zip = new ZipWriter()
+  const total = spec.frames.length
+  const pad = String(total).length
+
+  // 1) Render per-frame PNGs
+  let elapsed = 0
+  for (let i = 0; i < total; i++) {
+    renderToCanvas(canvas, {
+      timeline,
+      elapsedMs: elapsed,
+      tokensByFrame,
+      frames: spec.frames,
+      options: renderOpts,
+    })
+    const bytes = await canvasToPngBytes(canvas)
+    zip.add(`frame_${String(i + 1).padStart(pad, '0')}.png`, bytes)
+    onProgress?.({ current: i + 1, total: total + 1 })
+    const holdSeg = timeline.segments[i * 2]
+    const transSeg = timeline.segments[i * 2 + 1]
+    elapsed += holdSeg.durationMs + (transSeg?.durationMs ?? 0)
+  }
+
+  // 2) Encode MP4 if the browser supports WebCodecs
+  if (isMp4ExportSupported()) {
+    onProgress?.({ current: total, total: total + 1 })
+    try {
+      const mp4Blob = await exportMp4(spec, undefined, options)
+      zip.add('koma.mp4', new Uint8Array(await mp4Blob.arrayBuffer()))
+    } catch {
+      // MP4 encoding failed — ship the zip with PNGs only
+    }
+  }
+
+  onProgress?.({ current: total + 1, total: total + 1 })
+  return zip.finalize()
+}
+
 // ── Download helper ───────────────────────────────────────────────
 
 export function downloadBlob(blob: Blob, filename: string) {
