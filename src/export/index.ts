@@ -6,14 +6,7 @@
 // a duplicate-identifier bug when one component reaches into multiple
 // transitive modules that share dependencies — piconic-ai/barefootjs#1542).
 //
-// `png-sequence.ts` and `mp4.ts` share substantial transitive
-// dependencies (`canvas-render`, `timeline`, `highlighter`). The bf
-// inliner currently re-inlines those modules per top-level import,
-// which produces duplicate `const __bf_inline_N` declarations and
-// a SyntaxError in the browser. Routing both exporters through one
-// module gives the inliner a single dependency tree.
-//
-// Tracking: barefootjs/barefootjs issue on transitive-dedup.
+// Tracking: piconic-ai/barefootjs#1542
 
 import { buildTimeline, collapseTransitions } from '../model/timeline'
 import { DEFAULTS, type Spec } from '../model/types'
@@ -23,7 +16,7 @@ import {
   heightForFrames,
   renderToCanvas,
   type RenderOptions,
-} from './canvas-render'
+} from '../render/canvas'
 import { ZipWriter } from './zip'
 
 export type ExportProgress = {
