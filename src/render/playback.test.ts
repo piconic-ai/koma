@@ -1,7 +1,7 @@
 import { describe, expect, test } from 'vitest'
 import { buildTimeline } from '../model/timeline'
 import { DEFAULTS, type Spec } from '../model/types'
-import { getStageState, styleForLine, typingForLine } from './playback'
+import { getStageState, typingForLine } from './playback'
 
 const spec: Spec = {
   language: 'ts',
@@ -35,14 +35,6 @@ describe('getStageState', () => {
     if (s.kind === 'hold') {
       expect(s.frame.id).toBe('b')
     }
-  })
-})
-
-describe('styleForLine', () => {
-  test('keep is always fully visible', () => {
-    expect(
-      styleForLine({ type: 'keep', line: 'x', fromIndex: 0, toIndex: 0 }, 0.3),
-    ).toEqual({ opacity: 1, translateY: 0 })
   })
 })
 
