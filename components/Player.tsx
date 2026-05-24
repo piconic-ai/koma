@@ -220,8 +220,8 @@ export function Player(props: PlayerProps) {
         />
       </div>
       <div className="koma-controls">
-        <Button onClick={togglePlay} size="sm">
-          {playing() ? 'Pause' : 'Play'}
+        <Button onClick={togglePlay} size="sm" aria-label={playing() ? 'Pause' : 'Play'}>
+          {playing() ? '⏸' : '▶'}
         </Button>
         <input
           type="range"
