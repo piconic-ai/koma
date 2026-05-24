@@ -28,7 +28,7 @@ export type RenderOptions = {
 export const DEFAULT_RENDER_OPTIONS: RenderOptions = {
   width: 1080,
   height: 1080,
-  outerBackground: '#1a1b26',
+  outerBackground: '#00b769',
   codeBackground: '#0d1117',
   codeWidth: 900,
   fontFamily:
@@ -100,6 +100,18 @@ function drawTokenLine(
     cursor += ctx.measureText(token.content).width
   }
   void fontSize
+}
+
+export function heightForFrames(
+  frames: Frame[],
+  opts: Partial<RenderOptions> = {},
+): number {
+  const o = { ...DEFAULT_RENDER_OPTIONS, ...opts }
+  const maxLines = Math.max(1, ...frames.map(f => f.code.split('\n').length))
+  const lineGap = o.fontSize * o.lineHeight
+  return Math.ceil(
+    80 + o.windowChromeHeight + o.paddingY * 2 + maxLines * lineGap,
+  )
 }
 
 export type RenderInputs = {

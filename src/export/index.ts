@@ -20,6 +20,7 @@ import { DEFAULTS, type Spec } from '../model/types'
 import { highlight, type TokenLine } from '../render/highlighter'
 import {
   DEFAULT_RENDER_OPTIONS,
+  heightForFrames,
   renderToCanvas,
   type RenderOptions,
 } from './canvas-render'
@@ -64,6 +65,7 @@ function setupRender(spec: Spec, options: CommonExportOptions) {
   const renderOpts: RenderOptions = {
     ...DEFAULT_RENDER_OPTIONS,
     ...options.render,
+    height: options.render?.height ?? heightForFrames(spec.frames),
   }
   const rawTimeline = buildTimeline(spec)
   const timeline = options.reduceMotion
@@ -94,6 +96,7 @@ export async function exportPngSequence(
   const renderOpts: RenderOptions = {
     ...DEFAULT_RENDER_OPTIONS,
     ...options.render,
+    height: options.render?.height ?? heightForFrames(spec.frames),
   }
   const tokensByFrame = await preloadTokens(spec)
   const timeline = buildTimeline(spec)

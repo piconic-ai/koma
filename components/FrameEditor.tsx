@@ -72,7 +72,7 @@ export function FrameEditor(props: FrameEditorProps) {
         value={props.frame.code}
         onInput={onCodeInput}
         onKeyDown={onCodeKey}
-        rows={4}
+        rows={1}
         aria-label={`Frame ${props.index + 1} code`}
       />
 
