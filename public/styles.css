@@ -170,17 +170,21 @@ main {
 
 .koma-app-title {
   margin: 0;
-  font-size: 20px;
-  font-weight: 700;
-  letter-spacing: 0.02em;
+  font-size: 14px;
+  font-weight: 450;
+  letter-spacing: -0.021em;
+  color: rgba(31, 35, 40, 0.5);
   display: inline-flex;
   align-items: center;
-  gap: 8px;
+  gap: 6px;
 }
 
 .koma-app-logo {
   display: block;
   flex-shrink: 0;
+  height: 18px;
+  width: auto;
+  color: #00b769;
 }
 
 .koma-lang-label {
