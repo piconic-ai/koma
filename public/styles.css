@@ -352,7 +352,7 @@ main {
   display: flex;
   align-items: center;
   justify-content: center;
-  min-width: 24px;
+  min-width: 20px;
   background: var(--secondary);
   border-right: 1px solid var(--border);
   user-select: none;
