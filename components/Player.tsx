@@ -59,15 +59,17 @@ export function Player(props: PlayerProps) {
     const s = stage()
     const tokens = tokensByFrame()
 
-    const W = 1080, H = 1080, R = 16
+    const codeW = 900, chromeH = 48, padX = 40, padY = 40
+    const fontSize = 28, lh = 1.6, R = 16
+    const font = "'JetBrains Mono', 'Fira Code', ui-monospace, SFMono-Regular, Menlo, monospace"
+    const maxLines = Math.max(1, ...props.spec.frames.map(f => f.code.split('\n').length))
+    const W = 1080
+    const H = Math.ceil(80 + chromeH + padY * 2 + maxLines * fontSize * lh)
+
     if (canvas.width !== W) canvas.width = W
     if (canvas.height !== H) canvas.height = H
     const ctx = canvas.getContext('2d')
     if (!ctx) return
-
-    const codeW = 900, chromeH = 48, padX = 40, padY = 40
-    const fontSize = 28, lh = 1.6
-    const font = "'JetBrains Mono', 'Fira Code', ui-monospace, SFMono-Regular, Menlo, monospace"
 
     ctx.fillStyle = '#00b769'
     ctx.fillRect(0, 0, W, H)
@@ -124,7 +126,7 @@ export function Player(props: PlayerProps) {
     ctx.textBaseline = 'top'
     const startX = winX + padX
     const startY = winY + chromeH + padY
-    const lineGap = fontSize * lh
+    const step_ = fontSize * lh
 
     if (s.kind === 'hold') {
       const frameTokens =
@@ -134,7 +136,7 @@ export function Player(props: PlayerProps) {
         let cursor = startX
         for (const token of frameTokens[i]) {
           ctx.fillStyle = token.color ?? '#c9d1d9'
-          ctx.fillText(token.content, cursor, startY + i * lineGap)
+          ctx.fillText(token.content, cursor, startY + i * step_)
           cursor += ctx.measureText(token.content).width
         }
       }
@@ -149,12 +151,12 @@ export function Player(props: PlayerProps) {
             : role.line.substring(0, typing.visibleChars)
         if (text.length > 0) {
           ctx.fillStyle = '#c9d1d9'
-          ctx.fillText(text, startX, startY + drawY * lineGap)
+          ctx.fillText(text, startX, startY + drawY * step_)
         }
         if (typing.showCursor) {
           const cx = startX + ctx.measureText(text).width
           ctx.fillStyle = '#58a6ff'
-          ctx.fillText('|', cx, startY + drawY * lineGap)
+          ctx.fillText('|', cx, startY + drawY * step_)
         }
         drawY++
       }

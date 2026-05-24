@@ -102,6 +102,18 @@ function drawTokenLine(
   void fontSize
 }
 
+export function heightForFrames(
+  frames: Frame[],
+  opts: Partial<RenderOptions> = {},
+): number {
+  const o = { ...DEFAULT_RENDER_OPTIONS, ...opts }
+  const maxLines = Math.max(1, ...frames.map(f => f.code.split('\n').length))
+  const lineGap = o.fontSize * o.lineHeight
+  return Math.ceil(
+    80 + o.windowChromeHeight + o.paddingY * 2 + maxLines * lineGap,
+  )
+}
+
 export type RenderInputs = {
   timeline: Timeline
   elapsedMs: number
