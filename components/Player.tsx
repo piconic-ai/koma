@@ -21,125 +21,6 @@ import {
   type TokenLine,
 } from '../src/render/highlighter'
 
-const PREVIEW_W = 1080
-const PREVIEW_H = 1080
-const OUTER_BG = '#00b769'
-const CODE_BG = '#0d1117'
-const CODE_W = 900
-const CHROME_H = 48
-const PAD_X = 40
-const PAD_Y = 40
-const FONT_SIZE = 28
-const LINE_HEIGHT = 1.6
-const CORNER_R = 16
-const FONT = "'JetBrains Mono', 'Fira Code', ui-monospace, SFMono-Regular, Menlo, monospace"
-
-function roundRect(
-  ctx: CanvasRenderingContext2D,
-  x: number,
-  y: number,
-  w: number,
-  h: number,
-  r: number,
-) {
-  ctx.beginPath()
-  ctx.moveTo(x + r, y)
-  ctx.lineTo(x + w - r, y)
-  ctx.quadraticCurveTo(x + w, y, x + w, y + r)
-  ctx.lineTo(x + w, y + h - r)
-  ctx.quadraticCurveTo(x + w, y + h, x + w - r, y + h)
-  ctx.lineTo(x + r, y + h)
-  ctx.quadraticCurveTo(x, y + h, x, y + h - r)
-  ctx.lineTo(x, y + r)
-  ctx.quadraticCurveTo(x, y, x + r, y)
-  ctx.closePath()
-}
-
-function renderPreviewCanvas(
-  canvas: HTMLCanvasElement,
-  stage: StageState,
-  tokensByFrame: Map<string, TokenLine[]>,
-) {
-  if (canvas.width !== PREVIEW_W) canvas.width = PREVIEW_W
-  if (canvas.height !== PREVIEW_H) canvas.height = PREVIEW_H
-
-  const ctx = canvas.getContext('2d')
-  if (!ctx) return
-
-  ctx.fillStyle = OUTER_BG
-  ctx.fillRect(0, 0, PREVIEW_W, PREVIEW_H)
-
-  const winW = Math.min(CODE_W, PREVIEW_W - 40)
-  const winH = PREVIEW_H - 80
-  const winX = (PREVIEW_W - winW) / 2
-  const winY = (PREVIEW_H - winH) / 2
-
-  ctx.fillStyle = CODE_BG
-  roundRect(ctx, winX, winY, winW, winH, CORNER_R)
-  ctx.fill()
-
-  ctx.save()
-  roundRect(ctx, winX, winY, winW, winH, CORNER_R)
-  ctx.clip()
-
-  ctx.fillStyle = '#161b22'
-  ctx.fillRect(winX, winY, winW, CHROME_H)
-  const dotY = winY + CHROME_H / 2
-  const dots = [
-    { x: winX + 24, color: '#ff5f57' },
-    { x: winX + 48, color: '#febc2e' },
-    { x: winX + 72, color: '#28c840' },
-  ]
-  for (const d of dots) {
-    ctx.beginPath()
-    ctx.arc(d.x, dotY, 8, 0, Math.PI * 2)
-    ctx.fillStyle = d.color
-    ctx.fill()
-  }
-
-  ctx.font = `${FONT_SIZE}px ${FONT}`
-  ctx.textBaseline = 'top'
-  const startX = winX + PAD_X
-  const startY = winY + CHROME_H + PAD_Y
-  const lineGap = FONT_SIZE * LINE_HEIGHT
-
-  if (stage.kind === 'hold') {
-    const tokens =
-      tokensByFrame.get(stage.frame.id) ??
-      stage.frame.code.split('\n').map(line => [{ content: line }])
-    for (let i = 0; i < tokens.length; i++) {
-      let cursor = startX
-      for (const token of tokens[i]) {
-        ctx.fillStyle = token.color ?? '#c9d1d9'
-        ctx.fillText(token.content, cursor, startY + i * lineGap)
-        cursor += ctx.measureText(token.content).width
-      }
-    }
-  } else {
-    let drawY = 0
-    for (const role of stage.lines) {
-      const typing = typingForLine(role, stage.progress)
-      if (!typing.visible) continue
-      const text =
-        typing.visibleChars === -1
-          ? role.line
-          : role.line.substring(0, typing.visibleChars)
-      if (text.length > 0) {
-        ctx.fillStyle = '#c9d1d9'
-        ctx.fillText(text, startX, startY + drawY * lineGap)
-      }
-      if (typing.showCursor) {
-        const cx = startX + ctx.measureText(text).width
-        ctx.fillStyle = '#58a6ff'
-        ctx.fillText('|', cx, startY + drawY * lineGap)
-      }
-      drawY++
-    }
-  }
-
-  ctx.restore()
-}
-
 interface PlayerProps {
   spec: Spec
 }
@@ -171,12 +52,120 @@ export function Player(props: PlayerProps) {
     })
   }
 
-  let canvasEl: HTMLCanvasElement | null = null
+  const renderCanvas = () => {
+    if (typeof document === 'undefined') return
+    const canvas = document.getElementById('koma-preview-canvas') as HTMLCanvasElement
+    if (!canvas) return
+    const s = stage()
+    const tokens = tokensByFrame()
+
+    const W = 1080, H = 1080, R = 16
+    if (canvas.width !== W) canvas.width = W
+    if (canvas.height !== H) canvas.height = H
+    const ctx = canvas.getContext('2d')
+    if (!ctx) return
+
+    const codeW = 900, chromeH = 48, padX = 40, padY = 40
+    const fontSize = 28, lh = 1.6
+    const font = "'JetBrains Mono', 'Fira Code', ui-monospace, SFMono-Regular, Menlo, monospace"
+
+    ctx.fillStyle = '#00b769'
+    ctx.fillRect(0, 0, W, H)
+
+    const winW = Math.min(codeW, W - 40)
+    const winH = H - 80
+    const winX = (W - winW) / 2
+    const winY = (H - winH) / 2
+
+    ctx.fillStyle = '#0d1117'
+    ctx.beginPath()
+    ctx.moveTo(winX + R, winY)
+    ctx.lineTo(winX + winW - R, winY)
+    ctx.quadraticCurveTo(winX + winW, winY, winX + winW, winY + R)
+    ctx.lineTo(winX + winW, winY + winH - R)
+    ctx.quadraticCurveTo(winX + winW, winY + winH, winX + winW - R, winY + winH)
+    ctx.lineTo(winX + R, winY + winH)
+    ctx.quadraticCurveTo(winX, winY + winH, winX, winY + winH - R)
+    ctx.lineTo(winX, winY + R)
+    ctx.quadraticCurveTo(winX, winY, winX + R, winY)
+    ctx.closePath()
+    ctx.fill()
+
+    ctx.save()
+    ctx.beginPath()
+    ctx.moveTo(winX + R, winY)
+    ctx.lineTo(winX + winW - R, winY)
+    ctx.quadraticCurveTo(winX + winW, winY, winX + winW, winY + R)
+    ctx.lineTo(winX + winW, winY + winH - R)
+    ctx.quadraticCurveTo(winX + winW, winY + winH, winX + winW - R, winY + winH)
+    ctx.lineTo(winX + R, winY + winH)
+    ctx.quadraticCurveTo(winX, winY + winH, winX, winY + winH - R)
+    ctx.lineTo(winX, winY + R)
+    ctx.quadraticCurveTo(winX, winY, winX + R, winY)
+    ctx.closePath()
+    ctx.clip()
+
+    ctx.fillStyle = '#161b22'
+    ctx.fillRect(winX, winY, winW, chromeH)
+    const dotY = winY + chromeH / 2
+    const dots = [
+      { x: winX + 24, color: '#ff5f57' },
+      { x: winX + 48, color: '#febc2e' },
+      { x: winX + 72, color: '#28c840' },
+    ]
+    for (const d of dots) {
+      ctx.beginPath()
+      ctx.arc(d.x, dotY, 8, 0, Math.PI * 2)
+      ctx.fillStyle = d.color
+      ctx.fill()
+    }
+
+    ctx.font = `${fontSize}px ${font}`
+    ctx.textBaseline = 'top'
+    const startX = winX + padX
+    const startY = winY + chromeH + padY
+    const lineGap = fontSize * lh
+
+    if (s.kind === 'hold') {
+      const frameTokens =
+        tokens.get(s.frame.id) ??
+        s.frame.code.split('\n').map((line: string) => [{ content: line }])
+      for (let i = 0; i < frameTokens.length; i++) {
+        let cursor = startX
+        for (const token of frameTokens[i]) {
+          ctx.fillStyle = token.color ?? '#c9d1d9'
+          ctx.fillText(token.content, cursor, startY + i * lineGap)
+          cursor += ctx.measureText(token.content).width
+        }
+      }
+    } else {
+      let drawY = 0
+      for (const role of s.lines) {
+        const typing = typingForLine(role, s.progress)
+        if (!typing.visible) continue
+        const text =
+          typing.visibleChars === -1
+            ? role.line
+            : role.line.substring(0, typing.visibleChars)
+        if (text.length > 0) {
+          ctx.fillStyle = '#c9d1d9'
+          ctx.fillText(text, startX, startY + drawY * lineGap)
+        }
+        if (typing.showCursor) {
+          const cx = startX + ctx.measureText(text).width
+          ctx.fillStyle = '#58a6ff'
+          ctx.fillText('|', cx, startY + drawY * lineGap)
+        }
+        drawY++
+      }
+    }
+
+    ctx.restore()
+  }
 
   onMount(() => {
-    canvasEl = document.getElementById('koma-preview-canvas') as HTMLCanvasElement
-
     for (const f of props.spec.frames) ensureTokens(f, props.spec.language)
+    renderCanvas()
 
     if (typeof window !== 'undefined' && 'matchMedia' in window) {
       const mql = window.matchMedia('(prefers-reduced-motion: reduce)')
@@ -212,8 +201,9 @@ export function Player(props: PlayerProps) {
   const stage = createMemo(() => getStageState(timeline(), elapsedMs()))
 
   createEffect(() => {
-    if (!canvasEl) return
-    renderPreviewCanvas(canvasEl, stage(), tokensByFrame())
+    void stage()
+    void tokensByFrame()
+    renderCanvas()
   })
 
   let rafId: number | null = null
@@ -237,11 +227,13 @@ export function Player(props: PlayerProps) {
         setElapsedMs(total)
         setPlaying(false)
         stop()
+        renderCanvas()
         return
       }
       setElapsedMs(next)
     }
     lastTs = ts
+    renderCanvas()
     rafId = requestAnimationFrame(step)
   }
 
