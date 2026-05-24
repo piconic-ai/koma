@@ -220,8 +220,12 @@ export function Player(props: PlayerProps) {
         />
       </div>
       <div className="koma-controls">
-        <Button onClick={togglePlay} size="sm" aria-label={playing() ? 'Pause' : 'Play'}>
-          {playing() ? '⏸' : '▶'}
+        <Button onClick={togglePlay} size="icon-sm" aria-label={playing() ? 'Pause' : 'Play'}>
+          {playing() ? (
+            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><rect x="6" y="4" width="4" height="16" rx="1" /><rect x="14" y="4" width="4" height="16" rx="1" /></svg>
+          ) : (
+            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><path d="M6 4l14 8-14 8z" /></svg>
+          )}
         </Button>
         <input
           type="range"
