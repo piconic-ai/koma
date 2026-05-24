@@ -362,19 +362,37 @@ main {
 }
 
 .koma-add-frame {
+  position: relative;
   width: 32px;
   height: 32px;
   border-radius: 50%;
   border: 1px solid var(--border);
   background: var(--background);
-  color: var(--foreground);
   cursor: pointer;
-  font-size: 20px;
-  line-height: 1;
-  display: flex;
-  align-items: center;
-  justify-content: center;
+  font-size: 0;
+  padding: 0;
   margin: 8px auto;
+}
+
+.koma-add-frame::before,
+.koma-add-frame::after {
+  content: '';
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  background: var(--foreground);
+  border-radius: 1px;
+}
+
+.koma-add-frame::before {
+  width: 14px;
+  height: 2px;
+}
+
+.koma-add-frame::after {
+  width: 2px;
+  height: 14px;
 }
 
 .koma-add-frame:hover {
