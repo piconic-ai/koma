@@ -3,10 +3,10 @@
   "private": true,
   "type": "module",
   "scripts": {
-    "dev": "node scripts/build-export-bundle.mjs && concurrently -k -n build,uno,server -c blue,magenta,green \"bf build --watch\" \"unocss --watch\" \"npx wrangler dev --live-reload\"",
-    "build": "bf build && unocss && node scripts/build-export-bundle.mjs",
-    "deploy": "bf build && unocss && node scripts/build-export-bundle.mjs && npx wrangler deploy",
-    "watch": "concurrently -k -n build,uno -c blue,magenta \"bf build --watch\" \"unocss --watch\"",
+    "dev": "node scripts/build-export-bundle.mjs && concurrently -k -n build,uno,server -c blue,magenta,green \"node node_modules/@barefootjs/cli/dist/index.js build --watch\" \"unocss --watch\" \"npx wrangler dev --live-reload\"",
+    "build": "node node_modules/@barefootjs/cli/dist/index.js build && unocss && node scripts/build-export-bundle.mjs",
+    "deploy": "node node_modules/@barefootjs/cli/dist/index.js build && unocss && node scripts/build-export-bundle.mjs && npx wrangler deploy",
+    "watch": "concurrently -k -n build,uno -c blue,magenta \"node node_modules/@barefootjs/cli/dist/index.js build --watch\" \"unocss --watch\"",
     "build:export": "node scripts/build-export-bundle.mjs",
     "test": "vitest run"
   },
