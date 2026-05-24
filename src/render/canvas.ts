@@ -1,9 +1,4 @@
-// Canvas renderer used by PNG and MP4 export.
-//
-// This is the offline twin of the DOM-based Player. Both consume the
-// same `Timeline` so the recorded output matches what's previewed,
-// while the canvas path produces pixel-perfect frames at a target
-// resolution independent of the screen / DOM.
+// Canvas renderer shared by the Player preview and the export pipeline.
 
 import { locateInTimeline } from '../model/timeline'
 import type { Frame, Timeline } from '../model/types'

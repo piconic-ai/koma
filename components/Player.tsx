@@ -10,11 +10,8 @@ import {
 import { Button } from '@/components/ui/button'
 import { buildTimeline, collapseTransitions } from '../src/model/timeline'
 import type { Frame, Spec, Timeline } from '../src/model/types'
-import type { StageState } from '../src/render/playback'
-import {
-  getStageState,
-  typingForLine,
-} from '../src/render/playback'
+import { renderToCanvas, heightForFrames } from '../src/render/canvas'
+import { getStageState } from '../src/render/playback'
 import {
   highlight,
   plainTokens,
@@ -56,113 +53,13 @@ export function Player(props: PlayerProps) {
     if (typeof document === 'undefined') return
     const canvas = document.getElementById('koma-preview-canvas') as HTMLCanvasElement
     if (!canvas) return
-    const s = stage()
-    const tokens = tokensByFrame()
-
-    const codeW = 900, chromeH = 48, padX = 40, padY = 40
-    const fontSize = 28, lh = 1.6, R = 16
-    const font = "'JetBrains Mono', 'Fira Code', ui-monospace, SFMono-Regular, Menlo, monospace"
-    const maxLines = Math.max(1, ...props.spec.frames.map(f => f.code.split('\n').length))
-    const W = 1080
-    const H = Math.ceil(80 + chromeH + padY * 2 + maxLines * fontSize * lh)
-
-    if (canvas.width !== W) canvas.width = W
-    if (canvas.height !== H) canvas.height = H
-    const ctx = canvas.getContext('2d')
-    if (!ctx) return
-
-    ctx.fillStyle = '#00b769'
-    ctx.fillRect(0, 0, W, H)
-
-    const winW = Math.min(codeW, W - 40)
-    const winH = H - 80
-    const winX = (W - winW) / 2
-    const winY = (H - winH) / 2
-
-    ctx.fillStyle = '#0d1117'
-    ctx.beginPath()
-    ctx.moveTo(winX + R, winY)
-    ctx.lineTo(winX + winW - R, winY)
-    ctx.quadraticCurveTo(winX + winW, winY, winX + winW, winY + R)
-    ctx.lineTo(winX + winW, winY + winH - R)
-    ctx.quadraticCurveTo(winX + winW, winY + winH, winX + winW - R, winY + winH)
-    ctx.lineTo(winX + R, winY + winH)
-    ctx.quadraticCurveTo(winX, winY + winH, winX, winY + winH - R)
-    ctx.lineTo(winX, winY + R)
-    ctx.quadraticCurveTo(winX, winY, winX + R, winY)
-    ctx.closePath()
-    ctx.fill()
-
-    ctx.save()
-    ctx.beginPath()
-    ctx.moveTo(winX + R, winY)
-    ctx.lineTo(winX + winW - R, winY)
-    ctx.quadraticCurveTo(winX + winW, winY, winX + winW, winY + R)
-    ctx.lineTo(winX + winW, winY + winH - R)
-    ctx.quadraticCurveTo(winX + winW, winY + winH, winX + winW - R, winY + winH)
-    ctx.lineTo(winX + R, winY + winH)
-    ctx.quadraticCurveTo(winX, winY + winH, winX, winY + winH - R)
-    ctx.lineTo(winX, winY + R)
-    ctx.quadraticCurveTo(winX, winY, winX + R, winY)
-    ctx.closePath()
-    ctx.clip()
-
-    ctx.fillStyle = '#161b22'
-    ctx.fillRect(winX, winY, winW, chromeH)
-    const dotY = winY + chromeH / 2
-    const dots = [
-      { x: winX + 24, color: '#ff5f57' },
-      { x: winX + 48, color: '#febc2e' },
-      { x: winX + 72, color: '#28c840' },
-    ]
-    for (const d of dots) {
-      ctx.beginPath()
-      ctx.arc(d.x, dotY, 8, 0, Math.PI * 2)
-      ctx.fillStyle = d.color
-      ctx.fill()
-    }
-
-    ctx.font = `${fontSize}px ${font}`
-    ctx.textBaseline = 'top'
-    const startX = winX + padX
-    const startY = winY + chromeH + padY
-    const step_ = fontSize * lh
-
-    if (s.kind === 'hold') {
-      const frameTokens =
-        tokens.get(s.frame.id) ??
-        s.frame.code.split('\n').map((line: string) => [{ content: line }])
-      for (let i = 0; i < frameTokens.length; i++) {
-        let cursor = startX
-        for (const token of frameTokens[i]) {
-          ctx.fillStyle = token.color ?? '#c9d1d9'
-          ctx.fillText(token.content, cursor, startY + i * step_)
-          cursor += ctx.measureText(token.content).width
-        }
-      }
-    } else {
-      let drawY = 0
-      for (const role of s.lines) {
-        const typing = typingForLine(role, s.progress)
-        if (!typing.visible) continue
-        const text =
-          typing.visibleChars === -1
-            ? role.line
-            : role.line.substring(0, typing.visibleChars)
-        if (text.length > 0) {
-          ctx.fillStyle = '#c9d1d9'
-          ctx.fillText(text, startX, startY + drawY * step_)
-        }
-        if (typing.showCursor) {
-          const cx = startX + ctx.measureText(text).width
-          ctx.fillStyle = '#58a6ff'
-          ctx.fillText('|', cx, startY + drawY * step_)
-        }
-        drawY++
-      }
-    }
-
-    ctx.restore()
+    renderToCanvas(canvas, {
+      timeline: timeline(),
+      elapsedMs: elapsedMs(),
+      tokensByFrame: tokensByFrame(),
+      frames: props.spec.frames,
+      options: { height: heightForFrames(props.spec.frames) },
+    })
   }
 
   onMount(() => {

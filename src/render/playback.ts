@@ -29,22 +29,6 @@ export function getStageState(timeline: Timeline, elapsedMs: number): StageState
   }
 }
 
-export type LineStyle = {
-  opacity: number
-  translateY: number // px
-}
-
-export function styleForLine(role: LineRole, progress: number): LineStyle {
-  switch (role.type) {
-    case 'keep':
-      return { opacity: 1, translateY: 0 }
-    case 'add':
-      return { opacity: progress > 0 ? 1 : 0, translateY: 0 }
-    case 'remove':
-      return { opacity: progress < 1 ? 1 : 0, translateY: 0 }
-  }
-}
-
 // Ultra-fast typing: characters appear/disappear one by one.
 // Remove lines erase in the first 30% of the transition,
 // add lines type in the remaining 70%.
