@@ -28,7 +28,7 @@ export type RenderOptions = {
 export const DEFAULT_RENDER_OPTIONS: RenderOptions = {
   width: 1080,
   height: 1080,
-  outerBackground: '#5da55a',
+  outerBackground: '#00b769',
   codeBackground: '#0d1117',
   codeWidth: 900,
   fontFamily:

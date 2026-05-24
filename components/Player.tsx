@@ -23,7 +23,7 @@ import {
 
 const PREVIEW_W = 1080
 const PREVIEW_H = 1080
-const OUTER_BG = '#5da55a'
+const OUTER_BG = '#00b769'
 const CODE_BG = '#0d1117'
 const CODE_W = 900
 const CHROME_H = 48
