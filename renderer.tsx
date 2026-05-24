@@ -22,6 +22,7 @@ export const renderer = jsxRenderer(({ children, title }) => (
           tokens/uno to a second round-trip and flash unstyled DOM.
           tokens.css first so CSS variables are defined before any
           rule references them. */}
+      <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
       <link rel="stylesheet" href="/tokens.css" />
       <link rel="stylesheet" href="/styles.css" />
       <link rel="stylesheet" href="/uno.css" />
