@@ -285,6 +285,10 @@ main {
   z-index: 1;
 }
 
+.koma-frame-toolbar [data-slot="popover"] {
+  display: flex;
+}
+
 .koma-frame-editor:hover .koma-frame-toolbar,
 .koma-frame-editor:focus-within .koma-frame-toolbar {
   opacity: 1;
@@ -339,10 +343,8 @@ main {
 
 .koma-frame-options-grid {
   display: grid;
-  grid-template-columns: 1fr 1fr;
+  grid-template-columns: 1fr;
   gap: 12px;
-  padding: 8px 14px;
-  background: #161b22;
   font-size: 13px;
 }
 

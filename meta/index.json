@@ -1,6 +1,6 @@
 {
   "version": 1,
-  "generatedAt": "2026-05-23T13:58:56.316Z",
+  "generatedAt": "2026-05-24T11:39:33.697Z",
   "components": [
     {
       "name": "button",
@@ -11,6 +11,25 @@
         "aria"
       ],
       "stateful": false
+    },
+    {
+      "name": "popover",
+      "title": "Popover",
+      "category": "overlay",
+      "description": "Popover Components A floating panel that appears relative to a trigger element. Inspired by shadcn/ui Popover with CSS variable theming support. State management uses createContext/useContext for parent-child communication. Root Popover manages open state, children consume via context. Features: - ESC key to close - Click outside to close - Non-modal (no scroll lock, no focus trap) - Accessibility (aria-expanded, data-state)",
+      "tags": [
+        "stateful",
+        "multi-component",
+        "portal",
+        "context",
+        "aria"
+      ],
+      "stateful": false,
+      "subComponents": [
+        "PopoverTrigger",
+        "PopoverContent",
+        "PopoverClose"
+      ]
     },
     {
       "name": "slot",

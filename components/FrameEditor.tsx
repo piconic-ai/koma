@@ -2,6 +2,7 @@
 
 import { createSignal } from '@barefootjs/client'
 import type { Frame, Language } from '../src/model/types'
+import { Popover, PopoverTrigger, PopoverContent } from './ui/popover'
 
 interface FrameEditorProps {
   frame: Frame
@@ -46,14 +47,49 @@ export function FrameEditor(props: FrameEditorProps) {
         >
           ⧉
         </button>
-        <button
-          type="button"
-          className="koma-iconbtn"
-          onClick={() => setShowOptions(v => !v)}
-          aria-label="Frame options"
-        >
-          ⚙
-        </button>
+        <Popover open={showOptions()} onOpenChange={setShowOptions}>
+          <PopoverTrigger asChild>
+            <button
+              type="button"
+              className="koma-iconbtn"
+              aria-label="Frame options"
+            >
+              ⚙
+            </button>
+          </PopoverTrigger>
+          <PopoverContent align="start">
+            <div className="koma-frame-options-grid">
+              <label>
+                Hold (ms)
+                <input
+                  type="number"
+                  placeholder="auto"
+                  value={props.frame.hold == null ? '' : String(props.frame.hold)}
+                  onInput={(e) => {
+                    const v = (e.currentTarget as HTMLInputElement).value
+                    props.onHold(v === '' ? undefined : Number(v))
+                  }}
+                />
+              </label>
+              <label>
+                Transition (ms)
+                <input
+                  type="number"
+                  placeholder="auto"
+                  value={
+                    props.frame.transition?.duration == null
+                      ? ''
+                      : String(props.frame.transition.duration)
+                  }
+                  onInput={(e) => {
+                    const v = (e.currentTarget as HTMLInputElement).value
+                    props.onTransition(v === '' ? undefined : Number(v))
+                  }}
+                />
+              </label>
+            </div>
+          </PopoverContent>
+        </Popover>
         <button
           type="button"
           className="koma-iconbtn koma-iconbtn-danger"
@@ -75,39 +111,6 @@ export function FrameEditor(props: FrameEditorProps) {
         rows={1}
         aria-label={`Frame ${props.index + 1} code`}
       />
-
-      {showOptions() && (
-        <div className="koma-frame-options-grid">
-          <label>
-            Hold (ms)
-            <input
-              type="number"
-              placeholder="auto"
-              value={props.frame.hold == null ? '' : String(props.frame.hold)}
-              onInput={(e) => {
-                const v = (e.currentTarget as HTMLInputElement).value
-                props.onHold(v === '' ? undefined : Number(v))
-              }}
-            />
-          </label>
-          <label>
-            Transition (ms)
-            <input
-              type="number"
-              placeholder="auto"
-              value={
-                props.frame.transition?.duration == null
-                  ? ''
-                  : String(props.frame.transition.duration)
-              }
-              onInput={(e) => {
-                const v = (e.currentTarget as HTMLInputElement).value
-                props.onTransition(v === '' ? undefined : Number(v))
-              }}
-            />
-          </label>
-        </div>
-      )}
     </div>
   )
 }
