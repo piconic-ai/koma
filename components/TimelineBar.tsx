@@ -112,7 +112,7 @@ export function TimelineBar(props: TimelineBarProps) {
           id: f.id,
           hold: Math.max(200, Math.round(startHolds[i] * scale)),
         }))
-        bar.style.width = `${Math.min(100, (newWidth / wrapperRect.width) * 100)}%`
+        bar.style.maxWidth = `${Math.min(100, (newWidth / wrapperRect.width) * 100)}%`
         props.onLayout(holds)
       }
 

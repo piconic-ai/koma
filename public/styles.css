@@ -412,11 +412,10 @@ main {
 }
 
 .koma-timeline-wrapper .koma-timeline {
-  flex: 0 0 auto;
-  width: 100%;
+  flex: 1 1 auto;
+  min-width: 60px;
   margin-top: 0;
   position: relative;
-  transition: width 0.1s ease-out;
 }
 
 .koma-timeline-edge {
@@ -441,6 +440,7 @@ main {
   color: var(--muted-foreground);
   white-space: nowrap;
   flex-shrink: 0;
+  min-width: 3em;
 }
 
 .koma-add-frame {
