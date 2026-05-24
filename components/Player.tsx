@@ -10,8 +10,7 @@ import {
 import { Button } from '@/components/ui/button'
 import { buildTimeline, collapseTransitions } from '../src/model/timeline'
 import type { Frame, Spec, Timeline } from '../src/model/types'
-import type { LineRole } from '../src/model/types'
-import type { TypingState } from '../src/render/playback'
+import type { StageState } from '../src/render/playback'
 import {
   getStageState,
   typingForLine,
@@ -22,14 +21,130 @@ import {
   type TokenLine,
 } from '../src/render/highlighter'
 
+const PREVIEW_W = 1080
+const PREVIEW_H = 1080
+const OUTER_BG = '#5da55a'
+const CODE_BG = '#0d1117'
+const CODE_W = 900
+const CHROME_H = 48
+const PAD_X = 40
+const PAD_Y = 40
+const FONT_SIZE = 28
+const LINE_HEIGHT = 1.6
+const CORNER_R = 16
+const FONT = "'JetBrains Mono', 'Fira Code', ui-monospace, SFMono-Regular, Menlo, monospace"
+
+function roundRect(
+  ctx: CanvasRenderingContext2D,
+  x: number,
+  y: number,
+  w: number,
+  h: number,
+  r: number,
+) {
+  ctx.beginPath()
+  ctx.moveTo(x + r, y)
+  ctx.lineTo(x + w - r, y)
+  ctx.quadraticCurveTo(x + w, y, x + w, y + r)
+  ctx.lineTo(x + w, y + h - r)
+  ctx.quadraticCurveTo(x + w, y + h, x + w - r, y + h)
+  ctx.lineTo(x + r, y + h)
+  ctx.quadraticCurveTo(x, y + h, x, y + h - r)
+  ctx.lineTo(x, y + r)
+  ctx.quadraticCurveTo(x, y, x + r, y)
+  ctx.closePath()
+}
+
+function renderPreviewCanvas(
+  canvas: HTMLCanvasElement,
+  stage: StageState,
+  tokensByFrame: Map<string, TokenLine[]>,
+) {
+  if (canvas.width !== PREVIEW_W) canvas.width = PREVIEW_W
+  if (canvas.height !== PREVIEW_H) canvas.height = PREVIEW_H
+
+  const ctx = canvas.getContext('2d')
+  if (!ctx) return
+
+  ctx.fillStyle = OUTER_BG
+  ctx.fillRect(0, 0, PREVIEW_W, PREVIEW_H)
+
+  const winW = Math.min(CODE_W, PREVIEW_W - 40)
+  const winH = PREVIEW_H - 80
+  const winX = (PREVIEW_W - winW) / 2
+  const winY = (PREVIEW_H - winH) / 2
+
+  ctx.fillStyle = CODE_BG
+  roundRect(ctx, winX, winY, winW, winH, CORNER_R)
+  ctx.fill()
+
+  ctx.save()
+  roundRect(ctx, winX, winY, winW, winH, CORNER_R)
+  ctx.clip()
+
+  ctx.fillStyle = '#161b22'
+  ctx.fillRect(winX, winY, winW, CHROME_H)
+  const dotY = winY + CHROME_H / 2
+  const dots = [
+    { x: winX + 24, color: '#ff5f57' },
+    { x: winX + 48, color: '#febc2e' },
+    { x: winX + 72, color: '#28c840' },
+  ]
+  for (const d of dots) {
+    ctx.beginPath()
+    ctx.arc(d.x, dotY, 8, 0, Math.PI * 2)
+    ctx.fillStyle = d.color
+    ctx.fill()
+  }
+
+  ctx.font = `${FONT_SIZE}px ${FONT}`
+  ctx.textBaseline = 'top'
+  const startX = winX + PAD_X
+  const startY = winY + CHROME_H + PAD_Y
+  const lineGap = FONT_SIZE * LINE_HEIGHT
+
+  if (stage.kind === 'hold') {
+    const tokens =
+      tokensByFrame.get(stage.frame.id) ??
+      stage.frame.code.split('\n').map(line => [{ content: line }])
+    for (let i = 0; i < tokens.length; i++) {
+      let cursor = startX
+      for (const token of tokens[i]) {
+        ctx.fillStyle = token.color ?? '#c9d1d9'
+        ctx.fillText(token.content, cursor, startY + i * lineGap)
+        cursor += ctx.measureText(token.content).width
+      }
+    }
+  } else {
+    let drawY = 0
+    for (const role of stage.lines) {
+      const typing = typingForLine(role, stage.progress)
+      if (!typing.visible) continue
+      const text =
+        typing.visibleChars === -1
+          ? role.line
+          : role.line.substring(0, typing.visibleChars)
+      if (text.length > 0) {
+        ctx.fillStyle = '#c9d1d9'
+        ctx.fillText(text, startX, startY + drawY * lineGap)
+      }
+      if (typing.showCursor) {
+        const cx = startX + ctx.measureText(text).width
+        ctx.fillStyle = '#58a6ff'
+        ctx.fillText('|', cx, startY + drawY * lineGap)
+      }
+      drawY++
+    }
+  }
+
+  ctx.restore()
+}
+
 interface PlayerProps {
   spec: Spec
 }
 
 export function Player(props: PlayerProps) {
-  // `prefers-reduced-motion: reduce` collapses every transition to a
-  // hard cut. We re-check via matchMedia rather than baking the answer
-  // at SSR time because the server can't observe the user setting.
   const [reduceMotion, setReduceMotion] = createSignal(false)
 
   const timeline = createMemo<Timeline>(() => {
@@ -40,8 +155,6 @@ export function Player(props: PlayerProps) {
   const [elapsedMs, setElapsedMs] = createSignal(0)
   const [playing, setPlaying] = createSignal(false)
 
-  // Per-frame token cache — fetched lazily but reused once Shiki resolves.
-  // Falls back to plain tokens until then.
   const [tokensByFrame, setTokensByFrame] = createSignal<Map<string, TokenLine[]>>(
     new Map(),
   )
@@ -58,10 +171,13 @@ export function Player(props: PlayerProps) {
     })
   }
 
+  let canvasEl: HTMLCanvasElement | null = null
+
   onMount(() => {
+    canvasEl = document.getElementById('koma-preview-canvas') as HTMLCanvasElement
+
     for (const f of props.spec.frames) ensureTokens(f, props.spec.language)
 
-    // Subscribe to the reduced-motion media query.
     if (typeof window !== 'undefined' && 'matchMedia' in window) {
       const mql = window.matchMedia('(prefers-reduced-motion: reduce)')
       setReduceMotion(mql.matches)
@@ -70,10 +186,7 @@ export function Player(props: PlayerProps) {
       onCleanup(() => mql.removeEventListener('change', onChange))
     }
 
-    // Keyboard shortcuts: Space toggles play/pause, ←/→ steps frames.
     const onKey = (e: KeyboardEvent) => {
-      // Skip if focus is inside an editable element — typing in the
-      // textarea shouldn't fire global shortcuts.
       const tag = (e.target as HTMLElement | null)?.tagName
       if (tag === 'TEXTAREA' || tag === 'INPUT' || tag === 'SELECT') return
       if (e.key === ' ' || e.code === 'Space') {
@@ -96,7 +209,13 @@ export function Player(props: PlayerProps) {
     for (const f of props.spec.frames) ensureTokens(f, language)
   })
 
-  // requestAnimationFrame loop driven by `playing`.
+  const stage = createMemo(() => getStageState(timeline(), elapsedMs()))
+
+  createEffect(() => {
+    if (!canvasEl) return
+    renderPreviewCanvas(canvasEl, stage(), tokensByFrame())
+  })
+
   let rafId: number | null = null
   let lastTs: number | null = null
 
@@ -135,10 +254,7 @@ export function Player(props: PlayerProps) {
     }
   })
 
-  // Pause + rewind when the spec changes — a stale timeline mid-play
-  // confuses viewers more than the reset does.
   createEffect(() => {
-    // Touch the inputs so this effect re-runs on edit.
     void props.spec.frames.length
     void props.spec.language
     setPlaying(false)
@@ -163,8 +279,6 @@ export function Player(props: PlayerProps) {
     setElapsedMs(v)
   }
 
-  // Snap elapsed to the start of frame `currentFrameIndex() + dir`.
-  // Used by the keyboard arrow shortcuts.
   const stepFrame = (dir: 1 | -1) => {
     const t = timeline()
     const frames = props.spec.frames
@@ -172,9 +286,6 @@ export function Player(props: PlayerProps) {
       0,
       Math.min(frames.length - 1, currentFrameIndex() + dir),
     )
-    // Sum durations of every segment up to (but not including) the
-    // target frame's hold segment. With holds at indices 0, 2, 4, ...
-    // the hold for frame `k` starts at segment index `2k`.
     const targetSegIdx = target * 2
     let acc = 0
     for (let i = 0; i < targetSegIdx && i < t.segments.length; i++) {
@@ -184,8 +295,6 @@ export function Player(props: PlayerProps) {
     setElapsedMs(acc)
   }
 
-  const stage = createMemo(() => getStageState(timeline(), elapsedMs()))
-
   const frameCount = createMemo(() => props.spec.frames.length)
   const currentFrameIndex = createMemo(() => {
     const s = stage()
@@ -193,10 +302,6 @@ export function Player(props: PlayerProps) {
       const idx = props.spec.frames.findIndex(f => f.id === s.frame.id)
       return idx < 0 ? 0 : idx
     }
-    // Mid-transition: credit the destination frame using the segment shape.
-    // Segments alternate hold/transition starting with hold, so the
-    // destination of transition at segmentIndex `2k+1` is the hold at
-    // segmentIndex `2k+2`, which corresponds to frame index `k+1`.
     let segIdx = 0
     let acc = 0
     const t = timeline()
@@ -218,33 +323,15 @@ export function Player(props: PlayerProps) {
       aria-label={`Code animation, ${props.spec.frames.length} frames`}
     >
       <div className="koma-stage">
-        {stage().kind === 'hold' ? (
-          <HoldStage
-            tokens={
-              (() => {
-                const s = stage()
-                if (s.kind !== 'hold') return plainTokens('')
-                return (
-                  tokensByFrame().get(s.frame.id) ?? plainTokens(s.frame.code)
-                )
-              })()
-            }
-          />
-        ) : (
-          <TransitionStage
-            styledLines={
-              (() => {
-                const s = stage()
-                if (s.kind !== 'transition') return []
-                const p = s.progress
-                return s.lines.map(role => ({
-                  role,
-                  typing: typingForLine(role, p),
-                }))
-              })()
-            }
-          />
-        )}
+        <canvas
+          id="koma-preview-canvas"
+          style={{
+            width: '100%',
+            height: 'auto',
+            display: 'block',
+            borderRadius: '12px',
+          }}
+        />
       </div>
       <div className="koma-controls">
         <Button onClick={togglePlay} size="sm">
@@ -273,61 +360,6 @@ export function Player(props: PlayerProps) {
       <p className="koma-shortcut-hint">
         Space play/pause · ← → step frame
       </p>
-    </div>
-  )
-}
-
-type TypedLine = { role: LineRole; typing: TypingState }
-
-function HoldStage(props: { tokens: TokenLine[] }) {
-  return (
-    <div className="koma-frame">
-      <div className="koma-titlebar">
-        <span className="koma-dot koma-dot-red" />
-        <span className="koma-dot koma-dot-yellow" />
-        <span className="koma-dot koma-dot-green" />
-      </div>
-      <pre className="koma-code">
-        {props.tokens.map((line, i) => (
-          <div key={i} className="koma-line">
-            {line.length === 0 ? (
-              <span key="empty">{' '}</span>
-            ) : (
-              line.map((token, j) => (
-                <span key={j} style={token.color ? { color: token.color } : {}}>
-                  {token.content}
-                </span>
-              ))
-            )}
-          </div>
-        ))}
-      </pre>
-    </div>
-  )
-}
-
-function TransitionStage(props: { styledLines: TypedLine[] }) {
-  return (
-    <div className="koma-frame">
-      <div className="koma-titlebar">
-        <span className="koma-dot koma-dot-red" />
-        <span className="koma-dot koma-dot-yellow" />
-        <span className="koma-dot koma-dot-green" />
-      </div>
-      <pre className="koma-code">
-        {props.styledLines.map((item, i) => {
-          if (!item.typing.visible) return null
-          const text = item.typing.visibleChars === -1
-            ? item.role.line
-            : item.role.line.substring(0, item.typing.visibleChars)
-          return (
-            <div key={i} className="koma-line">
-              <span>{text.length === 0 && !item.typing.showCursor ? ' ' : text}</span>
-              {item.typing.showCursor && <span className="koma-cursor">|</span>}
-            </div>
-          )
-        })}
-      </pre>
     </div>
   )
 }

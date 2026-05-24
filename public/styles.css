@@ -113,9 +113,7 @@ main {
   display: flex;
   justify-content: center;
   align-items: center;
-  background: #1a1b26;
   border-radius: 12px;
-  padding: 20px;
   overflow: hidden;
 }
 
@@ -258,10 +256,7 @@ main {
 .koma-editors {
   display: flex;
   flex-direction: column;
-  gap: 0;
-  background: #0d1117;
-  border-radius: 8px;
-  overflow: hidden;
+  gap: 16px;
 }
 
 .koma-preview {
@@ -271,9 +266,12 @@ main {
   overflow: hidden;
 }
 
-/* per-frame editor — borderless, compact (4-koma manga style) */
+/* per-frame editor */
 .koma-frame-editor {
   position: relative;
+  background: #0d1117;
+  border-radius: 8px;
+  overflow: hidden;
 }
 
 .koma-frame-toolbar {
@@ -332,11 +330,6 @@ main {
   white-space: pre;
   overflow-wrap: normal;
   overflow-x: auto;
-  border-bottom: 1px solid rgba(255, 255, 255, 0.06);
-}
-
-.koma-frame-editor:last-of-type .koma-code-input {
-  border-bottom: none;
 }
 
 .koma-code-input:focus {
