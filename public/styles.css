@@ -375,21 +375,46 @@ main {
   pointer-events: none;
 }
 
+.koma-timeline-segment {
+  cursor: pointer;
+}
+
+.koma-timeline-segment + .koma-timeline-segment {
+  border-left: 1px solid var(--border);
+}
+
 .koma-timeline-handle {
   position: absolute;
   top: 0;
-  right: -4px;
-  width: 8px;
+  right: -5px;
+  width: 10px;
   height: 100%;
   cursor: col-resize;
   z-index: 2;
-  background: transparent;
-  transition: background 0.1s;
+  display: flex;
+  align-items: center;
+  justify-content: center;
 }
 
-.koma-timeline-handle:hover,
-.koma-timeline-handle[data-state="drag"] {
-  background: var(--ring);
+.koma-timeline-handle::before {
+  content: '';
+  width: 2px;
+  height: 14px;
+  border-radius: 1px;
+  background: var(--muted-foreground);
+  opacity: 0.4;
+  transition: opacity 0.1s, background 0.1s;
+}
+
+.koma-timeline-handle:hover::before,
+.koma-timeline-handle[data-state="drag"]::before {
+  opacity: 1;
+  background: var(--foreground);
+}
+
+.koma-frame-editor[data-selected] {
+  outline: 2px solid oklch(0.85 0.15 85);
+  outline-offset: -2px;
 }
 
 

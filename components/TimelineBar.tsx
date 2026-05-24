@@ -23,6 +23,7 @@ function formatDuration(ms: number): string {
 interface TimelineBarProps {
   frames: Array<{ id: string; code: string; hold?: number }>
   onLayout: (holds: Array<{ id: string; hold: number }>) => void
+  onSelect: (frameId: string) => void
 }
 
 export function TimelineBar(props: TimelineBarProps) {
@@ -52,6 +53,15 @@ export function TimelineBar(props: TimelineBarProps) {
 
     let activeHandle: { type: 'segment'; index: number } | { type: 'edge' } | null = null
     let dragState: { startX: number; frames: typeof props.frames; startHolds: number[]; barWidth: number; wrapperWidth: number; barLeft: number } | null = null
+
+    bar.addEventListener('click', (e: MouseEvent) => {
+      if ((e.target as HTMLElement).closest('[data-timeline-handle]')) return
+      if ((e.target as HTMLElement).closest('[data-timeline-edge]')) return
+      const panel = (e.target as HTMLElement).closest('[data-timeline-panel]') as HTMLElement | null
+      if (!panel) return
+      const frameId = panel.getAttribute('data-key')
+      if (frameId) props.onSelect(frameId)
+    })
 
     const onPointerDown = (e: PointerEvent) => {
       const segHandle = (e.target as HTMLElement).closest('[data-timeline-handle]') as HTMLElement | null
