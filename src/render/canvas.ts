@@ -97,6 +97,23 @@ function drawTokenLine(
   void fontSize
 }
 
+function truncateTokenLine(tokens: TokenLine, chars: number): TokenLine {
+  if (chars < 0) return tokens
+  const result: TokenLine = []
+  let remaining = chars
+  for (const token of tokens) {
+    if (remaining <= 0) break
+    if (token.content.length <= remaining) {
+      result.push(token)
+      remaining -= token.content.length
+    } else {
+      result.push({ content: token.content.substring(0, remaining), color: token.color })
+      break
+    }
+  }
+  return result
+}
+
 export function heightForFrames(
   frames: Frame[],
   opts: Partial<RenderOptions> = {},
@@ -181,23 +198,54 @@ export function renderToCanvas(
   const progress = pos.segmentProgress
   let drawY = 0
 
+  const fromTokens = inputs.tokensByFrame.get(seg.transition.fromFrameId)
+  const toTokens = inputs.tokensByFrame.get(seg.transition.toFrameId)
+
   for (let i = 0; i < seg.transition.lines.length; i++) {
     const role = seg.transition.lines[i]
     const typing = typingForLine(role, progress)
     if (!typing.visible) continue
-    const lineText = typing.displayLine ?? role.line
-    const text =
-      typing.visibleChars === -1
-        ? lineText
-        : lineText.substring(0, typing.visibleChars)
-    if (text.length > 0) {
-      c.fillStyle = '#c9d1d9'
-      c.fillText(text, startX, startY + drawY * lineGap)
+
+    let tokenLine: TokenLine | undefined
+    if (role.type === 'keep' || role.type === 'add') {
+      tokenLine = toTokens?.['toIndex' in role ? role.toIndex : 0]
+    } else if (role.type === 'remove') {
+      tokenLine = fromTokens?.[role.fromIndex]
+    } else if (role.type === 'modify') {
+      tokenLine = typing.displayLine
+        ? fromTokens?.[role.fromIndex]
+        : toTokens?.[role.toIndex]
     }
+
+    const truncated = tokenLine
+      ? truncateTokenLine(tokenLine, typing.visibleChars)
+      : undefined
+
+    const y = startY + drawY * lineGap
+
+    if (truncated && truncated.length > 0) {
+      drawTokenLine(c, truncated, startX, y, opts.fontSize)
+    } else {
+      const lineText = typing.displayLine ?? role.line
+      const text =
+        typing.visibleChars === -1
+          ? lineText
+          : lineText.substring(0, typing.visibleChars)
+      if (text.length > 0) {
+        c.fillStyle = '#c9d1d9'
+        c.fillText(text, startX, y)
+      }
+    }
+
     if (typing.showCursor) {
+      const lineText = typing.displayLine ?? role.line
+      const text =
+        typing.visibleChars === -1
+          ? lineText
+          : lineText.substring(0, typing.visibleChars)
       const cursorX = startX + c.measureText(text).width
       c.fillStyle = '#58a6ff'
-      c.fillText('|', cursorX, startY + drawY * lineGap)
+      c.fillText('|', cursorX, y)
     }
     drawY++
   }
