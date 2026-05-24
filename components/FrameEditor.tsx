@@ -1,6 +1,6 @@
 'use client'
 
-import { createSignal } from '@barefootjs/client'
+import { createSignal, onMount } from '@barefootjs/client'
 import type { Frame, Language } from '../src/model/types'
 
 interface FrameEditorProps {
@@ -18,9 +18,25 @@ interface FrameEditorProps {
 export function FrameEditor(props: FrameEditorProps) {
   const [showOptions, setShowOptions] = createSignal(false)
 
+  onMount(() => {
+    const ta = document.querySelector(
+      `[aria-label="Frame ${props.index + 1} code"]`,
+    ) as HTMLTextAreaElement | null
+    if (ta) {
+      ta.style.height = 'auto'
+      ta.style.height = ta.scrollHeight + 'px'
+    }
+  })
+
+  const autoResize = (el: HTMLTextAreaElement) => {
+    el.style.height = 'auto'
+    el.style.height = el.scrollHeight + 'px'
+  }
+
   const onCodeInput = (e: Event) => {
     const t = e.currentTarget as HTMLTextAreaElement
     props.onCode(t.value)
+    autoResize(t)
   }
 
   const onCodeKey = (e: KeyboardEvent) => {
@@ -72,7 +88,7 @@ export function FrameEditor(props: FrameEditorProps) {
         value={props.frame.code}
         onInput={onCodeInput}
         onKeyDown={onCodeKey}
-        rows={4}
+        rows={1}
         aria-label={`Frame ${props.index + 1} code`}
       />
 

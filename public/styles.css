@@ -316,7 +316,7 @@ main {
 
 .koma-code-input {
   width: 100%;
-  min-height: 80px;
+  min-height: 2em;
   padding: 12px 14px;
   border: none;
   border-radius: 0;
