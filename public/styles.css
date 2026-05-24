@@ -381,6 +381,8 @@ main {
 
 .koma-timeline [data-slot="resizable-handle"] {
   width: 3px !important;
+  min-width: 3px !important;
+  flex: 0 0 3px !important;
   background: var(--border) !important;
   cursor: col-resize;
 }
