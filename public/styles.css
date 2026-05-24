@@ -285,29 +285,6 @@ main {
   z-index: 1;
 }
 
-.koma-popover-anchor {
-  position: relative;
-  display: flex;
-}
-
-.koma-popover {
-  position: fixed;
-  z-index: 50;
-  min-width: 200px;
-  border-radius: var(--radius);
-  border: 1px solid var(--border);
-  background: var(--popover);
-  color: var(--popover-foreground);
-  box-shadow: var(--shadow-md);
-  padding: 16px;
-  animation: koma-popover-in 0.15s ease-out;
-}
-
-@keyframes koma-popover-in {
-  from { opacity: 0; transform: translateY(-4px); }
-  to   { opacity: 1; transform: translateY(0); }
-}
-
 .koma-frame-editor:hover .koma-frame-toolbar,
 .koma-frame-editor:focus-within .koma-frame-toolbar {
   opacity: 1;
@@ -360,26 +337,51 @@ main {
   outline: none;
 }
 
-.koma-frame-options-grid {
-  display: grid;
-  grid-template-columns: 1fr;
-  gap: 12px;
-  font-size: 13px;
-}
-
-.koma-frame-options-grid label {
+/* timeline bar */
+.koma-timeline {
   display: flex;
-  flex-direction: column;
-  gap: 4px;
+  height: 28px;
+  border-radius: 6px;
+  overflow: hidden;
+  border: 1px solid var(--border);
+  margin-top: 8px;
 }
 
-.koma-frame-options-grid input {
-  padding: 6px 8px;
-  border-radius: 6px;
-  border: 1px solid var(--border);
-  background: var(--background);
-  color: var(--foreground);
-  font: inherit;
+.koma-timeline-segment {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 24px;
+  background: var(--secondary);
+  border-right: 1px solid var(--border);
+  user-select: none;
+}
+
+.koma-timeline-segment:last-child {
+  border-right: none;
+}
+
+.koma-timeline-label {
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--muted-foreground);
+  pointer-events: none;
+}
+
+.koma-timeline-handle {
+  position: absolute;
+  top: 0;
+  right: -4px;
+  width: 8px;
+  height: 100%;
+  cursor: col-resize;
+  z-index: 2;
+}
+
+.koma-timeline-handle:hover,
+.koma-timeline-handle:active {
+  background: color-mix(in oklch, var(--ring) 40%, transparent);
 }
 
 .koma-add-frame {
