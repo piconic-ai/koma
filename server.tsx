@@ -34,7 +34,7 @@ console.log(greet('koma'))`,
 app.get('/', (c) =>
   c.render(
     <App initialSpec={SAMPLE} />,
-    { title: 'koma — code into frames' },
+    { title: 'piconic koma' },
   ),
 )
 

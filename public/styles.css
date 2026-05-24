@@ -173,6 +173,14 @@ main {
   font-size: 20px;
   font-weight: 700;
   letter-spacing: 0.02em;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.koma-app-logo {
+  display: block;
+  flex-shrink: 0;
 }
 
 .koma-lang-label {
@@ -339,27 +347,19 @@ main {
 
 /* timeline bar */
 .koma-timeline {
-  display: flex;
   height: 28px;
   border-radius: 6px;
-  overflow: hidden;
   border: 1px solid var(--border);
   margin-top: 8px;
+  overflow: hidden;
 }
 
 .koma-timeline-segment {
-  position: relative;
   display: flex;
   align-items: center;
   justify-content: center;
-  min-width: 20px;
   background: var(--secondary);
-  border-right: 1px solid var(--border);
   user-select: none;
-}
-
-.koma-timeline-segment:last-child {
-  border-right: none;
 }
 
 .koma-timeline-label {
@@ -369,19 +369,25 @@ main {
   pointer-events: none;
 }
 
-.koma-timeline-handle {
-  position: absolute;
-  top: 0;
-  right: -4px;
-  width: 8px;
-  height: 100%;
+.koma-timeline-resizable-handle {
+  width: 1px;
+  background: var(--border);
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
   cursor: col-resize;
-  z-index: 2;
 }
 
-.koma-timeline-handle:hover,
-.koma-timeline-handle:active {
-  background: color-mix(in oklch, var(--ring) 40%, transparent);
+.koma-timeline-resizable-handle::after {
+  content: '';
+  position: absolute;
+  inset: 0 -3px;
+}
+
+.koma-timeline-resizable-handle[data-resize-handle-state="hover"],
+.koma-timeline-resizable-handle[data-resize-handle-state="drag"] {
+  background: var(--ring);
 }
 
 .koma-add-frame {
