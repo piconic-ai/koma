@@ -356,7 +356,6 @@ main {
   height: 28px;
   border-radius: 6px;
   border: 1px solid var(--border);
-  overflow: hidden;
 }
 
 .koma-timeline-segment {

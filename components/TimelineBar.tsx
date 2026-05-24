@@ -50,81 +50,90 @@ export function TimelineBar(props: TimelineBarProps) {
       applySizes()
     })
 
-    // Segment handle drag (redistribute between adjacent frames)
-    bar.addEventListener('pointerdown', (e: PointerEvent) => {
-      const handle = (e.target as HTMLElement).closest('[data-timeline-handle]') as HTMLElement | null
-      if (!handle) return
+    let activeHandle: { type: 'segment'; index: number } | { type: 'edge' } | null = null
+    let dragState: { startX: number; frames: typeof props.frames; startHolds: number[]; barWidth: number; wrapperWidth: number; barLeft: number } | null = null
+
+    const onPointerDown = (e: PointerEvent) => {
+      const segHandle = (e.target as HTMLElement).closest('[data-timeline-handle]') as HTMLElement | null
+      const edgeHandle = (e.target as HTMLElement).closest('[data-timeline-edge]') as HTMLElement | null
+
+      if (!segHandle && !edgeHandle) return
       e.preventDefault()
-      handle.setPointerCapture(e.pointerId)
-      handle.setAttribute('data-state', 'drag')
 
-      const handleIndex = Number(handle.getAttribute('data-timeline-handle'))
       const frames = props.frames
-      const totalHold = frames.reduce((sum, f) => sum + holdOf(f), 0)
+      const startHolds = frames.map(f => holdOf(f))
       const barRect = bar.getBoundingClientRect()
+      const wrapperRect = el.getBoundingClientRect()
 
-      const onMove = (ev: PointerEvent) => {
-        const ratio = Math.max(0, Math.min(1, (ev.clientX - barRect.left) / barRect.width))
+      dragState = {
+        startX: e.clientX,
+        frames,
+        startHolds,
+        barWidth: barRect.width,
+        wrapperWidth: wrapperRect.width,
+        barLeft: barRect.left,
+      }
+
+      if (segHandle) {
+        activeHandle = { type: 'segment', index: Number(segHandle.getAttribute('data-timeline-handle')) }
+        segHandle.setAttribute('data-state', 'drag')
+      } else {
+        activeHandle = { type: 'edge' }
+        edgeHandle!.setAttribute('data-state', 'drag')
+      }
+
+      el.setPointerCapture(e.pointerId)
+    }
+
+    const onPointerMove = (e: PointerEvent) => {
+      if (!activeHandle || !dragState) return
+
+      if (activeHandle.type === 'segment') {
+        const totalHold = dragState.startHolds.reduce((sum, h) => sum + h, 0)
+        const ratio = Math.max(0, Math.min(1, (e.clientX - dragState.barLeft) / dragState.barWidth))
         const cursorMs = ratio * totalHold
+        const idx = activeHandle.index
         let acc = 0
-        for (let k = 0; k < handleIndex; k++) acc += holdOf(frames[k])
-        const combined = holdOf(frames[handleIndex]) + holdOf(frames[handleIndex + 1])
+        for (let k = 0; k < idx; k++) acc += dragState.startHolds[k]
+        const combined = dragState.startHolds[idx] + dragState.startHolds[idx + 1]
         const minHold = 200
         let newThis = Math.round(cursorMs - acc)
         newThis = Math.max(minHold, Math.min(combined - minHold, newThis))
         const newNext = combined - newThis
 
         props.onLayout([
-          { id: frames[handleIndex].id, hold: newThis },
-          { id: frames[handleIndex + 1].id, hold: newNext },
+          { id: dragState.frames[idx].id, hold: newThis },
+          { id: dragState.frames[idx + 1].id, hold: newNext },
         ])
-      }
-
-      const onUp = () => {
-        handle.removeEventListener('pointermove', onMove)
-        handle.removeEventListener('pointerup', onUp)
-        handle.setAttribute('data-state', 'idle')
-      }
-
-      handle.addEventListener('pointermove', onMove)
-      handle.addEventListener('pointerup', onUp)
-    })
-
-    // Right-edge drag (scale total duration)
-    const edgeHandle = el.querySelector('[data-timeline-edge]') as HTMLElement
-    if (!edgeHandle) return
-
-    edgeHandle.addEventListener('pointerdown', (e: PointerEvent) => {
-      e.preventDefault()
-      edgeHandle.setPointerCapture(e.pointerId)
-      edgeHandle.setAttribute('data-state', 'drag')
-
-      const frames = props.frames
-      const startHolds = frames.map(f => holdOf(f))
-      const startWidth = bar.getBoundingClientRect().width
-      const wrapperRect = el.getBoundingClientRect()
-      const barLeft = bar.getBoundingClientRect().left
-
-      const onMove = (ev: PointerEvent) => {
-        const newWidth = Math.max(60, ev.clientX - barLeft)
-        const scale = newWidth / startWidth
-        const holds = frames.map((f, i) => ({
+      } else {
+        const newWidth = Math.max(60, e.clientX - dragState.barLeft)
+        const scale = newWidth / dragState.barWidth
+        const holds = dragState.frames.map((f, i) => ({
           id: f.id,
-          hold: Math.max(200, Math.round(startHolds[i] * scale)),
+          hold: Math.max(200, Math.round(dragState!.startHolds[i] * scale)),
         }))
-        bar.style.maxWidth = `${Math.min(100, (newWidth / wrapperRect.width) * 100)}%`
+        bar.style.maxWidth = `${(newWidth / dragState.wrapperWidth) * 100}%`
         props.onLayout(holds)
       }
+    }
 
-      const onUp = () => {
-        edgeHandle.removeEventListener('pointermove', onMove)
-        edgeHandle.removeEventListener('pointerup', onUp)
-        edgeHandle.setAttribute('data-state', 'idle')
+    const onPointerUp = (e: PointerEvent) => {
+      if (!activeHandle) return
+      if (activeHandle.type === 'segment') {
+        const h = bar.querySelector(`[data-timeline-handle="${activeHandle.index}"]`) as HTMLElement
+        if (h) h.setAttribute('data-state', 'idle')
+      } else {
+        const h = bar.querySelector('[data-timeline-edge]') as HTMLElement
+        if (h) h.setAttribute('data-state', 'idle')
       }
+      activeHandle = null
+      dragState = null
+      el.releasePointerCapture(e.pointerId)
+    }
 
-      edgeHandle.addEventListener('pointermove', onMove)
-      edgeHandle.addEventListener('pointerup', onUp)
-    })
+    el.addEventListener('pointerdown', onPointerDown)
+    el.addEventListener('pointermove', onPointerMove)
+    el.addEventListener('pointerup', onPointerUp)
   }
 
   const totalRef = (el: HTMLElement) => {
