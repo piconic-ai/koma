@@ -394,9 +394,34 @@ main {
 }
 
 
-.koma-timeline-resizable-handle[data-resize-handle-state="hover"],
-.koma-timeline-resizable-handle[data-resize-handle-state="drag"] {
-  background: var(--ring);
+.koma-timeline-wrapper {
+  margin-top: 8px;
+}
+
+.koma-timeline-wrapper .koma-timeline {
+  margin-top: 0;
+}
+
+.koma-timeline-duration {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-top: 4px;
+}
+
+.koma-timeline-scale {
+  flex: 1 1 auto;
+  min-width: 0;
+  accent-color: var(--primary);
+  height: 4px;
+}
+
+.koma-timeline-total {
+  font-size: 12px;
+  font-family: 'JetBrains Mono', ui-monospace, Menlo, monospace;
+  color: var(--muted-foreground);
+  min-width: 36px;
+  text-align: right;
 }
 
 .koma-add-frame {

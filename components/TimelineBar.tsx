@@ -14,6 +14,13 @@ function holdOf(frame: { code: string; hold?: number }): number {
   return frame.hold ?? autoHold(frame.code)
 }
 
+const TRANSITION_MS = 400
+
+function formatDuration(ms: number): string {
+  const s = ms / 1000
+  return s < 10 ? `${s.toFixed(1)}s` : `${Math.round(s)}s`
+}
+
 interface TimelineBarProps {
   frames: Array<{ id: string; code: string; hold?: number }>
   onLayout: (holds: Array<{ id: string; hold: number }>) => void
@@ -81,25 +88,56 @@ export function TimelineBar(props: TimelineBarProps) {
     })
   }
 
+  const onScale = (e: Event) => {
+    const scale = Number((e.currentTarget as HTMLInputElement).value) / 100
+    const holds = props.frames.map(f => ({
+      id: f.id,
+      hold: Math.max(200, Math.round(holdOf(f) * scale)),
+    }))
+    props.onLayout(holds)
+  }
+
+  const totalRef = (el: HTMLElement) => {
+    createEffect(() => {
+      const totalHoldMs = props.frames.reduce((sum, f) => sum + holdOf(f), 0)
+      const transitionsMs = Math.max(0, props.frames.length - 1) * TRANSITION_MS
+      el.textContent = formatDuration(totalHoldMs + transitionsMs)
+    })
+  }
+
   return (
-    <div className="koma-timeline" ref={handleMount}>
-      {props.frames.map((frame, i) => (
-        <div
-          key={frame.id}
-          data-timeline-panel
-          data-key={frame.id}
-          className="koma-timeline-segment"
-        >
-          <span className="koma-timeline-label">{i + 1}</span>
-          {i < props.frames.length - 1 && (
-            <div
-              data-timeline-handle={i}
-              data-state="idle"
-              className="koma-timeline-handle"
-            />
-          )}
-        </div>
-      ))}
+    <div className="koma-timeline-wrapper">
+      <div className="koma-timeline" ref={handleMount}>
+        {props.frames.map((frame, i) => (
+          <div
+            key={frame.id}
+            data-timeline-panel
+            data-key={frame.id}
+            className="koma-timeline-segment"
+          >
+            <span className="koma-timeline-label">{i + 1}</span>
+            {i < props.frames.length - 1 && (
+              <div
+                data-timeline-handle={i}
+                data-state="idle"
+                className="koma-timeline-handle"
+              />
+            )}
+          </div>
+        ))}
+      </div>
+      <div className="koma-timeline-duration">
+        <input
+          type="range"
+          className="koma-timeline-scale"
+          min={25}
+          max={200}
+          value={100}
+          onInput={onScale}
+          aria-label="Scale duration"
+        />
+        <span className="koma-timeline-total" ref={totalRef} />
+      </div>
     </div>
   )
 }
