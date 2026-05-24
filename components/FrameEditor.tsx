@@ -1,8 +1,7 @@
 'use client'
 
-import { createSignal } from '@barefootjs/client'
+import { createSignal, createEffect } from '@barefootjs/client'
 import type { Frame, Language } from '../src/model/types'
-import { Popover, PopoverTrigger, PopoverContent } from './ui/popover'
 
 interface FrameEditorProps {
   frame: Frame
@@ -36,6 +35,46 @@ export function FrameEditor(props: FrameEditorProps) {
     props.onCode(next)
   }
 
+  const handlePopoverMount = (el: HTMLElement) => {
+    const anchor = el.closest('.koma-popover-anchor') as HTMLElement | null
+    if (!anchor) return
+
+    const position = () => {
+      const rect = anchor.getBoundingClientRect()
+      el.style.position = 'fixed'
+      el.style.top = `${rect.bottom + 4}px`
+      el.style.left = `${rect.left}px`
+    }
+
+    createEffect(() => {
+      if (showOptions()) {
+        position()
+
+        const onClickOutside = (e: MouseEvent) => {
+          if (!el.contains(e.target as Node) && !anchor.contains(e.target as Node)) {
+            setShowOptions(false)
+          }
+        }
+        const onKeyDown = (e: KeyboardEvent) => {
+          if (e.key === 'Escape') setShowOptions(false)
+        }
+        const onScroll = () => position()
+
+        document.addEventListener('mousedown', onClickOutside)
+        document.addEventListener('keydown', onKeyDown)
+        window.addEventListener('scroll', onScroll, true)
+        window.addEventListener('resize', onScroll)
+
+        return () => {
+          document.removeEventListener('mousedown', onClickOutside)
+          document.removeEventListener('keydown', onKeyDown)
+          window.removeEventListener('scroll', onScroll, true)
+          window.removeEventListener('resize', onScroll)
+        }
+      }
+    })
+  }
+
   return (
     <div className="koma-frame-editor">
       <div className="koma-frame-toolbar">
@@ -47,49 +86,50 @@ export function FrameEditor(props: FrameEditorProps) {
         >
           ⧉
         </button>
-        <Popover open={showOptions()} onOpenChange={setShowOptions}>
-          <PopoverTrigger asChild>
-            <button
-              type="button"
-              className="koma-iconbtn"
-              aria-label="Frame options"
-            >
-              ⚙
-            </button>
-          </PopoverTrigger>
-          <PopoverContent align="start">
-            <div className="koma-frame-options-grid">
-              <label>
-                Hold (ms)
-                <input
-                  type="number"
-                  placeholder="auto"
-                  value={props.frame.hold == null ? '' : String(props.frame.hold)}
-                  onInput={(e) => {
-                    const v = (e.currentTarget as HTMLInputElement).value
-                    props.onHold(v === '' ? undefined : Number(v))
-                  }}
-                />
-              </label>
-              <label>
-                Transition (ms)
-                <input
-                  type="number"
-                  placeholder="auto"
-                  value={
-                    props.frame.transition?.duration == null
-                      ? ''
-                      : String(props.frame.transition.duration)
-                  }
-                  onInput={(e) => {
-                    const v = (e.currentTarget as HTMLInputElement).value
-                    props.onTransition(v === '' ? undefined : Number(v))
-                  }}
-                />
-              </label>
+        <div className="koma-popover-anchor">
+          <button
+            type="button"
+            className="koma-iconbtn"
+            onClick={() => setShowOptions(v => !v)}
+            aria-label="Frame options"
+          >
+            ⚙
+          </button>
+          {showOptions() && (
+            <div className="koma-popover" ref={handlePopoverMount}>
+              <div className="koma-frame-options-grid">
+                <label>
+                  Hold (ms)
+                  <input
+                    type="number"
+                    placeholder="auto"
+                    value={props.frame.hold == null ? '' : String(props.frame.hold)}
+                    onInput={(e) => {
+                      const v = (e.currentTarget as HTMLInputElement).value
+                      props.onHold(v === '' ? undefined : Number(v))
+                    }}
+                  />
+                </label>
+                <label>
+                  Transition (ms)
+                  <input
+                    type="number"
+                    placeholder="auto"
+                    value={
+                      props.frame.transition?.duration == null
+                        ? ''
+                        : String(props.frame.transition.duration)
+                    }
+                    onInput={(e) => {
+                      const v = (e.currentTarget as HTMLInputElement).value
+                      props.onTransition(v === '' ? undefined : Number(v))
+                    }}
+                  />
+                </label>
+              </div>
             </div>
-          </PopoverContent>
-        </Popover>
+          )}
+        </div>
         <button
           type="button"
           className="koma-iconbtn koma-iconbtn-danger"

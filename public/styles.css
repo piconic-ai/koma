@@ -285,8 +285,27 @@ main {
   z-index: 1;
 }
 
-.koma-frame-toolbar [data-slot="popover"] {
+.koma-popover-anchor {
+  position: relative;
   display: flex;
+}
+
+.koma-popover {
+  position: fixed;
+  z-index: 50;
+  min-width: 200px;
+  border-radius: var(--radius);
+  border: 1px solid var(--border);
+  background: var(--popover);
+  color: var(--popover-foreground);
+  box-shadow: var(--shadow-md);
+  padding: 16px;
+  animation: koma-popover-in 0.15s ease-out;
+}
+
+@keyframes koma-popover-in {
+  from { opacity: 0; transform: translateY(-4px); }
+  to   { opacity: 1; transform: translateY(0); }
 }
 
 .koma-frame-editor:hover .koma-frame-toolbar,
