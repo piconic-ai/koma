@@ -43,6 +43,7 @@ export type LineRole =
   | { type: 'keep'; line: string; fromIndex: number; toIndex: number }
   | { type: 'add'; line: string; toIndex: number }
   | { type: 'remove'; line: string; fromIndex: number }
+  | { type: 'modify'; line: string; oldLine: string; commonPrefix: number; fromIndex: number; toIndex: number }
 
 export type Transition = {
   fromFrameId: string

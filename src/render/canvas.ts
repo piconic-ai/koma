@@ -185,10 +185,11 @@ export function renderToCanvas(
     const role = seg.transition.lines[i]
     const typing = typingForLine(role, progress)
     if (!typing.visible) continue
+    const lineText = typing.displayLine ?? role.line
     const text =
       typing.visibleChars === -1
-        ? role.line
-        : role.line.substring(0, typing.visibleChars)
+        ? lineText
+        : lineText.substring(0, typing.visibleChars)
     if (text.length > 0) {
       c.fillStyle = '#c9d1d9'
       c.fillText(text, startX, startY + drawY * lineGap)

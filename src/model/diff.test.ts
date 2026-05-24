@@ -70,6 +70,32 @@ describe('computeLineRoles', () => {
     expect(removed).toEqual([''])
   })
 
+  test('lines with common prefix become modify', () => {
+    const a = frame('function greet() {')
+    const b = frame('function greet(name: string) {\n  return `Hello, ${name}!`\n}')
+    const roles = computeLineRoles(a, b)
+    const modified = roles.filter(r => r.type === 'modify')
+    expect(modified).toHaveLength(1)
+    expect(modified[0]).toEqual({
+      type: 'modify',
+      line: 'function greet(name: string) {',
+      oldLine: 'function greet() {',
+      commonPrefix: 15,
+      fromIndex: 0,
+      toIndex: 0,
+    })
+    const added = roles.filter(r => r.type === 'add').map(r => r.line)
+    expect(added).toEqual(['  return `Hello, ${name}!`', '}'])
+  })
+
+  test('replacement without common prefix stays as remove + add', () => {
+    const a = frame('a\nb\nc')
+    const b = frame('a\nB\nc')
+    const roles = computeLineRoles(a, b)
+    const modified = roles.filter(r => r.type === 'modify')
+    expect(modified).toHaveLength(0)
+  })
+
   test('indices reference original line positions', () => {
     const a = frame('a\nb\nc\nd')
     const b = frame('a\nc\nd\ne')

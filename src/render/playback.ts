@@ -36,6 +36,7 @@ export type TypingState = {
   visibleChars: number // -1 = show all
   showCursor: boolean
   visible: boolean
+  displayLine?: string
 }
 
 const ERASE_PHASE = 0.3
@@ -53,6 +54,28 @@ export function typingForLine(role: LineRole, progress: number): TypingState {
     return {
       visibleChars: Math.max(0, Math.ceil(total * (1 - p))),
       showCursor: total > 0,
+      visible: true,
+    }
+  }
+  if (role.type === 'modify') {
+    const prefix = role.commonPrefix
+    if (progress < ERASE_PHASE) {
+      const p = progress / ERASE_PHASE
+      const oldSuffixLen = role.oldLine.length - prefix
+      const visibleSuffix = Math.max(0, Math.ceil(oldSuffixLen * (1 - p)))
+      return {
+        visibleChars: prefix + visibleSuffix,
+        showCursor: oldSuffixLen > 0,
+        visible: true,
+        displayLine: role.oldLine,
+      }
+    }
+    const p = (progress - ERASE_PHASE) / (1 - ERASE_PHASE)
+    const newSuffixLen = role.line.length - prefix
+    const visibleSuffix = Math.floor(newSuffixLen * p)
+    return {
+      visibleChars: prefix + visibleSuffix,
+      showCursor: newSuffixLen > 0 && p < 1,
       visible: true,
     }
   }

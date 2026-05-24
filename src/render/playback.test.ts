@@ -60,4 +60,24 @@ describe('typingForLine', () => {
     expect(at1.visibleChars).toBe(5)
     expect(at1.visible).toBe(true)
   })
+
+  test('modify preserves common prefix during erase phase', () => {
+    const role = { type: 'modify' as const, line: 'function greet(name) {', oldLine: 'function greet() {', commonPrefix: 15, fromIndex: 0, toIndex: 0 }
+    const at0 = typingForLine(role, 0)
+    expect(at0.visible).toBe(true)
+    expect(at0.visibleChars).toBe(18)
+    expect(at0.displayLine).toBe('function greet() {')
+
+    const atEnd = typingForLine(role, 0.3)
+    expect(atEnd.visible).toBe(true)
+    expect(atEnd.visibleChars).toBe(15)
+  })
+
+  test('modify types new suffix after erase phase', () => {
+    const role = { type: 'modify' as const, line: 'function greet(name) {', oldLine: 'function greet() {', commonPrefix: 15, fromIndex: 0, toIndex: 0 }
+    const at1 = typingForLine(role, 1)
+    expect(at1.visible).toBe(true)
+    expect(at1.visibleChars).toBe(22)
+    expect(at1.displayLine).toBeUndefined()
+  })
 })

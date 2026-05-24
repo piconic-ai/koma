@@ -81,6 +81,13 @@ function diffArrays(a: string[], b: string[]): Change[] {
   return changes
 }
 
+function commonPrefixLength(a: string, b: string): number {
+  const len = Math.min(a.length, b.length)
+  let i = 0
+  while (i < len && a[i] === b[i]) i++
+  return i
+}
+
 export function computeLineRoles(prev: Frame, next: Frame): LineRole[] {
   const prevLines = splitLines(prev.code)
   const nextLines = splitLines(next.code)
@@ -91,14 +98,82 @@ export function computeLineRoles(prev: Frame, next: Frame): LineRole[] {
   let fromIdx = 0
   let toIdx = 0
 
-  for (const change of changes) {
-    if (change.added) {
-      for (const line of change.value) {
-        roles.push({ type: 'add', line, toIndex: toIdx++ })
+  for (let ci = 0; ci < changes.length; ci++) {
+    const change = changes[ci]
+
+    if (change.removed) {
+      const nextChange = changes[ci + 1]
+      if (nextChange?.added) {
+        const removeLines = change.value
+        const addLines = nextChange.value
+        const paired = Math.min(removeLines.length, addLines.length)
+
+        for (let k = 0; k < paired; k++) {
+          const oldLine = removeLines[k]
+          const newLine = addLines[k]
+          const prefix = commonPrefixLength(oldLine, newLine)
+          if (prefix > 0 && (oldLine !== newLine)) {
+            roles.push({
+              type: 'modify',
+              line: newLine,
+              oldLine,
+              commonPrefix: prefix,
+              fromIndex: fromIdx++,
+              toIndex: toIdx++,
+            })
+          } else {
+            roles.push({ type: 'remove', line: oldLine, fromIndex: fromIdx++ })
+            roles.push({ type: 'add', line: newLine, toIndex: toIdx++ })
+          }
+        }
+        for (let k = paired; k < removeLines.length; k++) {
+          roles.push({ type: 'remove', line: removeLines[k], fromIndex: fromIdx++ })
+        }
+        for (let k = paired; k < addLines.length; k++) {
+          roles.push({ type: 'add', line: addLines[k], toIndex: toIdx++ })
+        }
+        ci++
+      } else {
+        for (const line of change.value) {
+          roles.push({ type: 'remove', line, fromIndex: fromIdx++ })
+        }
       }
-    } else if (change.removed) {
-      for (const line of change.value) {
-        roles.push({ type: 'remove', line, fromIndex: fromIdx++ })
+    } else if (change.added) {
+      const nextChange = changes[ci + 1]
+      if (nextChange?.removed) {
+        const addLines = change.value
+        const removeLines = nextChange.value
+        const paired = Math.min(removeLines.length, addLines.length)
+
+        for (let k = 0; k < paired; k++) {
+          const oldLine = removeLines[k]
+          const newLine = addLines[k]
+          const prefix = commonPrefixLength(oldLine, newLine)
+          if (prefix > 0 && (oldLine !== newLine)) {
+            roles.push({
+              type: 'modify',
+              line: newLine,
+              oldLine,
+              commonPrefix: prefix,
+              fromIndex: fromIdx++,
+              toIndex: toIdx++,
+            })
+          } else {
+            roles.push({ type: 'remove', line: oldLine, fromIndex: fromIdx++ })
+            roles.push({ type: 'add', line: newLine, toIndex: toIdx++ })
+          }
+        }
+        for (let k = paired; k < addLines.length; k++) {
+          roles.push({ type: 'add', line: addLines[k], toIndex: toIdx++ })
+        }
+        for (let k = paired; k < removeLines.length; k++) {
+          roles.push({ type: 'remove', line: removeLines[k], fromIndex: fromIdx++ })
+        }
+        ci++
+      } else {
+        for (const line of change.value) {
+          roles.push({ type: 'add', line, toIndex: toIdx++ })
+        }
       }
     } else {
       for (const line of change.value) {
