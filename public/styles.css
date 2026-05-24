@@ -379,37 +379,23 @@ main {
   cursor: pointer;
 }
 
-.koma-timeline-segment + .koma-timeline-segment {
-  border-left: 1px solid var(--border);
-}
-
-.koma-timeline-handle {
-  position: absolute;
-  top: 0;
-  right: -5px;
-  width: 10px;
-  height: 100%;
+.koma-timeline [data-slot="resizable-handle"] {
+  width: 3px !important;
+  background: var(--border) !important;
   cursor: col-resize;
-  z-index: 2;
-  display: flex;
-  align-items: center;
-  justify-content: center;
 }
 
-.koma-timeline-handle::before {
-  content: '';
-  width: 2px;
-  height: 14px;
-  border-radius: 1px;
-  background: var(--muted-foreground);
-  opacity: 0.4;
-  transition: opacity 0.1s, background 0.1s;
+.koma-timeline [data-slot="resizable-handle"]::after {
+  inset: 0 -4px !important;
 }
 
-.koma-timeline-handle:hover::before,
-.koma-timeline-handle[data-state="drag"]::before {
-  opacity: 1;
-  background: var(--foreground);
+.koma-timeline [data-slot="resizable-handle"] > div {
+  display: none;
+}
+
+.koma-timeline [data-slot="resizable-handle"]:hover,
+.koma-timeline [data-slot="resizable-handle"][data-resize-handle-state="drag"] {
+  background: var(--foreground) !important;
 }
 
 .koma-frame-editor[data-selected] {
