@@ -266,20 +266,25 @@ export function TimelineBar(props: TimelineBarProps) {
             hold: Math.max(minHold, Math.round(startHolds[i] * scale)),
           }))
 
-          const wouldShrink = scale < 1
-          const allAtMin = holds.every(h => h.hold <= minHold)
+          const startAllAtMin = startHolds.every(h => h <= minHold)
 
-          if (wouldShrink && allAtMin) {
+          if (startAllAtMin && scale < 1) {
             bar.setAttribute('data-at-min', '')
             return
           }
 
-          if (newWidth < wrapperWidth) {
-            bar.style.maxWidth = `${(newWidth / wrapperWidth) * 100}%`
+          const resultAllAtMin = holds.every(h => h.hold <= minHold)
+
+          if (resultAllAtMin) {
+            bar.setAttribute('data-at-min', '')
           } else {
-            bar.style.maxWidth = ''
+            bar.removeAttribute('data-at-min')
+            if (newWidth < wrapperWidth) {
+              bar.style.maxWidth = `${(newWidth / wrapperWidth) * 100}%`
+            } else {
+              bar.style.maxWidth = ''
+            }
           }
-          bar.removeAttribute('data-at-min')
           props.onLayout(holds)
         }
 
