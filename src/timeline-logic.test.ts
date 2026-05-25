@@ -424,3 +424,383 @@ describe('property: redistribute preserves combined total', () => {
     })
   })
 })
+
+// ── Boundary: holdOf edge cases ──────────────────────────
+
+describe('boundary: holdOf', () => {
+  test('hold=undefined → auto', () => {
+    expect(holdOf({ code: 'a', hold: undefined })).toBe(MIN_HOLD_MS)
+  })
+
+  test('hold=NaN → NaN (caller must guard)', () => {
+    expect(holdOf({ code: 'a', hold: NaN })).toBeNaN()
+  })
+
+  test('hold=negative → negative (caller must guard)', () => {
+    expect(holdOf({ code: 'a', hold: -1 })).toBe(-1)
+  })
+
+  test('empty string code → 1 line', () => {
+    expect(holdOf({ code: '' })).toBe(MIN_HOLD_MS)
+  })
+
+  test('trailing newline → extra line', () => {
+    expect(autoHold('a\n')).toBe(Math.max(MIN_HOLD_MS, 2 * HOLD_PER_LINE_MS))
+  })
+})
+
+// ── Boundary: computeSegmentPcts ─────────────────────────
+
+describe('boundary: computeSegmentPcts', () => {
+  test('single frame → 100%', () => {
+    expect(computeSegmentPcts([{ id: 'a', code: 'x', hold: 500 }])).toEqual([100])
+  })
+
+  test('one zero + one non-zero → [0, 100]', () => {
+    const pcts = computeSegmentPcts([
+      { id: 'a', code: 'x', hold: 0 },
+      { id: 'b', code: 'x', hold: 100 },
+    ])
+    expect(pcts[0]).toBe(0)
+    expect(pcts[1]).toBe(100)
+  })
+
+  test('very large hold difference', () => {
+    const pcts = computeSegmentPcts([
+      { id: 'a', code: 'x', hold: 1 },
+      { id: 'b', code: 'x', hold: 999999 },
+    ])
+    expect(pcts[0]).toBeCloseTo(0, 2)
+    expect(pcts[1]).toBeCloseTo(100, 2)
+    expect(pcts[0] + pcts[1]).toBeCloseTo(100)
+  })
+})
+
+// ── Boundary: computeTotalMs ─────────────────────────────
+
+describe('boundary: computeTotalMs', () => {
+  test('2 frames = 1 transition', () => {
+    const frames = [
+      { id: 'a', code: 'x', hold: 100 },
+      { id: 'b', code: 'x', hold: 100 },
+    ]
+    expect(computeTotalMs(frames)).toBe(200 + TRANSITION_MS)
+  })
+
+  test('10 frames = 9 transitions', () => {
+    const frames = Array.from({ length: 10 }, (_, i) => ({ id: `f${i}`, code: 'x', hold: 100 }))
+    expect(computeTotalMs(frames)).toBe(1000 + 9 * TRANSITION_MS)
+  })
+})
+
+// ── Boundary: formatDuration ─────────────────────────────
+
+describe('boundary: formatDuration', () => {
+  test.each([
+    [9999, '10.0s'],
+    [10000, '10s'],
+    [10001, '10s'],
+    [49, '0.0s'],
+    [50, '0.1s'],
+    [99, '0.1s'],
+    [100, '0.1s'],
+    [999, '1.0s'],
+    [1000, '1.0s'],
+    [1049, '1.0s'],
+    [1050, '1.1s'],
+  ])('%ims → %s', (ms, expected) => {
+    expect(formatDuration(ms)).toBe(expected)
+  })
+})
+
+// ── Boundary: redistributeHolds ──────────────────────────
+
+describe('boundary: redistributeHolds', () => {
+  test('combined = 2*MIN_HOLD → each gets exactly MIN_HOLD', () => {
+    const frames = f3(MIN_HOLD, MIN_HOLD, 999)
+    const r = redistributeHolds(frames, 0, 0)
+    expect(r[0].hold).toBe(MIN_HOLD)
+    expect(r[1].hold).toBe(MIN_HOLD)
+  })
+
+  test('combined = 2*MIN_HOLD → request=MIN_HOLD → exact split', () => {
+    const frames = f3(MIN_HOLD, MIN_HOLD, 999)
+    const r = redistributeHolds(frames, 0, MIN_HOLD)
+    expect(r[0].hold).toBe(MIN_HOLD)
+    expect(r[1].hold).toBe(MIN_HOLD)
+  })
+
+  test('newHoldThis = exactly combined - MIN_HOLD', () => {
+    const frames = f3(1000, 500, 999)
+    const r = redistributeHolds(frames, 0, 1500 - MIN_HOLD)
+    expect(r[0].hold).toBe(1500 - MIN_HOLD)
+    expect(r[1].hold).toBe(MIN_HOLD)
+  })
+
+  test('newHoldThis = exactly MIN_HOLD', () => {
+    const frames = f3(1000, 500, 999)
+    const r = redistributeHolds(frames, 0, MIN_HOLD)
+    expect(r[0].hold).toBe(MIN_HOLD)
+    expect(r[1].hold).toBe(1500 - MIN_HOLD)
+  })
+
+  test('newHoldThis = MIN_HOLD - 1 → clamped to MIN_HOLD', () => {
+    const frames = f3(1000, 500, 999)
+    const r = redistributeHolds(frames, 0, MIN_HOLD - 1)
+    expect(r[0].hold).toBe(MIN_HOLD)
+  })
+
+  test('newHoldThis = combined - MIN_HOLD + 1 → clamped', () => {
+    const frames = f3(1000, 500, 999)
+    const r = redistributeHolds(frames, 0, 1500 - MIN_HOLD + 1)
+    expect(r[0].hold).toBe(1500 - MIN_HOLD)
+  })
+})
+
+// ── Boundary: computeEdgeDrag scale=1 ────────────────────
+
+describe('boundary: computeEdgeDrag at scale boundaries', () => {
+  test('scale=1 → holds unchanged', () => {
+    const r = computeEdgeDrag([2000, 3000], ['a', 'b'], 1)
+    expect(r.holds.map(h => h.hold)).toEqual([2000, 3000])
+    expect(r.allAtMin).toBe(false)
+  })
+
+  test('scale=0 → all clamped to MIN_HOLD', () => {
+    const r = computeEdgeDrag([2000, 3000], ['a', 'b'], 0)
+    r.holds.forEach(h => expect(h.hold).toBe(MIN_HOLD))
+    expect(r.allAtMin).toBe(true)
+  })
+
+  test('scale=-1 → all clamped to MIN_HOLD', () => {
+    const r = computeEdgeDrag([2000, 3000], ['a', 'b'], -1)
+    r.holds.forEach(h => expect(h.hold).toBe(MIN_HOLD))
+  })
+
+  test('scale=Infinity → very large holds', () => {
+    const r = computeEdgeDrag([100, 100], ['a', 'b'], Infinity)
+    r.holds.forEach(h => expect(h.hold).toBe(Infinity))
+  })
+
+  test('startHolds contains 0 → clamped to MIN_HOLD', () => {
+    const r = computeEdgeDrag([0, 0, 0], ['a', 'b', 'c'], 2)
+    r.holds.forEach(h => expect(h.hold).toBe(MIN_HOLD))
+  })
+
+  test('single frame', () => {
+    const r = computeEdgeDrag([1000], ['a'], 0.5)
+    expect(r.holds).toEqual([{ id: 'a', hold: 500 }])
+  })
+
+  test('hold=MIN_HOLD with scale=1 → startAllAtMin=true', () => {
+    const r = computeEdgeDrag([MIN_HOLD], ['a'], 1)
+    expect(r.startAllAtMin).toBe(true)
+    expect(r.allAtMin).toBe(true)
+  })
+
+  test('hold=MIN_HOLD+1 with scale=1 → startAllAtMin=false', () => {
+    const r = computeEdgeDrag([MIN_HOLD + 1], ['a'], 1)
+    expect(r.startAllAtMin).toBe(false)
+    expect(r.allAtMin).toBe(false)
+  })
+
+  test('rounding boundary: hold=51, scale that rounds to exactly 50', () => {
+    // 51 * (50/51) = 50.0 → Math.round(50) = 50
+    const r = computeEdgeDrag([51], ['a'], 50 / 51)
+    expect(r.holds[0].hold).toBe(50)
+    expect(r.allAtMin).toBe(true)
+  })
+
+  test('rounding boundary: hold=51, scale that rounds to 51', () => {
+    // 51 * (51/51) = 51 → stays 51
+    const r = computeEdgeDrag([51], ['a'], 1)
+    expect(r.holds[0].hold).toBe(51)
+    expect(r.allAtMin).toBe(false)
+  })
+})
+
+// ── Boundary: computeBarWidth ────────────────────────────
+
+describe('boundary: computeBarWidth', () => {
+  const base = {
+    wrapperWidth: 1000,
+    startWidth: 1000,
+    startHolds: [2000, 2000],
+    frameIds: ['a', 'b'],
+  }
+
+  test('newWidth = startWidth → scale=1, no maxWidth', () => {
+    const r = computeBarWidth({ ...base, newWidth: 1000 })
+    expect(r.maxWidthPct).toBeNull()
+    expect(r.atMin).toBe(false)
+    expect(r.holds.map(h => h.hold)).toEqual([2000, 2000])
+  })
+
+  test('newWidth = wrapperWidth → no maxWidth', () => {
+    const r = computeBarWidth({ ...base, newWidth: 1000 })
+    expect(r.maxWidthPct).toBeNull()
+  })
+
+  test('newWidth = wrapperWidth + 1 → no maxWidth', () => {
+    const r = computeBarWidth({ ...base, newWidth: 1001 })
+    expect(r.maxWidthPct).toBeNull()
+  })
+
+  test('newWidth = wrapperWidth - 1 → maxWidth set', () => {
+    const r = computeBarWidth({ ...base, newWidth: 999 })
+    expect(r.maxWidthPct).toBeCloseTo(99.9)
+  })
+
+  test('newWidth = 0 → clamped internally, all at min', () => {
+    const r = computeBarWidth({ ...base, newWidth: 0 })
+    expect(r.atMin).toBe(true)
+    r.holds.forEach(h => expect(h.hold).toBe(MIN_HOLD))
+  })
+
+  test('startWidth = 0 → scale=Infinity', () => {
+    const r = computeBarWidth({ ...base, startWidth: 0, newWidth: 500 })
+    // scale = 500/0 = Infinity → holds = Infinity
+    r.holds.forEach(h => expect(h.hold).toBe(Infinity))
+  })
+
+  test('startHolds mixed: one at MIN_HOLD, one above', () => {
+    const r = computeBarWidth({
+      ...base,
+      startHolds: [MIN_HOLD, 2000],
+      newWidth: 500,
+    })
+    expect(r.blocked).toBe(false)
+    expect(r.holds[0].hold).toBe(MIN_HOLD) // was already at min, can't go lower
+    expect(r.holds[1].hold).toBe(1000)
+  })
+})
+
+// ── Boundary: elapsedToHoldRatio ─────────────────────────
+
+describe('boundary: elapsedToHoldRatio', () => {
+  const frames = f3(2000, 2000, 2000)
+
+  test('negative elapsed → 0%', () => {
+    // rem starts negative, loop breaks immediately
+    expect(elapsedToHoldRatio(-100, frames)).toBe(0)
+  })
+
+  test('elapsed = exactly total timeline → 100%', () => {
+    const totalTimeline = 2000 + TRANSITION_MS + 2000 + TRANSITION_MS + 2000
+    expect(elapsedToHoldRatio(totalTimeline, frames)).toBe(100)
+  })
+
+  test('elapsed > total timeline → capped at 100%', () => {
+    const totalTimeline = 2000 + TRANSITION_MS + 2000 + TRANSITION_MS + 2000
+    expect(elapsedToHoldRatio(totalTimeline + 9999, frames)).toBe(100)
+  })
+
+  test('elapsed at exact transition start → frame boundary', () => {
+    // Frame 1 ends at 2000, transition is 2000..2400
+    expect(elapsedToHoldRatio(2000, frames)).toBeCloseTo(100 / 3)
+    expect(elapsedToHoldRatio(2001, frames)).toBeCloseTo(100 / 3)
+  })
+
+  test('elapsed at exact transition end → frame boundary', () => {
+    expect(elapsedToHoldRatio(2000 + TRANSITION_MS, frames)).toBeCloseTo(100 / 3)
+  })
+
+  test('elapsed 1ms into frame 2 → slightly past 1/3', () => {
+    const ratio = elapsedToHoldRatio(2000 + TRANSITION_MS + 1, frames)
+    expect(ratio).toBeGreaterThan(100 / 3)
+  })
+
+  test('single frame: elapsed=0 → 0%', () => {
+    expect(elapsedToHoldRatio(0, [{ id: 'a', code: 'x', hold: 1000 }])).toBe(0)
+  })
+
+  test('single frame: elapsed=500 → 50%', () => {
+    expect(elapsedToHoldRatio(500, [{ id: 'a', code: 'x', hold: 1000 }])).toBe(50)
+  })
+
+  test('single frame: elapsed=1000 → 100%', () => {
+    expect(elapsedToHoldRatio(1000, [{ id: 'a', code: 'x', hold: 1000 }])).toBe(100)
+  })
+
+  test('frames with hold=0 → all at 0%', () => {
+    expect(elapsedToHoldRatio(0, f3(0, 0, 0))).toBe(0)
+  })
+})
+
+// ── Boundary: holdRatioToElapsed ─────────────────────────
+
+describe('boundary: holdRatioToElapsed', () => {
+  const frames = f3(2000, 2000, 2000)
+
+  test('ratio=0 → 0', () => {
+    expect(holdRatioToElapsed(0, frames)).toBe(0)
+  })
+
+  test('ratio=1 → full timeline', () => {
+    expect(holdRatioToElapsed(1, frames)).toBe(2000 + TRANSITION_MS + 2000 + TRANSITION_MS + 2000)
+  })
+
+  test('ratio slightly > 0 → small elapsed in frame 1', () => {
+    const elapsed = holdRatioToElapsed(0.001, frames)
+    expect(elapsed).toBeGreaterThan(0)
+    expect(elapsed).toBeLessThan(100)
+  })
+
+  test('ratio at exact frame boundary 1/3', () => {
+    const elapsed = holdRatioToElapsed(1 / 3, frames)
+    expect(elapsed).toBe(2000)
+  })
+
+  test('ratio at exact frame boundary 2/3', () => {
+    const elapsed = holdRatioToElapsed(2 / 3, frames)
+    expect(elapsed).toBe(2000 + TRANSITION_MS + 2000)
+  })
+
+  test('ratio > 1 → clamped to end', () => {
+    const elapsed = holdRatioToElapsed(1.5, frames)
+    expect(elapsed).toBe(2000 + TRANSITION_MS + 2000 + TRANSITION_MS + 2000)
+  })
+
+  test('ratio < 0 → 0', () => {
+    expect(holdRatioToElapsed(-0.5, frames)).toBe(0)
+  })
+
+  test('single frame ratio=0.5 → no transitions', () => {
+    expect(holdRatioToElapsed(0.5, [{ id: 'a', code: 'x', hold: 1000 }])).toBe(500)
+  })
+
+  test('unequal holds: ratio maps proportionally', () => {
+    const frames = [
+      { id: 'a', code: 'x', hold: 1000 },
+      { id: 'b', code: 'x', hold: 3000 },
+    ]
+    // ratio=0.25 → 1000ms into total hold (1000+3000=4000), so end of frame 1
+    expect(holdRatioToElapsed(0.25, frames)).toBe(1000)
+    // ratio=0.5 → 2000ms into total hold → 1000ms into frame 2 + transition
+    expect(holdRatioToElapsed(0.5, frames)).toBe(1000 + TRANSITION_MS + 1000)
+  })
+})
+
+// ── Round-trip: ratio conversion with various frame configs ──
+
+describe('round-trip: elapsedToHoldRatio ↔ holdRatioToElapsed', () => {
+  const configs: Array<{ name: string; frames: FrameInput[] }> = [
+    { name: 'equal 3 frames', frames: f3(2000, 2000, 2000) },
+    { name: 'unequal', frames: f3(500, 1500, 3000) },
+    { name: 'at minimum', frames: f3(50, 50, 50) },
+    { name: 'single frame', frames: [{ id: 'a', code: 'x', hold: 5000 }] },
+    { name: 'two frames', frames: [{ id: 'a', code: 'x', hold: 1000 }, { id: 'b', code: 'x', hold: 2000 }] },
+  ]
+
+  const ratios = [0, 0.001, 0.1, 0.25, 1/3, 0.5, 2/3, 0.75, 0.999, 1.0]
+
+  configs.forEach(({ name, frames }) => {
+    ratios.forEach(ratio => {
+      test(`${name}, ratio=${ratio.toFixed(3)}`, () => {
+        const elapsed = holdRatioToElapsed(ratio, frames)
+        const backRatio = elapsedToHoldRatio(elapsed, frames) / 100
+        expect(backRatio).toBeCloseTo(ratio, 3)
+      })
+    })
+  })
+})

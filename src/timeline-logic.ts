@@ -76,6 +76,7 @@ export function elapsedToHoldRatio(
 ): number {
   const total = frames.reduce((s, f) => s + holdOf(f), 0)
   if (total <= 0) return 0
+  if (elapsed <= 0) return 0
   let rem = elapsed
   let accHold = 0
   for (let k = 0; k < frames.length; k++) {
@@ -97,7 +98,9 @@ export function holdRatioToElapsed(
 ): number {
   const totalHold = frames.reduce((s, f) => s + holdOf(f), 0)
   if (totalHold <= 0) return 0
-  const holdMs = barRatio * totalHold
+  if (barRatio <= 0) return 0
+  const clampedRatio = Math.min(barRatio, 1)
+  const holdMs = clampedRatio * totalHold
   let elapsed = 0
   let accHold = 0
   for (let k = 0; k < frames.length; k++) {
