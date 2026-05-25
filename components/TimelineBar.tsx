@@ -9,7 +9,7 @@ import {
   computeBarWidth,
   TRANSITION_MS,
   MIN_HOLD,
-} from '../src/timeline-logic'
+} from '../src/lib/timelinebar/logic'
 
 interface TimelineBarProps {
   frames: Array<{ id: string; code: string; hold?: number }>

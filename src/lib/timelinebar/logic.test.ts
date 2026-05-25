@@ -16,7 +16,7 @@ import {
   HOLD_PER_LINE_MS,
   TRANSITION_MS,
   type FrameInput,
-} from './timeline-logic'
+} from './logic'
 
 // ── Helpers ──────────────────────────────────────────────
 
