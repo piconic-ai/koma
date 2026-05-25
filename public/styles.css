@@ -449,6 +449,15 @@ main {
   opacity: 1;
 }
 
+.koma-timeline[data-at-min] {
+  border-color: var(--destructive);
+}
+
+.koma-timeline[data-at-min] .koma-timeline-edge {
+  background: var(--destructive);
+  opacity: 1;
+}
+
 .koma-timeline-total {
   font-size: 12px;
   font-family: 'JetBrains Mono', ui-monospace, Menlo, monospace;
@@ -456,6 +465,11 @@ main {
   white-space: nowrap;
   flex-shrink: 0;
   min-width: 3em;
+  transition: color 0.15s;
+}
+
+.koma-timeline[data-at-min] ~ .koma-timeline-total {
+  color: var(--destructive);
 }
 
 .koma-add-frame {

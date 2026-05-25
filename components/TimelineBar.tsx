@@ -34,7 +34,7 @@ export function TimelineBar(props: TimelineBarProps) {
   const onLayout = (sizes: number[]) => {
     const holds = frames.map((f, i) => ({
       id: f.id,
-      hold: Math.max(200, Math.round((sizes[i] / 100) * totalHold)),
+      hold: Math.max(50, Math.round((sizes[i] / 100) * totalHold)),
     }))
     props.onLayout(holds)
   }
@@ -68,14 +68,21 @@ export function TimelineBar(props: TimelineBarProps) {
       const startWidth = group.getBoundingClientRect().width
       const groupLeft = group.getBoundingClientRect().left
 
+      const minHold = 50
+      const minTotal = currentFrames.length * minHold
+
       const onMove = (ev: PointerEvent) => {
         const newWidth = Math.max(60, ev.clientX - groupLeft)
         const scale = newWidth / startWidth
         const holds = currentFrames.map((f, i) => ({
           id: f.id,
-          hold: Math.max(200, Math.round(startHolds[i] * scale)),
+          hold: Math.max(minHold, Math.round(startHolds[i] * scale)),
         }))
+        const actualTotal = holds.reduce((s, h) => s + h.hold, 0)
+        const atMin = actualTotal <= minTotal
+
         group.style.maxWidth = `${(newWidth / el.getBoundingClientRect().width) * 100}%`
+        group.setAttribute('data-at-min', atMin ? '' : null as any)
         props.onLayout(holds)
       }
 
@@ -83,6 +90,7 @@ export function TimelineBar(props: TimelineBarProps) {
         edgeHandle.removeEventListener('pointermove', onMove)
         edgeHandle.removeEventListener('pointerup', onUp)
         edgeHandle.setAttribute('data-state', 'idle')
+        group.removeAttribute('data-at-min')
       }
 
       edgeHandle.addEventListener('pointermove', onMove)
