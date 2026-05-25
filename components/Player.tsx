@@ -19,9 +19,6 @@ import {
 
 interface PlayerProps {
   spec: Spec
-  onTimeUpdate?: (elapsedMs: number, totalMs: number, playing: boolean) => void
-  seekMs?: number
-  playToggle?: number
 }
 
 export function Player(props: PlayerProps) {
@@ -60,7 +57,9 @@ export function Player(props: PlayerProps) {
     if (typeof document === 'undefined') return
     const canvas = document.getElementById('koma-preview-canvas') as HTMLCanvasElement
     if (!canvas) return
-    props.onTimeUpdate?.(elapsedMs(), timeline().totalDurationMs, playing())
+    window.dispatchEvent(new CustomEvent('koma:timeupdate', {
+      detail: { elapsed: elapsedMs(), total: timeline().totalDurationMs, playing: playing() },
+    }))
     renderToCanvas(canvas, {
       timeline: timeline(),
       elapsedMs: elapsedMs(),
@@ -98,6 +97,20 @@ export function Player(props: PlayerProps) {
     }
     window.addEventListener('keydown', onKey)
     onCleanup(() => window.removeEventListener('keydown', onKey))
+
+    const onSeek = (e: Event) => {
+      const ms = (e as CustomEvent).detail.ms
+      setPlaying(false)
+      setElapsedMs(ms)
+      renderCanvas()
+    }
+    const onPlayToggle = () => togglePlay()
+    window.addEventListener('koma:seek', onSeek)
+    window.addEventListener('koma:toggleplay', onPlayToggle)
+    onCleanup(() => {
+      window.removeEventListener('koma:seek', onSeek)
+      window.removeEventListener('koma:toggleplay', onPlayToggle)
+    })
   })
 
   createEffect(() => {
@@ -149,7 +162,11 @@ export function Player(props: PlayerProps) {
   }
 
   createEffect(() => {
-    if (playing()) {
+    const p = playing()
+    window.dispatchEvent(new CustomEvent('koma:timeupdate', {
+      detail: { elapsed: elapsedMs(), total: timeline().totalDurationMs, playing: p },
+    }))
+    if (p) {
       lastTs = null
       rafId = requestAnimationFrame(step)
     } else {
@@ -165,22 +182,6 @@ export function Player(props: PlayerProps) {
     setElapsedMs(0)
   })
 
-  createEffect(() => {
-    const seek = props.seekMs
-    if (seek != null) {
-      setPlaying(false)
-      setElapsedMs(seek)
-    }
-  })
-
-  let prevToggle = 0
-  createEffect(() => {
-    const t = props.playToggle ?? 0
-    if (t !== prevToggle) {
-      prevToggle = t
-      togglePlay()
-    }
-  })
 
   onCleanup(stop)
 
