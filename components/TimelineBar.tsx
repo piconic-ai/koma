@@ -82,14 +82,16 @@ export function TimelineBar(props: TimelineBarProps) {
           props.onSeek(Math.round(ratio * (props.totalMs || 8800)))
         }
 
-        const onUp = () => {
+        const cleanup = () => {
           playhead.removeEventListener('pointermove', onMove)
-          playhead.removeEventListener('pointerup', onUp)
+          playhead.removeEventListener('pointerup', cleanup)
+          playhead.removeEventListener('pointercancel', cleanup)
           isDraggingPlayhead = false
         }
 
         playhead.addEventListener('pointermove', onMove)
-        playhead.addEventListener('pointerup', onUp)
+        playhead.addEventListener('pointerup', cleanup)
+        playhead.addEventListener('pointercancel', cleanup)
       })
     }
 
@@ -161,12 +163,13 @@ export function TimelineBar(props: TimelineBarProps) {
       })
     })
 
-    // Segment handle drag
+    // Segment handle drag — delegate from bar, capture on handle
     bar.addEventListener('pointerdown', (e: PointerEvent) => {
       const handle = (e.target as HTMLElement).closest('[data-seg-handle]') as HTMLElement
       if (!handle) return
       e.preventDefault()
-      bar.setPointerCapture(e.pointerId)
+      e.stopPropagation()
+      handle.setPointerCapture(e.pointerId)
       handle.setAttribute('data-state', 'drag')
 
       const idx = Number(handle.getAttribute('data-seg-handle'))
@@ -188,14 +191,16 @@ export function TimelineBar(props: TimelineBarProps) {
         ])
       }
 
-      const onUp = () => {
-        bar.removeEventListener('pointermove', onMove)
-        bar.removeEventListener('pointerup', onUp)
+      const cleanup = () => {
+        handle.removeEventListener('pointermove', onMove)
+        handle.removeEventListener('pointerup', cleanup)
+        handle.removeEventListener('pointercancel', cleanup)
         handle.setAttribute('data-state', 'idle')
       }
 
-      bar.addEventListener('pointermove', onMove)
-      bar.addEventListener('pointerup', onUp)
+      handle.addEventListener('pointermove', onMove)
+      handle.addEventListener('pointerup', cleanup)
+      handle.addEventListener('pointercancel', cleanup)
     })
 
     // Right-edge drag
@@ -223,14 +228,16 @@ export function TimelineBar(props: TimelineBarProps) {
           props.onLayout(holds)
         }
 
-        const onUp = () => {
+        const cleanup = () => {
           edgeHandle.removeEventListener('pointermove', onMove)
-          edgeHandle.removeEventListener('pointerup', onUp)
+          edgeHandle.removeEventListener('pointerup', cleanup)
+          edgeHandle.removeEventListener('pointercancel', cleanup)
           edgeHandle.setAttribute('data-state', 'idle')
         }
 
         edgeHandle.addEventListener('pointermove', onMove)
-        edgeHandle.addEventListener('pointerup', onUp)
+        edgeHandle.addEventListener('pointerup', cleanup)
+        edgeHandle.addEventListener('pointercancel', cleanup)
       })
     }
   }
