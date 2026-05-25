@@ -46,6 +46,11 @@ export function TimelineBar(props: TimelineBarProps) {
       }
     })
 
+    // Clear at-min on any click outside the edge handle
+    document.addEventListener('click', () => {
+      bar.removeAttribute('data-at-min')
+    })
+
     // Play icon + Playhead — single timeupdate listener
     const playBtn = el.querySelector('[data-play-btn]') as HTMLElement
     const playIcon = '<svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><path d="M6 4l14 8-14 8z"/></svg>'
@@ -252,24 +257,29 @@ export function TimelineBar(props: TimelineBarProps) {
         const wrapperWidth = el.getBoundingClientRect().width
 
         const minHold = 50
-        const minTotal = frames.length * minHold
-        const minScale = minTotal / startHolds.reduce((s, h) => s + h, 0)
-        const minWidth = startWidth * minScale
 
         const onMove = (ev: PointerEvent) => {
-          const newWidth = Math.max(minWidth, ev.clientX - barLeft)
+          const newWidth = Math.max(60, ev.clientX - barLeft)
           const scale = newWidth / startWidth
           const holds = frames.map((f, i) => ({
             id: f.id,
             hold: Math.max(minHold, Math.round(startHolds[i] * scale)),
           }))
-          const atMin = newWidth <= minWidth
+
+          const wouldShrink = scale < 1
+          const allAtMin = holds.every(h => h.hold <= minHold)
+
+          if (wouldShrink && allAtMin) {
+            bar.setAttribute('data-at-min', '')
+            return
+          }
+
           if (newWidth < wrapperWidth) {
             bar.style.maxWidth = `${(newWidth / wrapperWidth) * 100}%`
           } else {
             bar.style.maxWidth = ''
           }
-          bar.setAttribute('data-at-min', atMin ? '' : null as any)
+          bar.removeAttribute('data-at-min')
           props.onLayout(holds)
         }
 
