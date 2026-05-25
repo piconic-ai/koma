@@ -52,13 +52,31 @@ export function TimelineBar(props: TimelineBarProps) {
     const pauseIcon = '<svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><rect x="6" y="4" width="4" height="16" rx="1"/><rect x="14" y="4" width="4" height="16" rx="1"/></svg>'
     if (playBtn) playBtn.innerHTML = playIcon
 
+    const elapsedToHoldRatio = (elapsed: number): number => {
+      const frames = props.frames
+      const total = frames.reduce((s, f) => s + holdOf(f), 0)
+      if (total <= 0) return 0
+      let rem = elapsed
+      let accHold = 0
+      for (let k = 0; k < frames.length; k++) {
+        const fHold = holdOf(frames[k])
+        if (rem <= fHold) { accHold += rem; break }
+        rem -= fHold
+        accHold += fHold
+        if (k < frames.length - 1) {
+          if (rem <= TRANSITION_MS) { break }
+          rem -= TRANSITION_MS
+        }
+      }
+      return (accHold / total) * 100
+    }
+
     let isDraggingPlayhead = false
     const onTimeUpdate = (e: Event) => {
       const d = (e as CustomEvent).detail
       if (playBtn) playBtn.innerHTML = d.playing ? pauseIcon : playIcon
       if (playhead && !isDraggingPlayhead) {
-        const pct = d.total > 0 ? (d.elapsed / d.total) * 100 : 0
-        playhead.style.left = `${pct}%`
+        playhead.style.left = `${elapsedToHoldRatio(d.elapsed)}%`
       }
     }
     const prev = (el as any).__komaTimeUpdate as typeof onTimeUpdate | undefined
@@ -142,10 +160,23 @@ export function TimelineBar(props: TimelineBarProps) {
         seg.addEventListener('click', (e) => {
           e.stopPropagation()
           props.onSelect(frame.id)
-          if (props.totalMs > 0) {
+          if (totalHold > 0 && props.totalMs > 0) {
             const rect = bar.getBoundingClientRect()
-            const ratio = Math.max(0, Math.min(1, ((e as MouseEvent).clientX - rect.left) / rect.width))
-            props.onSeek(Math.round(ratio * props.totalMs))
+            const barRatio = Math.max(0, Math.min(1, ((e as MouseEvent).clientX - rect.left) / rect.width))
+            const holdMs = barRatio * totalHold
+            let elapsed = 0
+            let accHold = 0
+            for (let k = 0; k < frames.length; k++) {
+              const fHold = holdOf(frames[k])
+              if (accHold + fHold >= holdMs) {
+                elapsed += holdMs - accHold
+                break
+              }
+              accHold += fHold
+              elapsed += fHold
+              if (k < frames.length - 1) elapsed += TRANSITION_MS
+            }
+            props.onSeek(Math.round(elapsed))
           }
         })
       })
