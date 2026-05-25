@@ -61,6 +61,9 @@ export function TimelineBar(props: TimelineBarProps) {
         playhead.style.left = `${pct}%`
       }
     }
+    const prev = (el as any).__komaTimeUpdate as typeof onTimeUpdate | undefined
+    if (prev) window.removeEventListener('koma:timeupdate', prev)
+    ;(el as any).__komaTimeUpdate = onTimeUpdate
     window.addEventListener('koma:timeupdate', onTimeUpdate)
 
     // Playhead drag
@@ -75,7 +78,9 @@ export function TimelineBar(props: TimelineBarProps) {
           const barRect = bar.getBoundingClientRect()
           const ratio = Math.max(0, Math.min(1, (ev.clientX - barRect.left) / barRect.width))
           playhead.style.left = `${ratio * 100}%`
-          props.onSeek(Math.round(ratio * (props.totalMs || 8800)))
+          if (props.totalMs > 0) {
+            props.onSeek(Math.round(ratio * props.totalMs))
+          }
         }
 
         const cleanup = () => {
@@ -106,9 +111,11 @@ export function TimelineBar(props: TimelineBarProps) {
     createEffect(() => {
       const frames = props.frames
       const ids = frames.map(f => f.id).join(',')
+      if (ids === prevFrameIds) return
+      prevFrameIds = ids
+
       const totalHold = frames.reduce((sum, f) => sum + holdOf(f), 0)
 
-      // Rebuild segment DOM
       bar.querySelectorAll('[data-seg]').forEach(s => s.remove())
       bar.querySelectorAll('[data-seg-handle]').forEach(s => s.remove())
 
@@ -122,7 +129,7 @@ export function TimelineBar(props: TimelineBarProps) {
         const seg = document.createElement('div')
         seg.setAttribute('data-seg', frame.id)
         seg.className = 'koma-timeline-segment'
-        const pct = (holdOf(frame) / totalHold) * 100
+        const pct = totalHold > 0 ? (holdOf(frame) / totalHold) * 100 : 0
         seg.style.flexBasis = `${pct}%`
         seg.style.flexGrow = '0'
         seg.style.flexShrink = '0'
@@ -142,14 +149,13 @@ export function TimelineBar(props: TimelineBarProps) {
           }
         })
       })
-
-      prevFrameIds = ids
     })
 
     // Update segment sizes when hold values change
     createEffect(() => {
       const frames = props.frames
       const totalHold = frames.reduce((sum, f) => sum + holdOf(f), 0)
+      if (totalHold <= 0) return
       frames.forEach((frame) => {
         const seg = bar.querySelector(`[data-seg="${frame.id}"]`) as HTMLElement
         if (seg) {

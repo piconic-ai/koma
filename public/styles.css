@@ -514,7 +514,8 @@ main {
 }
 
 .koma-timeline[data-at-min] {
-  border-color: var(--destructive);
+  outline: 2px solid var(--destructive);
+  outline-offset: -2px;
 }
 
 .koma-timeline[data-at-min] .koma-timeline-edge {
