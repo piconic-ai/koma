@@ -153,7 +153,7 @@ main {
   display: flex;
   flex-direction: column;
   min-height: 100vh;
-  padding-bottom: 340px;
+  padding-bottom: var(--dock-height, 340px);
 }
 
 .koma-app-header {
