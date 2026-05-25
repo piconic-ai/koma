@@ -153,7 +153,7 @@ main {
   display: flex;
   flex-direction: column;
   min-height: 100vh;
-  padding-bottom: 52px;
+  padding-bottom: 340px;
 }
 
 .koma-app-header {
@@ -250,31 +250,33 @@ main {
   color: var(--muted-foreground, var(--foreground));
 }
 
-.koma-app-grid {
-  display: grid;
-  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
-  gap: 24px;
-  padding: 24px;
-  flex: 1 1 auto;
-  align-items: start;
-  max-width: 100%;
-}
-
-@media (max-width: 900px) {
-  .koma-app-grid {
-    grid-template-columns: 1fr;
-  }
-}
 
 .koma-editors {
   display: flex;
   flex-direction: column;
   gap: 16px;
+  padding: 24px;
+  max-width: 640px;
+  margin: 0 auto;
+  width: 100%;
+}
+
+.koma-preview-dock {
+  position: fixed;
+  bottom: 52px;
+  left: 0;
+  right: 0;
+  z-index: 15;
+  background: var(--background);
+  border-top: 1px solid var(--border);
+  padding: 8px 24px;
+  display: flex;
+  justify-content: center;
 }
 
 .koma-preview {
-  position: sticky;
-  top: 80px;
+  width: 100%;
+  max-width: 480px;
   min-width: 0;
   overflow: hidden;
 }
