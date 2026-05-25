@@ -7,7 +7,6 @@ import {
   onCleanup,
   onMount,
 } from '@barefootjs/client'
-import { Button } from '@/components/ui/button'
 import { buildTimeline, collapseTransitions } from '../src/model/timeline'
 import type { Frame, Spec, Timeline } from '../src/model/types'
 import { renderToCanvas, heightForFrames } from '../src/render/canvas'
@@ -20,8 +19,9 @@ import {
 
 interface PlayerProps {
   spec: Spec
-  onTimeUpdate?: (elapsedMs: number, totalMs: number) => void
+  onTimeUpdate?: (elapsedMs: number, totalMs: number, playing: boolean) => void
   seekMs?: number
+  playToggle?: number
 }
 
 export function Player(props: PlayerProps) {
@@ -60,7 +60,7 @@ export function Player(props: PlayerProps) {
     if (typeof document === 'undefined') return
     const canvas = document.getElementById('koma-preview-canvas') as HTMLCanvasElement
     if (!canvas) return
-    props.onTimeUpdate?.(elapsedMs(), timeline().totalDurationMs)
+    props.onTimeUpdate?.(elapsedMs(), timeline().totalDurationMs, playing())
     renderToCanvas(canvas, {
       timeline: timeline(),
       elapsedMs: elapsedMs(),
@@ -173,6 +173,15 @@ export function Player(props: PlayerProps) {
     }
   })
 
+  let prevToggle = 0
+  createEffect(() => {
+    const t = props.playToggle ?? 0
+    if (t !== prevToggle) {
+      prevToggle = t
+      togglePlay()
+    }
+  })
+
   onCleanup(stop)
 
   const togglePlay = () => {
@@ -233,18 +242,6 @@ export function Player(props: PlayerProps) {
             borderRadius: '8px',
           }}
         />
-      </div>
-      <div className="koma-controls">
-        <Button onClick={togglePlay} size="icon-sm" aria-label={playing() ? 'Pause' : 'Play'}>
-          {playing() ? (
-            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><rect x="6" y="4" width="4" height="16" rx="1" /><rect x="14" y="4" width="4" height="16" rx="1" /></svg>
-          ) : (
-            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><path d="M6 4l14 8-14 8z" /></svg>
-          )}
-        </Button>
-        <span className="koma-counter">
-          {currentFrameIndex() + 1}/{frameCount()}
-        </span>
       </div>
     </div>
   )

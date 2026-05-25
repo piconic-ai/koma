@@ -423,6 +423,25 @@ main {
   gap: 6px;
 }
 
+.koma-timeline-play {
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  border: 1px solid var(--border);
+  background: var(--background);
+  color: var(--foreground);
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  padding: 0;
+}
+
+.koma-timeline-play:hover {
+  background: var(--accent);
+}
+
 .koma-timeline-wrapper .koma-timeline {
   flex: 1 1 auto;
   min-width: 60px;

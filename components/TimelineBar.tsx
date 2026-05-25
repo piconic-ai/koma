@@ -27,7 +27,9 @@ interface TimelineBarProps {
   onSelect: (frameId: string) => void
   elapsedMs: number
   totalMs: number
+  playing: boolean
   onSeek: (ms: number) => void
+  onTogglePlay: () => void
 }
 
 export function TimelineBar(props: TimelineBarProps) {
@@ -145,8 +147,23 @@ export function TimelineBar(props: TimelineBarProps) {
     return [<ResizableHandle key={`h-${frame.id}`} withHandle />, panel]
   })
 
+  const playBtnRef = (el: HTMLElement) => {
+    createEffect(() => {
+      el.setAttribute('aria-label', props.playing ? 'Pause' : 'Play')
+      el.innerHTML = props.playing
+        ? '<svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><rect x="6" y="4" width="4" height="16" rx="1"/><rect x="14" y="4" width="4" height="16" rx="1"/></svg>'
+        : '<svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><path d="M6 4l14 8-14 8z"/></svg>'
+    })
+  }
+
   return (
     <div className="koma-timeline-wrapper" ref={handleMount}>
+      <button
+        type="button"
+        className="koma-timeline-play"
+        onClick={() => props.onTogglePlay()}
+        ref={playBtnRef}
+      />
       <ResizablePanelGroup
         direction="horizontal"
         className="koma-timeline"
