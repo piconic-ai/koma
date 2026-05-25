@@ -46,23 +46,55 @@ export function TimelineBar(props: TimelineBarProps) {
       }
     })
 
-    // Play icon
-    createEffect(() => {
-      const playBtn = el.querySelector('[data-play-btn]') as HTMLElement
-      if (playBtn) {
-        playBtn.innerHTML = props.playing
-          ? '<svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><rect x="6" y="4" width="4" height="16" rx="1"/><rect x="14" y="4" width="4" height="16" rx="1"/></svg>'
-          : '<svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><path d="M6 4l14 8-14 8z"/></svg>'
-      }
-    })
+    // Play icon + Playhead — single timeupdate listener
+    const playBtn = el.querySelector('[data-play-btn]') as HTMLElement
+    const playIcon = '<svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><path d="M6 4l14 8-14 8z"/></svg>'
+    const pauseIcon = '<svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><rect x="6" y="4" width="4" height="16" rx="1"/><rect x="14" y="4" width="4" height="16" rx="1"/></svg>'
+    if (playBtn) playBtn.innerHTML = playIcon
 
-    // Playhead
-    createEffect(() => {
-      if (playhead) {
-        const pct = props.totalMs > 0 ? (props.elapsedMs / props.totalMs) * 100 : 0
+    let isDraggingPlayhead = false
+    const onTimeUpdate = (e: Event) => {
+      const d = (e as CustomEvent).detail
+      if (playBtn) playBtn.innerHTML = d.playing ? pauseIcon : playIcon
+      if (playhead && !isDraggingPlayhead) {
+        const pct = d.total > 0 ? (d.elapsed / d.total) * 100 : 0
         playhead.style.left = `${pct}%`
       }
-    })
+    }
+    const prev = (el as any).__komaTimeUpdate as typeof onTimeUpdate | undefined
+    if (prev) window.removeEventListener('koma:timeupdate', prev)
+    ;(el as any).__komaTimeUpdate = onTimeUpdate
+    window.addEventListener('koma:timeupdate', onTimeUpdate)
+
+    // Playhead drag
+    if (playhead) {
+      playhead.addEventListener('pointerdown', (e: PointerEvent) => {
+        e.preventDefault()
+        e.stopPropagation()
+        playhead.setPointerCapture(e.pointerId)
+        isDraggingPlayhead = true
+
+        const onMove = (ev: PointerEvent) => {
+          const barRect = bar.getBoundingClientRect()
+          const ratio = Math.max(0, Math.min(1, (ev.clientX - barRect.left) / barRect.width))
+          playhead.style.left = `${ratio * 100}%`
+          if (props.totalMs > 0) {
+            props.onSeek(Math.round(ratio * props.totalMs))
+          }
+        }
+
+        const cleanup = () => {
+          playhead.removeEventListener('pointermove', onMove)
+          playhead.removeEventListener('pointerup', cleanup)
+          playhead.removeEventListener('pointercancel', cleanup)
+          isDraggingPlayhead = false
+        }
+
+        playhead.addEventListener('pointermove', onMove)
+        playhead.addEventListener('pointerup', cleanup)
+        playhead.addEventListener('pointercancel', cleanup)
+      })
+    }
 
     // Total label
     createEffect(() => {
@@ -79,9 +111,11 @@ export function TimelineBar(props: TimelineBarProps) {
     createEffect(() => {
       const frames = props.frames
       const ids = frames.map(f => f.id).join(',')
+      if (ids === prevFrameIds) return
+      prevFrameIds = ids
+
       const totalHold = frames.reduce((sum, f) => sum + holdOf(f), 0)
 
-      // Rebuild segment DOM
       bar.querySelectorAll('[data-seg]').forEach(s => s.remove())
       bar.querySelectorAll('[data-seg-handle]').forEach(s => s.remove())
 
@@ -95,7 +129,7 @@ export function TimelineBar(props: TimelineBarProps) {
         const seg = document.createElement('div')
         seg.setAttribute('data-seg', frame.id)
         seg.className = 'koma-timeline-segment'
-        const pct = (holdOf(frame) / totalHold) * 100
+        const pct = totalHold > 0 ? (holdOf(frame) / totalHold) * 100 : 0
         seg.style.flexBasis = `${pct}%`
         seg.style.flexGrow = '0'
         seg.style.flexShrink = '0'
@@ -115,14 +149,13 @@ export function TimelineBar(props: TimelineBarProps) {
           }
         })
       })
-
-      prevFrameIds = ids
     })
 
     // Update segment sizes when hold values change
     createEffect(() => {
       const frames = props.frames
       const totalHold = frames.reduce((sum, f) => sum + holdOf(f), 0)
+      if (totalHold <= 0) return
       frames.forEach((frame) => {
         const seg = bar.querySelector(`[data-seg="${frame.id}"]`) as HTMLElement
         if (seg) {
@@ -132,12 +165,13 @@ export function TimelineBar(props: TimelineBarProps) {
       })
     })
 
-    // Segment handle drag
+    // Segment handle drag — delegate from bar, capture on handle
     bar.addEventListener('pointerdown', (e: PointerEvent) => {
       const handle = (e.target as HTMLElement).closest('[data-seg-handle]') as HTMLElement
       if (!handle) return
       e.preventDefault()
-      bar.setPointerCapture(e.pointerId)
+      e.stopPropagation()
+      handle.setPointerCapture(e.pointerId)
       handle.setAttribute('data-state', 'drag')
 
       const idx = Number(handle.getAttribute('data-seg-handle'))
@@ -159,14 +193,16 @@ export function TimelineBar(props: TimelineBarProps) {
         ])
       }
 
-      const onUp = () => {
-        bar.removeEventListener('pointermove', onMove)
-        bar.removeEventListener('pointerup', onUp)
+      const cleanup = () => {
+        handle.removeEventListener('pointermove', onMove)
+        handle.removeEventListener('pointerup', cleanup)
+        handle.removeEventListener('pointercancel', cleanup)
         handle.setAttribute('data-state', 'idle')
       }
 
-      bar.addEventListener('pointermove', onMove)
-      bar.addEventListener('pointerup', onUp)
+      handle.addEventListener('pointermove', onMove)
+      handle.addEventListener('pointerup', cleanup)
+      handle.addEventListener('pointercancel', cleanup)
     })
 
     // Right-edge drag
@@ -194,14 +230,16 @@ export function TimelineBar(props: TimelineBarProps) {
           props.onLayout(holds)
         }
 
-        const onUp = () => {
+        const cleanup = () => {
           edgeHandle.removeEventListener('pointermove', onMove)
-          edgeHandle.removeEventListener('pointerup', onUp)
+          edgeHandle.removeEventListener('pointerup', cleanup)
+          edgeHandle.removeEventListener('pointercancel', cleanup)
           edgeHandle.setAttribute('data-state', 'idle')
         }
 
         edgeHandle.addEventListener('pointermove', onMove)
-        edgeHandle.addEventListener('pointerup', onUp)
+        edgeHandle.addEventListener('pointerup', cleanup)
+        edgeHandle.addEventListener('pointercancel', cleanup)
       })
     }
   }

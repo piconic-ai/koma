@@ -153,7 +153,7 @@ main {
   display: flex;
   flex-direction: column;
   min-height: 100vh;
-  padding-bottom: 52px;
+  padding-bottom: 340px;
 }
 
 .koma-app-header {
@@ -250,31 +250,34 @@ main {
   color: var(--muted-foreground, var(--foreground));
 }
 
-.koma-app-grid {
-  display: grid;
-  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
-  gap: 24px;
-  padding: 24px;
-  flex: 1 1 auto;
-  align-items: start;
-  max-width: 100%;
-}
-
-@media (max-width: 900px) {
-  .koma-app-grid {
-    grid-template-columns: 1fr;
-  }
-}
 
 .koma-editors {
   display: flex;
   flex-direction: column;
   gap: 16px;
+  padding: 24px;
+  max-width: 688px;
+  margin: 0 auto;
+  width: 100%;
+}
+
+.koma-preview-dock {
+  position: fixed;
+  bottom: 52px;
+  left: 0;
+  right: 0;
+  z-index: 15;
+  background: var(--background);
+  border-top: 1px solid var(--border);
+  padding: 8px 24px;
+  display: flex;
+  justify-content: center;
 }
 
 .koma-preview {
-  position: sticky;
-  top: 80px;
+  width: 100%;
+  max-width: 688px;
+  padding: 0 24px;
   min-width: 0;
   overflow: hidden;
 }
@@ -354,36 +357,34 @@ main {
 .koma-timeline {
   display: flex;
   height: 36px;
-  border-radius: 4px;
-  border: 1px solid var(--border);
+  border-radius: 6px;
+  overflow: hidden;
+  position: relative;
 }
 
 .koma-timeline-segment {
-  position: relative;
   display: flex;
   align-items: center;
   justify-content: center;
-  min-width: 20px;
-  background: var(--secondary);
+  min-width: 16px;
+  background: var(--foreground);
   user-select: none;
+  cursor: pointer;
 }
 
 .koma-timeline-label {
-  font-size: 11px;
-  font-weight: 600;
-  color: var(--muted-foreground);
+  font-size: 10px;
+  font-weight: 500;
+  color: var(--background);
   pointer-events: none;
-}
-
-.koma-timeline-segment {
-  cursor: pointer;
+  opacity: 0.6;
 }
 
 .koma-timeline-handle-bar {
   width: 3px;
   min-width: 3px;
   flex: 0 0 3px;
-  background: var(--ring);
+  background: var(--background);
   cursor: col-resize;
   position: relative;
 }
@@ -396,7 +397,7 @@ main {
 
 .koma-timeline-handle-bar:hover,
 .koma-timeline-handle-bar[data-state="drag"] {
-  background: var(--foreground);
+  background: var(--ring);
 }
 
 .koma-frame-editor[data-selected] {
@@ -450,48 +451,71 @@ main {
 
 .koma-timeline-edge {
   position: absolute;
-  top: -1px;
-  right: -1px;
+  top: 0;
+  right: 0;
   width: 8px;
-  height: calc(100% + 2px);
+  height: 100%;
   cursor: ew-resize;
   z-index: 3;
-  background: var(--ring);
-  border-radius: 0 4px 4px 0;
-  opacity: 0.5;
-  transition: opacity 0.1s;
+  background: transparent;
+  opacity: 0;
+  transition: opacity 0.15s;
 }
 
-.koma-timeline-edge:hover,
+.koma-timeline-edge::before {
+  content: '';
+  position: absolute;
+  top: 25%;
+  right: 2px;
+  width: 3px;
+  height: 50%;
+  border-radius: 2px;
+  background: var(--background);
+}
+
+.koma-timeline:hover .koma-timeline-edge,
 .koma-timeline-edge[data-state="drag"] {
   opacity: 1;
 }
 
 .koma-timeline-playhead {
   position: absolute;
-  top: -3px;
+  top: -2px;
   left: 0;
   width: 2px;
-  height: calc(100% + 6px);
-  background: var(--primary);
+  height: calc(100% + 4px);
+  background: #00b769;
   z-index: 4;
-  pointer-events: none;
-  transition: left 0.05s linear;
+  cursor: grab;
+  touch-action: none;
+  will-change: left;
+}
+
+.koma-timeline-playhead:active {
+  cursor: grabbing;
 }
 
 .koma-timeline-playhead::before {
   content: '';
   position: absolute;
-  top: 0;
-  left: -3px;
-  width: 8px;
+  top: -3px;
+  left: -5px;
+  width: 12px;
   height: 8px;
-  background: var(--primary);
-  border-radius: 50%;
+  background: #00b769;
+  border-radius: 2px;
+  clip-path: polygon(50% 100%, 0 0, 100% 0);
+}
+
+.koma-timeline-playhead::after {
+  content: '';
+  position: absolute;
+  inset: 0 -6px;
 }
 
 .koma-timeline[data-at-min] {
-  border-color: var(--destructive);
+  outline: 2px solid var(--destructive);
+  outline-offset: -2px;
 }
 
 .koma-timeline[data-at-min] .koma-timeline-edge {
