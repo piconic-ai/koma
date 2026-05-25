@@ -27,8 +27,13 @@ const PAUSE_SVG = '<svg xmlns="http://www.w3.org/2000/svg" width="14" height="14
 
 export function TimelineBar(props: TimelineBarProps) {
   const [atMin, setAtMin] = createSignal(false)
+  const [frames, setFrames] = createSignal(props.frames)
 
-  const totalHold = () => props.frames.reduce((sum, f) => sum + holdOf(f), 0)
+  createEffect(() => {
+    setFrames(props.frames)
+  })
+
+  const totalHold = () => frames().reduce((sum, f) => sum + holdOf(f), 0)
 
   const totalDuration = () => {
     const h = totalHold()
@@ -137,59 +142,6 @@ export function TimelineBar(props: TimelineBarProps) {
       handle.addEventListener('pointercancel', cleanup)
     })
 
-    // ── Segment DOM (reactive rebuild on frame add/remove) ──
-    let prevFrameIds = ''
-    createEffect(() => {
-      const frames = props.frames
-      const ids = frames.map(f => f.id).join(',')
-      if (ids === prevFrameIds) return
-      prevFrameIds = ids
-
-      const th = totalHold()
-      bar.querySelectorAll('[data-seg]').forEach(s => s.remove())
-      bar.querySelectorAll('[data-seg-handle]').forEach(s => s.remove())
-
-      frames.forEach((frame, i) => {
-        if (i > 0) {
-          const handle = document.createElement('div')
-          handle.setAttribute('data-seg-handle', String(i - 1))
-          handle.setAttribute('data-state', 'idle')
-          handle.className = 'koma-timeline-handle-bar'
-          bar.insertBefore(handle, playhead)
-        }
-        const seg = document.createElement('div')
-        seg.setAttribute('data-seg', frame.id)
-        seg.className = 'koma-timeline-segment'
-        const pct = th > 0 ? (holdOf(frame) / th) * 100 : 0
-        seg.style.cssText = `flex-basis:${pct}%;flex-grow:0;flex-shrink:0`
-        const label = document.createElement('span')
-        label.className = 'koma-timeline-label'
-        label.textContent = String(i + 1)
-        seg.appendChild(label)
-        bar.insertBefore(seg, playhead)
-
-        seg.addEventListener('click', (e) => {
-          e.stopPropagation()
-          props.onSelect(frame.id)
-          if (th > 0 && props.totalMs > 0) {
-            const rect = bar.getBoundingClientRect()
-            const barRatio = Math.max(0, Math.min(1, ((e as MouseEvent).clientX - rect.left) / rect.width))
-            props.onSeek(Math.round(holdRatioToElapsed(barRatio, frames)))
-          }
-        })
-      })
-    })
-
-    // ── Segment size update (hold changes without add/remove) ──
-    createEffect(() => {
-      const frames = props.frames
-      const th = totalHold()
-      if (th <= 0) return
-      frames.forEach((frame) => {
-        const seg = bar.querySelector(`[data-seg="${frame.id}"]`) as HTMLElement
-        if (seg) seg.style.flexBasis = `${(holdOf(frame) / th) * 100}%`
-      })
-    })
 
     // ── Right-edge drag ──────────────────────────────────
     const edgeHandle = bar.querySelector('[data-timeline-edge]') as HTMLElement
@@ -249,6 +201,29 @@ export function TimelineBar(props: TimelineBarProps) {
         className={`koma-timeline ${atMin() ? 'koma-timeline--at-min' : ''}`}
         data-timeline-bar
       >
+        {frames().map((frame, i) => (
+          <div key={frame.id} data-key={frame.id} style="display:contents">
+            {i > 0 && (
+              <div
+                data-seg-handle={i - 1}
+                data-state="idle"
+                className="koma-timeline-handle-bar"
+              />
+            )}
+            <div
+              className="koma-timeline-segment"
+              style={`flex-basis:${totalHold() > 0 ? (holdOf(frame) / totalHold()) * 100 : 0}%;flex-grow:0;flex-shrink:0`}
+              onClick={() => {
+                props.onSelect(frame.id)
+                if (totalHold() > 0 && props.totalMs > 0) {
+                  props.onSeek(Math.round(holdRatioToElapsed(i / frames().length, frames())))
+                }
+              }}
+            >
+              <span className="koma-timeline-label">{i + 1}</span>
+            </div>
+          </div>
+        ))}
         <div data-playhead className="koma-timeline-playhead" />
         <div data-timeline-edge data-state="idle" className="koma-timeline-edge" />
       </div>
