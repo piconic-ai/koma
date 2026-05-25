@@ -1,6 +1,6 @@
 'use client'
 
-import { createEffect } from '@barefootjs/client'
+import { createSignal, createEffect } from '@barefootjs/client'
 import {
   holdOf,
   formatDuration,
@@ -26,15 +26,22 @@ const PLAY_SVG = '<svg xmlns="http://www.w3.org/2000/svg" width="14" height="14"
 const PAUSE_SVG = '<svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><rect x="6" y="4" width="4" height="16" rx="1"/><rect x="14" y="4" width="4" height="16" rx="1"/></svg>'
 
 export function TimelineBar(props: TimelineBarProps) {
+  const [atMin, setAtMin] = createSignal(false)
+
+  const totalHold = () => props.frames.reduce((sum, f) => sum + holdOf(f), 0)
+
+  const totalDuration = () => {
+    const h = totalHold()
+    const t = Math.max(0, props.frames.length - 1) * TRANSITION_MS
+    return h + t
+  }
+
   const handleMount = (el: HTMLElement) => {
     const bar = el.querySelector('[data-timeline-bar]') as HTMLElement
     const playhead = el.querySelector('[data-playhead]') as HTMLElement
-    const totalLabel = el.querySelector('[data-total]') as HTMLElement
     const playBtn = el.querySelector('[data-play-btn]') as HTMLElement
 
-    if (playBtn) playBtn.innerHTML = PLAY_SVG
-
-    // ── Play button ──────────────────────────────────────
+    // ── Play button click ────────────────────────────────
     el.addEventListener('click', (e: MouseEvent) => {
       if ((e.target as HTMLElement).closest('[data-play-btn]')) {
         e.stopPropagation()
@@ -43,7 +50,7 @@ export function TimelineBar(props: TimelineBarProps) {
     })
 
     // ── Clear at-min on any click ────────────────────────
-    document.addEventListener('click', () => bar.removeAttribute('data-at-min'))
+    document.addEventListener('click', () => setAtMin(false))
 
     // ── Timeupdate: playhead + play icon ─────────────────
     let isDraggingPlayhead = false
@@ -90,71 +97,6 @@ export function TimelineBar(props: TimelineBarProps) {
       })
     }
 
-    // ── Total label ──────────────────────────────────────
-    createEffect(() => {
-      if (!totalLabel) return
-      const totalHoldMs = props.frames.reduce((sum, f) => sum + holdOf(f), 0)
-      const transitionsMs = Math.max(0, props.frames.length - 1) * TRANSITION_MS
-      const total = totalHoldMs + transitionsMs
-      totalLabel.textContent = Number.isFinite(total) ? formatDuration(total) : '—'
-    })
-
-    // ── Segment DOM rebuild ──────────────────────────────
-    let prevFrameIds = ''
-    createEffect(() => {
-      const frames = props.frames
-      const ids = frames.map(f => f.id).join(',')
-      if (ids === prevFrameIds) return
-      prevFrameIds = ids
-
-      const totalHold = frames.reduce((sum, f) => sum + holdOf(f), 0)
-
-      bar.querySelectorAll('[data-seg]').forEach(s => s.remove())
-      bar.querySelectorAll('[data-seg-handle]').forEach(s => s.remove())
-
-      frames.forEach((frame, i) => {
-        if (i > 0) {
-          const handle = document.createElement('div')
-          handle.setAttribute('data-seg-handle', String(i - 1))
-          handle.className = 'koma-timeline-handle-bar'
-          bar.insertBefore(handle, playhead)
-        }
-        const seg = document.createElement('div')
-        seg.setAttribute('data-seg', frame.id)
-        seg.className = 'koma-timeline-segment'
-        const pct = totalHold > 0 ? (holdOf(frame) / totalHold) * 100 : 0
-        seg.style.flexBasis = `${pct}%`
-        seg.style.flexGrow = '0'
-        seg.style.flexShrink = '0'
-        const label = document.createElement('span')
-        label.className = 'koma-timeline-label'
-        label.textContent = String(i + 1)
-        seg.appendChild(label)
-        bar.insertBefore(seg, playhead)
-
-        seg.addEventListener('click', (e) => {
-          e.stopPropagation()
-          props.onSelect(frame.id)
-          if (totalHold > 0 && props.totalMs > 0) {
-            const rect = bar.getBoundingClientRect()
-            const barRatio = Math.max(0, Math.min(1, ((e as MouseEvent).clientX - rect.left) / rect.width))
-            props.onSeek(Math.round(holdRatioToElapsed(barRatio, frames)))
-          }
-        })
-      })
-    })
-
-    // ── Segment size update ──────────────────────────────
-    createEffect(() => {
-      const frames = props.frames
-      const totalHold = frames.reduce((sum, f) => sum + holdOf(f), 0)
-      if (totalHold <= 0) return
-      frames.forEach((frame) => {
-        const seg = bar.querySelector(`[data-seg="${frame.id}"]`) as HTMLElement
-        if (seg) seg.style.flexBasis = `${(holdOf(frame) / totalHold) * 100}%`
-      })
-    })
-
     // ── Segment handle drag ──────────────────────────────
     bar.addEventListener('pointerdown', (e: PointerEvent) => {
       const handle = (e.target as HTMLElement).closest('[data-seg-handle]') as HTMLElement
@@ -166,12 +108,12 @@ export function TimelineBar(props: TimelineBarProps) {
 
       const idx = Number(handle.getAttribute('data-seg-handle'))
       const frames = props.frames
-      const totalHold = frames.reduce((sum, f) => sum + holdOf(f), 0)
+      const th = totalHold()
       const barRect = bar.getBoundingClientRect()
 
       const onMove = (ev: PointerEvent) => {
         const ratio = Math.max(0, Math.min(1, (ev.clientX - barRect.left) / barRect.width))
-        const cursorMs = ratio * totalHold
+        const cursorMs = ratio * th
         let acc = 0
         for (let k = 0; k < idx; k++) acc += holdOf(frames[k])
         const combined = holdOf(frames[idx]) + holdOf(frames[idx + 1])
@@ -193,6 +135,60 @@ export function TimelineBar(props: TimelineBarProps) {
       handle.addEventListener('pointermove', onMove)
       handle.addEventListener('pointerup', cleanup)
       handle.addEventListener('pointercancel', cleanup)
+    })
+
+    // ── Segment DOM (reactive rebuild on frame add/remove) ──
+    let prevFrameIds = ''
+    createEffect(() => {
+      const frames = props.frames
+      const ids = frames.map(f => f.id).join(',')
+      if (ids === prevFrameIds) return
+      prevFrameIds = ids
+
+      const th = totalHold()
+      bar.querySelectorAll('[data-seg]').forEach(s => s.remove())
+      bar.querySelectorAll('[data-seg-handle]').forEach(s => s.remove())
+
+      frames.forEach((frame, i) => {
+        if (i > 0) {
+          const handle = document.createElement('div')
+          handle.setAttribute('data-seg-handle', String(i - 1))
+          handle.setAttribute('data-state', 'idle')
+          handle.className = 'koma-timeline-handle-bar'
+          bar.insertBefore(handle, playhead)
+        }
+        const seg = document.createElement('div')
+        seg.setAttribute('data-seg', frame.id)
+        seg.className = 'koma-timeline-segment'
+        const pct = th > 0 ? (holdOf(frame) / th) * 100 : 0
+        seg.style.cssText = `flex-basis:${pct}%;flex-grow:0;flex-shrink:0`
+        const label = document.createElement('span')
+        label.className = 'koma-timeline-label'
+        label.textContent = String(i + 1)
+        seg.appendChild(label)
+        bar.insertBefore(seg, playhead)
+
+        seg.addEventListener('click', (e) => {
+          e.stopPropagation()
+          props.onSelect(frame.id)
+          if (th > 0 && props.totalMs > 0) {
+            const rect = bar.getBoundingClientRect()
+            const barRatio = Math.max(0, Math.min(1, ((e as MouseEvent).clientX - rect.left) / rect.width))
+            props.onSeek(Math.round(holdRatioToElapsed(barRatio, frames)))
+          }
+        })
+      })
+    })
+
+    // ── Segment size update (hold changes without add/remove) ──
+    createEffect(() => {
+      const frames = props.frames
+      const th = totalHold()
+      if (th <= 0) return
+      frames.forEach((frame) => {
+        const seg = bar.querySelector(`[data-seg="${frame.id}"]`) as HTMLElement
+        if (seg) seg.style.flexBasis = `${(holdOf(frame) / th) * 100}%`
+      })
     })
 
     // ── Right-edge drag ──────────────────────────────────
@@ -217,14 +213,12 @@ export function TimelineBar(props: TimelineBarProps) {
         const result = computeBarWidth({ newWidth, startWidth, wrapperWidth, startHolds, frameIds })
 
         if (result.blocked) {
-          bar.setAttribute('data-at-min', '')
+          setAtMin(true)
           return
         }
 
-        if (result.atMin) {
-          bar.setAttribute('data-at-min', '')
-        } else {
-          bar.removeAttribute('data-at-min')
+        setAtMin(result.atMin)
+        if (!result.atMin) {
           if (result.maxWidthPct !== null) {
             bar.style.maxWidth = `${result.maxWidthPct}%`
           } else {
@@ -239,7 +233,7 @@ export function TimelineBar(props: TimelineBarProps) {
         edgeHandle.removeEventListener('pointerup', cleanup)
         edgeHandle.removeEventListener('pointercancel', cleanup)
         edgeHandle.setAttribute('data-state', 'idle')
-        bar.removeAttribute('data-at-min')
+        setAtMin(false)
       }
 
       edgeHandle.addEventListener('pointermove', onMove)
@@ -251,11 +245,16 @@ export function TimelineBar(props: TimelineBarProps) {
   return (
     <div className="koma-timeline-wrapper" ref={handleMount}>
       <button type="button" className="koma-timeline-play" data-play-btn />
-      <div className="koma-timeline" data-timeline-bar>
+      <div
+        className={`koma-timeline ${atMin() ? 'koma-timeline--at-min' : ''}`}
+        data-timeline-bar
+      >
         <div data-playhead className="koma-timeline-playhead" />
         <div data-timeline-edge data-state="idle" className="koma-timeline-edge" />
       </div>
-      <span data-total className="koma-timeline-total" />
+      <span className="koma-timeline-total">
+        {Number.isFinite(totalDuration()) ? formatDuration(totalDuration()) : '—'}
+      </span>
     </div>
   )
 }

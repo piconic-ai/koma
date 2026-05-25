@@ -513,12 +513,12 @@ main {
   inset: 0 -6px;
 }
 
-.koma-timeline[data-at-min] {
+.koma-timeline--at-min {
   outline: 2px solid var(--destructive);
   outline-offset: -2px;
 }
 
-.koma-timeline[data-at-min] .koma-timeline-edge {
+.koma-timeline--at-min .koma-timeline-edge {
   background: var(--destructive);
   opacity: 1;
 }
@@ -533,7 +533,7 @@ main {
   transition: color 0.15s;
 }
 
-.koma-timeline[data-at-min] ~ .koma-timeline-total {
+.koma-timeline--at-min ~ .koma-timeline-total {
   color: var(--destructive);
 }
 
