@@ -278,6 +278,7 @@ export function TimelineBar(props: TimelineBarProps) {
           edgeHandle.removeEventListener('pointerup', cleanup)
           edgeHandle.removeEventListener('pointercancel', cleanup)
           edgeHandle.setAttribute('data-state', 'idle')
+          bar.removeAttribute('data-at-min')
         }
 
         edgeHandle.addEventListener('pointermove', onMove)
