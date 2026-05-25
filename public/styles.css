@@ -256,7 +256,7 @@ main {
   flex-direction: column;
   gap: 16px;
   padding: 24px;
-  max-width: 640px;
+  max-width: 688px;
   margin: 0 auto;
   width: 100%;
 }
@@ -276,7 +276,8 @@ main {
 
 .koma-preview {
   width: 100%;
-  max-width: 640px;
+  max-width: 688px;
+  padding: 0 24px;
   min-width: 0;
   overflow: hidden;
 }
