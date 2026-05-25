@@ -46,26 +46,22 @@ export function TimelineBar(props: TimelineBarProps) {
       }
     })
 
-    // Play icon — update via timeupdate event
+    // Play icon + Playhead — single timeupdate listener
     const playBtn = el.querySelector('[data-play-btn]') as HTMLElement
     const playIcon = '<svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><path d="M6 4l14 8-14 8z"/></svg>'
     const pauseIcon = '<svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><rect x="6" y="4" width="4" height="16" rx="1"/><rect x="14" y="4" width="4" height="16" rx="1"/></svg>'
     if (playBtn) playBtn.innerHTML = playIcon
 
-    window.addEventListener('koma:timeupdate', (e: Event) => {
-      if (!playBtn) return
-      const d = (e as CustomEvent).detail
-      playBtn.innerHTML = d.playing ? pauseIcon : playIcon
-    })
-
-    // Playhead — listen directly for timeupdate events
     let isDraggingPlayhead = false
-    window.addEventListener('koma:timeupdate', (e: Event) => {
-      if (!playhead || isDraggingPlayhead) return
+    const onTimeUpdate = (e: Event) => {
       const d = (e as CustomEvent).detail
-      const pct = d.total > 0 ? (d.elapsed / d.total) * 100 : 0
-      playhead.style.left = `${pct}%`
-    })
+      if (playBtn) playBtn.innerHTML = d.playing ? pauseIcon : playIcon
+      if (playhead && !isDraggingPlayhead) {
+        const pct = d.total > 0 ? (d.elapsed / d.total) * 100 : 0
+        playhead.style.left = `${pct}%`
+      }
+    }
+    window.addEventListener('koma:timeupdate', onTimeUpdate)
 
     // Playhead drag
     if (playhead) {
