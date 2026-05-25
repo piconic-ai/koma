@@ -1,24 +1,15 @@
 'use client'
 
 import { createEffect } from '@barefootjs/client'
-
-const HOLD_PER_LINE_MS = 600
-const MIN_HOLD_MS = 2500
-const TRANSITION_MS = 400
-
-function autoHold(code: string): number {
-  const lines = code.split('\n').length
-  return Math.max(MIN_HOLD_MS, lines * HOLD_PER_LINE_MS)
-}
-
-function holdOf(frame: { code: string; hold?: number }): number {
-  return frame.hold ?? autoHold(frame.code)
-}
-
-function formatDuration(ms: number): string {
-  const s = ms / 1000
-  return s < 10 ? `${s.toFixed(1)}s` : `${Math.round(s)}s`
-}
+import {
+  holdOf,
+  formatDuration,
+  elapsedToHoldRatio,
+  holdRatioToElapsed,
+  computeBarWidth,
+  TRANSITION_MS,
+  MIN_HOLD,
+} from '../src/timeline-logic'
 
 interface TimelineBarProps {
   frames: Array<{ id: string; code: string; hold?: number }>
@@ -31,57 +22,37 @@ interface TimelineBarProps {
   onTogglePlay: () => void
 }
 
+const PLAY_SVG = '<svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><path d="M6 4l14 8-14 8z"/></svg>'
+const PAUSE_SVG = '<svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><rect x="6" y="4" width="4" height="16" rx="1"/><rect x="14" y="4" width="4" height="16" rx="1"/></svg>'
+
 export function TimelineBar(props: TimelineBarProps) {
   const handleMount = (el: HTMLElement) => {
     const bar = el.querySelector('[data-timeline-bar]') as HTMLElement
     const playhead = el.querySelector('[data-playhead]') as HTMLElement
     const totalLabel = el.querySelector('[data-total]') as HTMLElement
+    const playBtn = el.querySelector('[data-play-btn]') as HTMLElement
 
-    // Play button
+    if (playBtn) playBtn.innerHTML = PLAY_SVG
+
+    // ── Play button ──────────────────────────────────────
     el.addEventListener('click', (e: MouseEvent) => {
       if ((e.target as HTMLElement).closest('[data-play-btn]')) {
         e.stopPropagation()
         props.onTogglePlay()
-        return
       }
     })
 
-    // Clear at-min on any click outside the edge handle
-    document.addEventListener('click', () => {
-      bar.removeAttribute('data-at-min')
-    })
+    // ── Clear at-min on any click ────────────────────────
+    document.addEventListener('click', () => bar.removeAttribute('data-at-min'))
 
-    // Play icon + Playhead — single timeupdate listener
-    const playBtn = el.querySelector('[data-play-btn]') as HTMLElement
-    const playIcon = '<svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><path d="M6 4l14 8-14 8z"/></svg>'
-    const pauseIcon = '<svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><rect x="6" y="4" width="4" height="16" rx="1"/><rect x="14" y="4" width="4" height="16" rx="1"/></svg>'
-    if (playBtn) playBtn.innerHTML = playIcon
-
-    const elapsedToHoldRatio = (elapsed: number): number => {
-      const frames = props.frames
-      const total = frames.reduce((s, f) => s + holdOf(f), 0)
-      if (total <= 0) return 0
-      let rem = elapsed
-      let accHold = 0
-      for (let k = 0; k < frames.length; k++) {
-        const fHold = holdOf(frames[k])
-        if (rem <= fHold) { accHold += rem; break }
-        rem -= fHold
-        accHold += fHold
-        if (k < frames.length - 1) {
-          if (rem <= TRANSITION_MS) { break }
-          rem -= TRANSITION_MS
-        }
-      }
-      return (accHold / total) * 100
-    }
-
+    // ── Timeupdate: playhead + play icon ─────────────────
     let isDraggingPlayhead = false
+
     const onTimeUpdate = (e: Event) => {
       const d = (e as CustomEvent).detail
-      if (playBtn) playBtn.innerHTML = d.playing ? pauseIcon : playIcon
+      if (playBtn) playBtn.innerHTML = d.playing ? PAUSE_SVG : PLAY_SVG
       if (playhead && !isDraggingPlayhead) {
-        playhead.style.left = `${elapsedToHoldRatio(d.elapsed)}%`
+        playhead.style.left = `${elapsedToHoldRatio(d.elapsed, props.frames)}%`
       }
     }
     const prev = (el as any).__komaTimeUpdate as typeof onTimeUpdate | undefined
@@ -89,7 +60,7 @@ export function TimelineBar(props: TimelineBarProps) {
     ;(el as any).__komaTimeUpdate = onTimeUpdate
     window.addEventListener('koma:timeupdate', onTimeUpdate)
 
-    // Playhead drag
+    // ── Playhead drag ────────────────────────────────────
     if (playhead) {
       playhead.addEventListener('pointerdown', (e: PointerEvent) => {
         e.preventDefault()
@@ -102,7 +73,7 @@ export function TimelineBar(props: TimelineBarProps) {
           const ratio = Math.max(0, Math.min(1, (ev.clientX - barRect.left) / barRect.width))
           playhead.style.left = `${ratio * 100}%`
           if (props.totalMs > 0) {
-            props.onSeek(Math.round(ratio * props.totalMs))
+            props.onSeek(Math.round(holdRatioToElapsed(ratio, props.frames)))
           }
         }
 
@@ -119,17 +90,16 @@ export function TimelineBar(props: TimelineBarProps) {
       })
     }
 
-    // Total label
+    // ── Total label ──────────────────────────────────────
     createEffect(() => {
-      if (totalLabel) {
-        const totalHoldMs = props.frames.reduce((sum, f) => sum + holdOf(f), 0)
-        const transitionsMs = Math.max(0, props.frames.length - 1) * TRANSITION_MS
-        const total = totalHoldMs + transitionsMs
-        totalLabel.textContent = Number.isFinite(total) ? formatDuration(total) : '—'
-      }
+      if (!totalLabel) return
+      const totalHoldMs = props.frames.reduce((sum, f) => sum + holdOf(f), 0)
+      const transitionsMs = Math.max(0, props.frames.length - 1) * TRANSITION_MS
+      const total = totalHoldMs + transitionsMs
+      totalLabel.textContent = Number.isFinite(total) ? formatDuration(total) : '—'
     })
 
-    // Rebuild segments when frames change
+    // ── Segment DOM rebuild ──────────────────────────────
     let prevFrameIds = ''
     createEffect(() => {
       const frames = props.frames
@@ -168,40 +138,24 @@ export function TimelineBar(props: TimelineBarProps) {
           if (totalHold > 0 && props.totalMs > 0) {
             const rect = bar.getBoundingClientRect()
             const barRatio = Math.max(0, Math.min(1, ((e as MouseEvent).clientX - rect.left) / rect.width))
-            const holdMs = barRatio * totalHold
-            let elapsed = 0
-            let accHold = 0
-            for (let k = 0; k < frames.length; k++) {
-              const fHold = holdOf(frames[k])
-              if (accHold + fHold >= holdMs) {
-                elapsed += holdMs - accHold
-                break
-              }
-              accHold += fHold
-              elapsed += fHold
-              if (k < frames.length - 1) elapsed += TRANSITION_MS
-            }
-            props.onSeek(Math.round(elapsed))
+            props.onSeek(Math.round(holdRatioToElapsed(barRatio, frames)))
           }
         })
       })
     })
 
-    // Update segment sizes when hold values change
+    // ── Segment size update ──────────────────────────────
     createEffect(() => {
       const frames = props.frames
       const totalHold = frames.reduce((sum, f) => sum + holdOf(f), 0)
       if (totalHold <= 0) return
       frames.forEach((frame) => {
         const seg = bar.querySelector(`[data-seg="${frame.id}"]`) as HTMLElement
-        if (seg) {
-          const pct = (holdOf(frame) / totalHold) * 100
-          seg.style.flexBasis = `${pct}%`
-        }
+        if (seg) seg.style.flexBasis = `${(holdOf(frame) / totalHold) * 100}%`
       })
     })
 
-    // Segment handle drag — delegate from bar, capture on handle
+    // ── Segment handle drag ──────────────────────────────
     bar.addEventListener('pointerdown', (e: PointerEvent) => {
       const handle = (e.target as HTMLElement).closest('[data-seg-handle]') as HTMLElement
       if (!handle) return
@@ -222,7 +176,7 @@ export function TimelineBar(props: TimelineBarProps) {
         for (let k = 0; k < idx; k++) acc += holdOf(frames[k])
         const combined = holdOf(frames[idx]) + holdOf(frames[idx + 1])
         let newThis = Math.round(cursorMs - acc)
-        newThis = Math.max(50, Math.min(combined - 50, newThis))
+        newThis = Math.max(MIN_HOLD, Math.min(combined - MIN_HOLD, newThis))
         props.onLayout([
           { id: frames[idx].id, hold: newThis },
           { id: frames[idx + 1].id, hold: combined - newThis },
@@ -241,66 +195,57 @@ export function TimelineBar(props: TimelineBarProps) {
       handle.addEventListener('pointercancel', cleanup)
     })
 
-    // Right-edge drag
+    // ── Right-edge drag ──────────────────────────────────
     const edgeHandle = bar.querySelector('[data-timeline-edge]') as HTMLElement
-    if (edgeHandle) {
-      edgeHandle.addEventListener('pointerdown', (e: PointerEvent) => {
-        e.preventDefault()
-        e.stopPropagation()
-        edgeHandle.setPointerCapture(e.pointerId)
-        edgeHandle.setAttribute('data-state', 'drag')
+    if (!edgeHandle) return
 
-        const frames = props.frames
-        const startHolds = frames.map(f => holdOf(f))
-        const barLeft = bar.getBoundingClientRect().left
-        const startWidth = bar.getBoundingClientRect().width
-        const wrapperWidth = el.getBoundingClientRect().width
+    edgeHandle.addEventListener('pointerdown', (e: PointerEvent) => {
+      e.preventDefault()
+      e.stopPropagation()
+      edgeHandle.setPointerCapture(e.pointerId)
+      edgeHandle.setAttribute('data-state', 'drag')
 
-        const minHold = 50
+      const frames = props.frames
+      const startHolds = frames.map(f => holdOf(f))
+      const frameIds = frames.map(f => f.id)
+      const barLeft = bar.getBoundingClientRect().left
+      const startWidth = bar.getBoundingClientRect().width
+      const wrapperWidth = el.getBoundingClientRect().width
 
-        const onMove = (ev: PointerEvent) => {
-          const newWidth = Math.max(60, ev.clientX - barLeft)
-          const scale = newWidth / startWidth
-          const holds = frames.map((f, i) => ({
-            id: f.id,
-            hold: Math.max(minHold, Math.round(startHolds[i] * scale)),
-          }))
+      const onMove = (ev: PointerEvent) => {
+        const newWidth = Math.max(60, ev.clientX - barLeft)
+        const result = computeBarWidth({ newWidth, startWidth, wrapperWidth, startHolds, frameIds })
 
-          const startAllAtMin = startHolds.every(h => h <= minHold)
-
-          if (startAllAtMin && scale < 1) {
-            bar.setAttribute('data-at-min', '')
-            return
-          }
-
-          const resultAllAtMin = holds.every(h => h.hold <= minHold)
-
-          if (resultAllAtMin) {
-            bar.setAttribute('data-at-min', '')
-          } else {
-            bar.removeAttribute('data-at-min')
-            if (newWidth < wrapperWidth) {
-              bar.style.maxWidth = `${(newWidth / wrapperWidth) * 100}%`
-            } else {
-              bar.style.maxWidth = ''
-            }
-          }
-          props.onLayout(holds)
+        if (result.blocked) {
+          bar.setAttribute('data-at-min', '')
+          return
         }
 
-        const cleanup = () => {
-          edgeHandle.removeEventListener('pointermove', onMove)
-          edgeHandle.removeEventListener('pointerup', cleanup)
-          edgeHandle.removeEventListener('pointercancel', cleanup)
-          edgeHandle.setAttribute('data-state', 'idle')
+        if (result.atMin) {
+          bar.setAttribute('data-at-min', '')
+        } else {
           bar.removeAttribute('data-at-min')
+          if (result.maxWidthPct !== null) {
+            bar.style.maxWidth = `${result.maxWidthPct}%`
+          } else {
+            bar.style.maxWidth = ''
+          }
         }
+        props.onLayout(result.holds)
+      }
 
-        edgeHandle.addEventListener('pointermove', onMove)
-        edgeHandle.addEventListener('pointerup', cleanup)
-        edgeHandle.addEventListener('pointercancel', cleanup)
-      })
-    }
+      const cleanup = () => {
+        edgeHandle.removeEventListener('pointermove', onMove)
+        edgeHandle.removeEventListener('pointerup', cleanup)
+        edgeHandle.removeEventListener('pointercancel', cleanup)
+        edgeHandle.setAttribute('data-state', 'idle')
+        bar.removeAttribute('data-at-min')
+      }
+
+      edgeHandle.addEventListener('pointermove', onMove)
+      edgeHandle.addEventListener('pointerup', cleanup)
+      edgeHandle.addEventListener('pointercancel', cleanup)
+    })
   }
 
   return (
