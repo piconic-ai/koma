@@ -46,23 +46,25 @@ export function TimelineBar(props: TimelineBarProps) {
       }
     })
 
-    // Play icon
-    createEffect(() => {
-      const playBtn = el.querySelector('[data-play-btn]') as HTMLElement
-      if (playBtn) {
-        playBtn.innerHTML = props.playing
-          ? '<svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><rect x="6" y="4" width="4" height="16" rx="1"/><rect x="14" y="4" width="4" height="16" rx="1"/></svg>'
-          : '<svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><path d="M6 4l14 8-14 8z"/></svg>'
-      }
+    // Play icon — update via timeupdate event
+    const playBtn = el.querySelector('[data-play-btn]') as HTMLElement
+    const playIcon = '<svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><path d="M6 4l14 8-14 8z"/></svg>'
+    const pauseIcon = '<svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><rect x="6" y="4" width="4" height="16" rx="1"/><rect x="14" y="4" width="4" height="16" rx="1"/></svg>'
+    if (playBtn) playBtn.innerHTML = playIcon
+
+    window.addEventListener('koma:timeupdate', (e: Event) => {
+      if (!playBtn) return
+      const d = (e as CustomEvent).detail
+      playBtn.innerHTML = d.playing ? pauseIcon : playIcon
     })
 
-    // Playhead position
+    // Playhead — listen directly for timeupdate events
     let isDraggingPlayhead = false
-    createEffect(() => {
-      if (playhead && !isDraggingPlayhead) {
-        const pct = props.totalMs > 0 ? (props.elapsedMs / props.totalMs) * 100 : 0
-        playhead.style.left = `${pct}%`
-      }
+    window.addEventListener('koma:timeupdate', (e: Event) => {
+      if (!playhead || isDraggingPlayhead) return
+      const d = (e as CustomEvent).detail
+      const pct = d.total > 0 ? (d.elapsed / d.total) * 100 : 0
+      playhead.style.left = `${pct}%`
     })
 
     // Playhead drag
@@ -77,9 +79,7 @@ export function TimelineBar(props: TimelineBarProps) {
           const barRect = bar.getBoundingClientRect()
           const ratio = Math.max(0, Math.min(1, (ev.clientX - barRect.left) / barRect.width))
           playhead.style.left = `${ratio * 100}%`
-          if (props.totalMs > 0) {
-            props.onSeek(Math.round(ratio * props.totalMs))
-          }
+          props.onSeek(Math.round(ratio * (props.totalMs || 8800)))
         }
 
         const onUp = () => {
