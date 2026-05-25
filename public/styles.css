@@ -449,6 +449,29 @@ main {
   opacity: 1;
 }
 
+.koma-timeline-playhead {
+  position: absolute;
+  top: -3px;
+  left: 0;
+  width: 2px;
+  height: calc(100% + 6px);
+  background: var(--primary);
+  z-index: 4;
+  pointer-events: none;
+  transition: left 0.05s linear;
+}
+
+.koma-timeline-playhead::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: -3px;
+  width: 8px;
+  height: 8px;
+  background: var(--primary);
+  border-radius: 50%;
+}
+
 .koma-timeline[data-at-min] {
   border-color: var(--destructive);
 }

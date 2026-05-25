@@ -25,6 +25,9 @@ interface TimelineBarProps {
   frames: Array<{ id: string; code: string; hold?: number }>
   onLayout: (holds: Array<{ id: string; hold: number }>) => void
   onSelect: (frameId: string) => void
+  elapsedMs: number
+  totalMs: number
+  onSeek: (ms: number) => void
 }
 
 export function TimelineBar(props: TimelineBarProps) {
@@ -40,15 +43,35 @@ export function TimelineBar(props: TimelineBarProps) {
   }
 
   const handleMount = (el: HTMLElement) => {
-    // Segment click → select frame
+    // Playhead
+    const playhead = el.querySelector('[data-playhead]') as HTMLElement
+    if (playhead) {
+      createEffect(() => {
+        const pct = props.totalMs > 0 ? (props.elapsedMs / props.totalMs) * 100 : 0
+        playhead.style.left = `${pct}%`
+      })
+    }
+
+    // Segment click → select frame + seek
     el.addEventListener('click', (e: MouseEvent) => {
       if ((e.target as HTMLElement).closest('[data-slot="resizable-handle"]')) return
       if ((e.target as HTMLElement).closest('[data-timeline-edge]')) return
+      const group = el.querySelector('[data-slot="resizable-panel-group"]') as HTMLElement
+      if (!group) return
+
       const panel = (e.target as HTMLElement).closest('[data-slot="resizable-panel"]') as HTMLElement | null
-      if (!panel) return
-      const idx = Array.from(el.querySelectorAll('[data-slot="resizable-panel"]')).indexOf(panel)
-      if (idx >= 0 && props.frames[idx]) {
-        props.onSelect(props.frames[idx].id)
+      if (panel) {
+        const idx = Array.from(group.querySelectorAll('[data-slot="resizable-panel"]')).indexOf(panel)
+        if (idx >= 0 && props.frames[idx]) {
+          props.onSelect(props.frames[idx].id)
+        }
+      }
+
+      // Seek to clicked position
+      if (props.totalMs > 0) {
+        const rect = group.getBoundingClientRect()
+        const ratio = Math.max(0, Math.min(1, (e.clientX - rect.left) / rect.width))
+        props.onSeek(Math.round(ratio * props.totalMs))
       }
     })
 
@@ -130,6 +153,7 @@ export function TimelineBar(props: TimelineBarProps) {
         onLayout={onLayout}
       >
         {children}
+        <div data-playhead className="koma-timeline-playhead" />
         <div
           data-timeline-edge
           data-state="idle"

@@ -20,6 +20,8 @@ import {
 
 interface PlayerProps {
   spec: Spec
+  onTimeUpdate?: (elapsedMs: number, totalMs: number) => void
+  seekMs?: number
 }
 
 export function Player(props: PlayerProps) {
@@ -58,6 +60,7 @@ export function Player(props: PlayerProps) {
     if (typeof document === 'undefined') return
     const canvas = document.getElementById('koma-preview-canvas') as HTMLCanvasElement
     if (!canvas) return
+    props.onTimeUpdate?.(elapsedMs(), timeline().totalDurationMs)
     renderToCanvas(canvas, {
       timeline: timeline(),
       elapsedMs: elapsedMs(),
@@ -162,17 +165,19 @@ export function Player(props: PlayerProps) {
     setElapsedMs(0)
   })
 
+  createEffect(() => {
+    const seek = props.seekMs
+    if (seek != null) {
+      setPlaying(false)
+      setElapsedMs(seek)
+    }
+  })
+
   onCleanup(stop)
 
   const togglePlay = () => {
     if (elapsedMs() >= timeline().totalDurationMs) setElapsedMs(0)
     setPlaying(p => !p)
-  }
-
-  const onScrub = (e: Event) => {
-    const v = Number((e.currentTarget as HTMLInputElement).value)
-    setPlaying(false)
-    setElapsedMs(v)
   }
 
   const stepFrame = (dir: 1 | -1) => {
@@ -237,22 +242,10 @@ export function Player(props: PlayerProps) {
             <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><path d="M6 4l14 8-14 8z" /></svg>
           )}
         </Button>
-        <input
-          type="range"
-          className="koma-scrub"
-          min={0}
-          max={timeline().totalDurationMs}
-          step={16}
-          value={String(elapsedMs())}
-          onInput={onScrub}
-        />
         <span className="koma-counter">
           {currentFrameIndex() + 1}/{frameCount()}
         </span>
       </div>
-      <p className="koma-shortcut-hint">
-        Space play/pause · ← → step frame
-      </p>
     </div>
   )
 }
