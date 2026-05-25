@@ -196,3 +196,100 @@ describe('scaleAllHolds', () => {
     expect(result.map(r => r.id)).toEqual(['a', 'b'])
   })
 })
+
+function elapsedToHoldRatio(
+  elapsed: number,
+  frames: Array<{ code: string; hold?: number }>,
+): number {
+  const total = frames.reduce((s, f) => s + holdOf(f), 0)
+  if (total <= 0) return 0
+  let rem = elapsed
+  let accHold = 0
+  for (let k = 0; k < frames.length; k++) {
+    const fHold = holdOf(frames[k])
+    if (rem <= fHold) { accHold += rem; break }
+    rem -= fHold
+    accHold += fHold
+    if (k < frames.length - 1) {
+      if (rem <= TRANSITION_MS) { break }
+      rem -= TRANSITION_MS
+    }
+  }
+  return (accHold / total) * 100
+}
+
+function holdRatioToElapsed(
+  barRatio: number,
+  frames: Array<{ code: string; hold?: number }>,
+): number {
+  const totalHold = frames.reduce((s, f) => s + holdOf(f), 0)
+  if (totalHold <= 0) return 0
+  const holdMs = barRatio * totalHold
+  let elapsed = 0
+  let accHold = 0
+  for (let k = 0; k < frames.length; k++) {
+    const fHold = holdOf(frames[k])
+    if (accHold + fHold >= holdMs) {
+      elapsed += holdMs - accHold
+      break
+    }
+    accHold += fHold
+    elapsed += fHold
+    if (k < frames.length - 1) elapsed += TRANSITION_MS
+  }
+  return elapsed
+}
+
+describe('elapsedToHoldRatio / holdRatioToElapsed', () => {
+  const frames = [
+    { code: 'a', hold: 2000 },
+    { code: 'b', hold: 2000 },
+    { code: 'c', hold: 2000 },
+  ]
+
+  test('elapsed=0 maps to 0%', () => {
+    expect(elapsedToHoldRatio(0, frames)).toBe(0)
+  })
+
+  test('elapsed at end of frame 1 maps to 1/3', () => {
+    expect(elapsedToHoldRatio(2000, frames)).toBeCloseTo(100 / 3, 1)
+  })
+
+  test('elapsed during transition maps to frame boundary', () => {
+    expect(elapsedToHoldRatio(2200, frames)).toBeCloseTo(100 / 3, 1)
+  })
+
+  test('elapsed at start of frame 2 maps to 1/3', () => {
+    expect(elapsedToHoldRatio(2400, frames)).toBeCloseTo(100 / 3, 1)
+  })
+
+  test('elapsed mid frame 2 maps to ~50%', () => {
+    expect(elapsedToHoldRatio(2400 + 1000, frames)).toBeCloseTo(50, 1)
+  })
+
+  test('holdRatioToElapsed at 0 returns 0', () => {
+    expect(holdRatioToElapsed(0, frames)).toBe(0)
+  })
+
+  test('holdRatioToElapsed at 0.5 returns mid of frame 2', () => {
+    const elapsed = holdRatioToElapsed(0.5, frames)
+    expect(elapsed).toBe(2000 + TRANSITION_MS + 1000)
+  })
+
+  test('holdRatioToElapsed at 1.0 returns end of last frame', () => {
+    const elapsed = holdRatioToElapsed(1.0, frames)
+    expect(elapsed).toBe(2000 + TRANSITION_MS + 2000 + TRANSITION_MS + 2000)
+  })
+
+  test('round-trip: elapsed → ratio → elapsed', () => {
+    const original = 2400 + 500
+    const ratio = elapsedToHoldRatio(original, frames) / 100
+    const back = holdRatioToElapsed(ratio, frames)
+    expect(back).toBeCloseTo(original, 0)
+  })
+
+  test('empty frames returns 0', () => {
+    expect(elapsedToHoldRatio(1000, [])).toBe(0)
+    expect(holdRatioToElapsed(0.5, [])).toBe(0)
+  })
+})
