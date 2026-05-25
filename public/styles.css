@@ -353,7 +353,7 @@ main {
 /* timeline bar */
 .koma-timeline {
   display: flex;
-  height: 28px;
+  height: 36px;
   border-radius: 4px;
   border: 1px solid var(--border);
 }
@@ -379,25 +379,24 @@ main {
   cursor: pointer;
 }
 
-.koma-timeline [data-slot="resizable-handle"] {
-  width: 3px !important;
-  min-width: 3px !important;
-  flex: 0 0 3px !important;
-  background: var(--ring) !important;
+.koma-timeline-handle-bar {
+  width: 3px;
+  min-width: 3px;
+  flex: 0 0 3px;
+  background: var(--ring);
   cursor: col-resize;
+  position: relative;
 }
 
-.koma-timeline [data-slot="resizable-handle"]::after {
-  inset: 0 -4px !important;
+.koma-timeline-handle-bar::after {
+  content: '';
+  position: absolute;
+  inset: 0 -4px;
 }
 
-.koma-timeline [data-slot="resizable-handle"] > div {
-  display: none;
-}
-
-.koma-timeline [data-slot="resizable-handle"]:hover,
-.koma-timeline [data-slot="resizable-handle"][data-resize-handle-state="drag"] {
-  background: var(--foreground) !important;
+.koma-timeline-handle-bar:hover,
+.koma-timeline-handle-bar[data-state="drag"] {
+  background: var(--foreground);
 }
 
 .koma-frame-editor[data-selected] {
@@ -424,12 +423,12 @@ main {
 }
 
 .koma-timeline-play {
-  width: 28px;
-  height: 28px;
+  width: 36px;
+  height: 36px;
   border-radius: 50%;
-  border: 1px solid var(--border);
-  background: var(--background);
-  color: var(--foreground);
+  border: none;
+  background: var(--foreground);
+  color: var(--background);
   cursor: pointer;
   display: flex;
   align-items: center;
@@ -439,7 +438,7 @@ main {
 }
 
 .koma-timeline-play:hover {
-  background: var(--accent);
+  opacity: 0.85;
 }
 
 .koma-timeline-wrapper .koma-timeline {
