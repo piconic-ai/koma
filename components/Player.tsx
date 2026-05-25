@@ -225,7 +225,7 @@ export function Player(props: PlayerProps) {
             width: '100%',
             height: 'auto',
             display: 'block',
-            borderRadius: '12px',
+            borderRadius: '8px',
           }}
         />
       </div>

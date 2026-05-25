@@ -33,7 +33,7 @@ export const DEFAULT_RENDER_OPTIONS: RenderOptions = {
   paddingX: 40,
   paddingY: 40,
   windowChromeHeight: 48,
-  cornerRadius: 16,
+  cornerRadius: 10,
 }
 
 function roundRect(
