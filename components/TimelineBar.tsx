@@ -251,18 +251,25 @@ export function TimelineBar(props: TimelineBarProps) {
         const startWidth = bar.getBoundingClientRect().width
         const wrapperWidth = el.getBoundingClientRect().width
 
+        const minHold = 50
+        const minTotal = frames.length * minHold
+        const minScale = minTotal / startHolds.reduce((s, h) => s + h, 0)
+        const minWidth = startWidth * minScale
+
         const onMove = (ev: PointerEvent) => {
-          const newWidth = Math.max(60, ev.clientX - barLeft)
+          const newWidth = Math.max(minWidth, ev.clientX - barLeft)
           const scale = newWidth / startWidth
           const holds = frames.map((f, i) => ({
             id: f.id,
-            hold: Math.max(50, Math.round(startHolds[i] * scale)),
+            hold: Math.max(minHold, Math.round(startHolds[i] * scale)),
           }))
+          const atMin = newWidth <= minWidth
           if (newWidth < wrapperWidth) {
             bar.style.maxWidth = `${(newWidth / wrapperWidth) * 100}%`
           } else {
             bar.style.maxWidth = ''
           }
+          bar.setAttribute('data-at-min', atMin ? '' : null as any)
           props.onLayout(holds)
         }
 
