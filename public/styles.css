@@ -276,7 +276,7 @@ main {
 
 .koma-preview {
   width: 100%;
-  max-width: 480px;
+  max-width: 640px;
   min-width: 0;
   overflow: hidden;
 }
