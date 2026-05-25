@@ -450,17 +450,27 @@ main {
   position: absolute;
   top: 0;
   right: 0;
-  width: 6px;
+  width: 8px;
   height: 100%;
   cursor: ew-resize;
   z-index: 3;
-  background: var(--background);
-  border-left: 2px solid var(--ring);
-  opacity: 0.6;
-  transition: opacity 0.1s;
+  background: transparent;
+  opacity: 0;
+  transition: opacity 0.15s;
 }
 
-.koma-timeline-edge:hover,
+.koma-timeline-edge::before {
+  content: '';
+  position: absolute;
+  top: 25%;
+  right: 2px;
+  width: 3px;
+  height: 50%;
+  border-radius: 2px;
+  background: var(--background);
+}
+
+.koma-timeline:hover .koma-timeline-edge,
 .koma-timeline-edge[data-state="drag"] {
   opacity: 1;
 }
