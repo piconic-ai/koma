@@ -246,16 +246,17 @@ export function TimelineBar(props: TimelineBarProps) {
         edgeHandle.setAttribute('data-state', 'drag')
 
         const frames = props.frames
-        const baseHolds = frames.map(f => autoHold(f.code))
+        const startHolds = frames.map(f => holdOf(f))
         const barLeft = bar.getBoundingClientRect().left
+        const startWidth = bar.getBoundingClientRect().width
         const wrapperWidth = el.getBoundingClientRect().width
 
         const onMove = (ev: PointerEvent) => {
           const newWidth = Math.max(60, ev.clientX - barLeft)
-          const scale = newWidth / wrapperWidth
+          const scale = newWidth / startWidth
           const holds = frames.map((f, i) => ({
             id: f.id,
-            hold: Math.max(50, Math.round(baseHolds[i] * scale)),
+            hold: Math.max(50, Math.round(startHolds[i] * scale)),
           }))
           if (newWidth < wrapperWidth) {
             bar.style.maxWidth = `${(newWidth / wrapperWidth) * 100}%`
