@@ -174,12 +174,14 @@ export function Player(props: PlayerProps) {
     }
   })
 
+  let prevSpecKey = ''
   createEffect(() => {
-    void props.spec.frames.length
-    void props.spec.language
-    for (const f of props.spec.frames) void f.code
-    setPlaying(false)
-    setElapsedMs(0)
+    const key = props.spec.language + ':' + props.spec.frames.length + ':' + props.spec.frames.map(f => f.code).join('\n')
+    if (prevSpecKey && key !== prevSpecKey) {
+      setPlaying(false)
+      setElapsedMs(0)
+    }
+    prevSpecKey = key
   })
 
 

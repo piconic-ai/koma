@@ -45,17 +45,13 @@ export function TimelineBar(props: TimelineBarProps) {
   }
 
   const handleMount = (el: HTMLElement) => {
-    // Playhead
-    const playhead = el.querySelector('[data-playhead]') as HTMLElement
-    if (playhead) {
-      createEffect(() => {
-        const pct = props.totalMs > 0 ? (props.elapsedMs / props.totalMs) * 100 : 0
-        playhead.style.left = `${pct}%`
-      })
-    }
-
-    // Segment click → select frame + seek
+    // Play button - event delegation
     el.addEventListener('click', (e: MouseEvent) => {
+      if ((e.target as HTMLElement).closest('[data-play-btn]')) {
+        e.stopPropagation()
+        props.onTogglePlay()
+        return
+      }
       if ((e.target as HTMLElement).closest('[data-slot="resizable-handle"]')) return
       if ((e.target as HTMLElement).closest('[data-timeline-edge]')) return
       const group = el.querySelector('[data-slot="resizable-panel-group"]') as HTMLElement
@@ -69,11 +65,30 @@ export function TimelineBar(props: TimelineBarProps) {
         }
       }
 
-      // Seek to clicked position
       if (props.totalMs > 0) {
         const rect = group.getBoundingClientRect()
         const ratio = Math.max(0, Math.min(1, (e.clientX - rect.left) / rect.width))
         props.onSeek(Math.round(ratio * props.totalMs))
+      }
+    })
+
+    // Play button icon
+    createEffect(() => {
+      const playBtn = el.querySelector('[data-play-btn]') as HTMLElement
+      if (playBtn) {
+        playBtn.setAttribute('aria-label', props.playing ? 'Pause' : 'Play')
+        playBtn.innerHTML = props.playing
+          ? '<svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><rect x="6" y="4" width="4" height="16" rx="1"/><rect x="14" y="4" width="4" height="16" rx="1"/></svg>'
+          : '<svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><path d="M6 4l14 8-14 8z"/></svg>'
+      }
+    })
+
+    // Playhead
+    createEffect(() => {
+      const playhead = el.querySelector('[data-playhead]') as HTMLElement
+      if (playhead) {
+        const pct = props.totalMs > 0 ? (props.elapsedMs / props.totalMs) * 100 : 0
+        playhead.style.left = `${pct}%`
       }
     })
 
@@ -127,7 +142,8 @@ export function TimelineBar(props: TimelineBarProps) {
     createEffect(() => {
       const totalHoldMs = props.frames.reduce((sum, f) => sum + holdOf(f), 0)
       const transitionsMs = Math.max(0, props.frames.length - 1) * TRANSITION_MS
-      el.textContent = formatDuration(totalHoldMs + transitionsMs)
+      const total = totalHoldMs + transitionsMs
+      el.textContent = Number.isFinite(total) ? formatDuration(total) : '—'
     })
   }
 
@@ -147,22 +163,12 @@ export function TimelineBar(props: TimelineBarProps) {
     return [<ResizableHandle key={`h-${frame.id}`} withHandle />, panel]
   })
 
-  const playBtnRef = (el: HTMLElement) => {
-    createEffect(() => {
-      el.setAttribute('aria-label', props.playing ? 'Pause' : 'Play')
-      el.innerHTML = props.playing
-        ? '<svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><rect x="6" y="4" width="4" height="16" rx="1"/><rect x="14" y="4" width="4" height="16" rx="1"/></svg>'
-        : '<svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><path d="M6 4l14 8-14 8z"/></svg>'
-    })
-  }
-
   return (
     <div className="koma-timeline-wrapper" ref={handleMount}>
       <button
         type="button"
         className="koma-timeline-play"
-        onClick={() => props.onTogglePlay()}
-        ref={playBtnRef}
+        data-play-btn
       />
       <ResizablePanelGroup
         direction="horizontal"
