@@ -56,13 +56,42 @@ export function TimelineBar(props: TimelineBarProps) {
       }
     })
 
-    // Playhead
+    // Playhead position
+    let isDraggingPlayhead = false
     createEffect(() => {
-      if (playhead) {
+      if (playhead && !isDraggingPlayhead) {
         const pct = props.totalMs > 0 ? (props.elapsedMs / props.totalMs) * 100 : 0
         playhead.style.left = `${pct}%`
       }
     })
+
+    // Playhead drag
+    if (playhead) {
+      playhead.addEventListener('pointerdown', (e: PointerEvent) => {
+        e.preventDefault()
+        e.stopPropagation()
+        playhead.setPointerCapture(e.pointerId)
+        isDraggingPlayhead = true
+
+        const onMove = (ev: PointerEvent) => {
+          const barRect = bar.getBoundingClientRect()
+          const ratio = Math.max(0, Math.min(1, (ev.clientX - barRect.left) / barRect.width))
+          playhead.style.left = `${ratio * 100}%`
+          if (props.totalMs > 0) {
+            props.onSeek(Math.round(ratio * props.totalMs))
+          }
+        }
+
+        const onUp = () => {
+          playhead.removeEventListener('pointermove', onMove)
+          playhead.removeEventListener('pointerup', onUp)
+          isDraggingPlayhead = false
+        }
+
+        playhead.addEventListener('pointermove', onMove)
+        playhead.addEventListener('pointerup', onUp)
+      })
+    }
 
     // Total label
     createEffect(() => {

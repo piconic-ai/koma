@@ -354,36 +354,34 @@ main {
 .koma-timeline {
   display: flex;
   height: 36px;
-  border-radius: 4px;
-  border: 1px solid var(--border);
+  border-radius: 6px;
+  overflow: hidden;
+  position: relative;
 }
 
 .koma-timeline-segment {
-  position: relative;
   display: flex;
   align-items: center;
   justify-content: center;
-  min-width: 20px;
-  background: var(--secondary);
+  min-width: 16px;
+  background: var(--foreground);
   user-select: none;
+  cursor: pointer;
 }
 
 .koma-timeline-label {
-  font-size: 11px;
-  font-weight: 600;
-  color: var(--muted-foreground);
+  font-size: 10px;
+  font-weight: 500;
+  color: var(--background);
   pointer-events: none;
-}
-
-.koma-timeline-segment {
-  cursor: pointer;
+  opacity: 0.6;
 }
 
 .koma-timeline-handle-bar {
   width: 3px;
   min-width: 3px;
   flex: 0 0 3px;
-  background: var(--ring);
+  background: var(--background);
   cursor: col-resize;
   position: relative;
 }
@@ -396,7 +394,7 @@ main {
 
 .koma-timeline-handle-bar:hover,
 .koma-timeline-handle-bar[data-state="drag"] {
-  background: var(--foreground);
+  background: var(--ring);
 }
 
 .koma-frame-editor[data-selected] {
@@ -450,15 +448,15 @@ main {
 
 .koma-timeline-edge {
   position: absolute;
-  top: -1px;
-  right: -1px;
-  width: 8px;
-  height: calc(100% + 2px);
+  top: 0;
+  right: 0;
+  width: 6px;
+  height: 100%;
   cursor: ew-resize;
   z-index: 3;
-  background: var(--ring);
-  border-radius: 0 4px 4px 0;
-  opacity: 0.5;
+  background: var(--background);
+  border-left: 2px solid var(--ring);
+  opacity: 0.6;
   transition: opacity 0.1s;
 }
 
@@ -469,25 +467,37 @@ main {
 
 .koma-timeline-playhead {
   position: absolute;
-  top: -3px;
+  top: -2px;
   left: 0;
   width: 2px;
-  height: calc(100% + 6px);
-  background: var(--primary);
+  height: calc(100% + 4px);
+  background: #00b769;
   z-index: 4;
-  pointer-events: none;
-  transition: left 0.05s linear;
+  cursor: grab;
+  touch-action: none;
+  will-change: left;
+}
+
+.koma-timeline-playhead:active {
+  cursor: grabbing;
 }
 
 .koma-timeline-playhead::before {
   content: '';
   position: absolute;
-  top: 0;
-  left: -3px;
-  width: 8px;
+  top: -3px;
+  left: -5px;
+  width: 12px;
   height: 8px;
-  background: var(--primary);
-  border-radius: 50%;
+  background: #00b769;
+  border-radius: 2px;
+  clip-path: polygon(50% 100%, 0 0, 100% 0);
+}
+
+.koma-timeline-playhead::after {
+  content: '';
+  position: absolute;
+  inset: 0 -6px;
 }
 
 .koma-timeline[data-at-min] {
