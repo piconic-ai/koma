@@ -250,6 +250,8 @@ export function TimelineBar(props: TimelineBarProps) {
         const startWidth = bar.getBoundingClientRect().width
         const barLeft = bar.getBoundingClientRect().left
 
+        const wrapperWidth = el.getBoundingClientRect().width
+
         const onMove = (ev: PointerEvent) => {
           const newWidth = Math.max(60, ev.clientX - barLeft)
           const scale = newWidth / startWidth
@@ -257,7 +259,11 @@ export function TimelineBar(props: TimelineBarProps) {
             id: f.id,
             hold: Math.max(50, Math.round(startHolds[i] * scale)),
           }))
-          bar.style.maxWidth = `${(newWidth / el.getBoundingClientRect().width) * 100}%`
+          if (newWidth < wrapperWidth) {
+            bar.style.maxWidth = `${(newWidth / wrapperWidth) * 100}%`
+          } else {
+            bar.style.maxWidth = ''
+          }
           props.onLayout(holds)
         }
 
