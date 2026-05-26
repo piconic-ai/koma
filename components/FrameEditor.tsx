@@ -1,5 +1,6 @@
 'use client'
 
+import { createEffect } from '@barefootjs/client'
 import type { Frame, Language } from '../src/model/types'
 
 interface FrameEditorProps {
@@ -7,6 +8,7 @@ interface FrameEditorProps {
   language: Language
   index: number
   total: number
+  selected: boolean
   onCode: (code: string) => void
   onDuplicate: () => void
   onRemove: () => void
@@ -30,8 +32,21 @@ export function FrameEditor(props: FrameEditorProps) {
     props.onCode(next)
   }
 
+  const handleMount = (el: HTMLElement) => {
+    createEffect(() => {
+      if (props.selected) {
+        el.setAttribute('data-selected', '')
+        el.scrollIntoView({ behavior: 'smooth', block: 'center' })
+        const textarea = el.querySelector('.koma-code-input') as HTMLTextAreaElement | null
+        if (textarea) textarea.focus()
+      } else {
+        el.removeAttribute('data-selected')
+      }
+    })
+  }
+
   return (
-    <div className="koma-frame-editor">
+    <div className="koma-frame-editor" ref={handleMount}>
       <div className="koma-frame-toolbar">
         <button
           type="button"

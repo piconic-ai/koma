@@ -2,6 +2,7 @@ import { describe, expect, test } from 'bun:test'
 import {
   autoHold,
   holdOf,
+  isAtMinHold,
   formatDuration,
   computeSegmentPcts,
   computeTotalMs,
@@ -12,6 +13,7 @@ import {
   holdRatioToElapsed,
   computeBarWidth,
   computeExtensionHolds,
+  computeSegmentDrag,
   MIN_HOLD,
   MIN_HOLD_MS,
   MIN_EXTEND_MS_PER_PX,
@@ -856,5 +858,71 @@ describe('computeExtensionHolds', () => {
     const holds = computeExtensionHolds([54, 54], ['a', 'b'], 100, 0)
     const total = holds.reduce((s, h) => s + h.hold, 0)
     expect(total).toBeGreaterThan(54 * 2)
+  })
+})
+
+// ── isAtMinHold ─────────────────────────────────────────
+
+describe('isAtMinHold', () => {
+  test('hold === MIN_HOLD → true', () => {
+    expect(isAtMinHold({ code: 'x', hold: MIN_HOLD })).toBe(true)
+  })
+
+  test('hold < MIN_HOLD → true', () => {
+    expect(isAtMinHold({ code: 'x', hold: 0 })).toBe(true)
+  })
+
+  test('hold === MIN_HOLD + 1 → false', () => {
+    expect(isAtMinHold({ code: 'x', hold: MIN_HOLD + 1 })).toBe(false)
+  })
+
+  test('hold === undefined (auto) → false', () => {
+    expect(isAtMinHold({ code: 'x' })).toBe(false)
+  })
+
+  test('large hold → false', () => {
+    expect(isAtMinHold({ code: 'x', hold: 5000 })).toBe(false)
+  })
+})
+
+// ── Idempotency: repeated calls produce same results ────
+
+describe('idempotency: drag functions return consistent results', () => {
+  test('computeSegmentDrag same ratio twice → identical', () => {
+    const frames: FrameInput[] = [
+      { id: 'a', code: 'x', hold: 2000 },
+      { id: 'b', code: 'y', hold: 2000 },
+      { id: 'c', code: 'z', hold: 2000 },
+    ]
+    const r1 = computeSegmentDrag(0.4, 0, frames)
+    const r2 = computeSegmentDrag(0.4, 0, frames)
+    expect(r1).toEqual(r2)
+  })
+
+  test('computeBarWidth at identity → no change', () => {
+    const params = {
+      newWidth: 1000,
+      startWidth: 1000,
+      wrapperWidth: 1000,
+      startHolds: [2000, 2000, 2000],
+      frameIds: ['a', 'b', 'c'],
+    }
+    const r = computeBarWidth(params)
+    expect(r.holds.map(h => h.hold)).toEqual([2000, 2000, 2000])
+    expect(r.atMin).toBe(false)
+    expect(r.blocked).toBe(false)
+  })
+
+  test('computeBarWidth called twice with same params → identical', () => {
+    const params = {
+      newWidth: 500,
+      startWidth: 1000,
+      wrapperWidth: 1000,
+      startHolds: [2000, 2000, 2000],
+      frameIds: ['a', 'b', 'c'],
+    }
+    const r1 = computeBarWidth(params)
+    const r2 = computeBarWidth(params)
+    expect(r1).toEqual(r2)
   })
 })

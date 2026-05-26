@@ -3,10 +3,10 @@
   "private": true,
   "type": "module",
   "scripts": {
-    "dev": "bun scripts/build-export-bundle.mjs && concurrently -k -n build,uno,server -c blue,magenta,green \"bun node_modules/@barefootjs/cli/dist/index.js build --watch\" \"unocss --watch\" \"bunx wrangler dev --live-reload\"",
-    "build": "bun node_modules/@barefootjs/cli/dist/index.js build && unocss && bun scripts/build-export-bundle.mjs",
-    "deploy": "bun node_modules/@barefootjs/cli/dist/index.js build && unocss && bun scripts/build-export-bundle.mjs && bunx wrangler deploy",
-    "watch": "concurrently -k -n build,uno -c blue,magenta \"bun node_modules/@barefootjs/cli/dist/index.js build --watch\" \"unocss --watch\"",
+    "dev": "bun run build:export && concurrently -k -n build,uno,server -c blue,magenta,green \"bunx @barefootjs/cli build --watch\" \"unocss --watch\" \"bunx wrangler dev --live-reload\"",
+    "build": "bunx @barefootjs/cli build && unocss && bun run build:export",
+    "deploy": "bun run build && bunx wrangler deploy",
+    "watch": "concurrently -k -n build,uno -c blue,magenta \"bunx @barefootjs/cli build --watch\" \"unocss --watch\"",
     "build:export": "bun scripts/build-export-bundle.mjs",
     "test": "bun test"
   },
@@ -34,19 +34,5 @@
     "concurrently": "^9.0.0",
     "typescript": "^5.6.0",
     "unocss": "^66.0.0"
-  },
-  "overrides": {
-    "@barefootjs/cli": "^0.1.2",
-    "@barefootjs/client": "^0.1.2",
-    "@barefootjs/hono": "^0.1.2",
-    "@barefootjs/jsx": "^0.1.2",
-    "@barefootjs/shared": "^0.1.2",
-    "@barefootjs/streaming": "^0.1.2",
-    "@barefootjs/test": "^0.1.2",
-    "@barefootjs/form": "^0.1.2",
-    "@barefootjs/chart": "^0.1.2",
-    "@barefootjs/xyflow": "^0.1.2",
-    "@barefootjs/go-template": "^0.1.2",
-    "@barefootjs/mojolicious": "^0.1.2"
   }
 }
