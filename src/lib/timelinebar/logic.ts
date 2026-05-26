@@ -146,3 +146,25 @@ export function computeBarWidth(params: {
 
   return { holds, maxWidthPct, atMin: false, blocked: false }
 }
+
+export function clientXToRatio(clientX: number, rect: { left: number; width: number }): number {
+  return Math.max(0, Math.min(1, (clientX - rect.left) / rect.width))
+}
+
+export function computeSegmentDrag(
+  ratio: number,
+  idx: number,
+  frames: FrameInput[],
+): Array<{ id: string; hold: number }> {
+  const totalHold = frames.reduce((s, f) => s + holdOf(f), 0)
+  const cursorMs = ratio * totalHold
+  let acc = 0
+  for (let k = 0; k < idx; k++) acc += holdOf(frames[k])
+  const combined = holdOf(frames[idx]) + holdOf(frames[idx + 1])
+  let newThis = Math.round(cursorMs - acc)
+  newThis = Math.max(MIN_HOLD, Math.min(combined - MIN_HOLD, newThis))
+  return [
+    { id: frames[idx].id, hold: newThis },
+    { id: frames[idx + 1].id, hold: combined - newThis },
+  ]
+}

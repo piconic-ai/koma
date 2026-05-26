@@ -395,8 +395,7 @@ main {
   inset: 0 -4px;
 }
 
-.koma-timeline-handle-bar:hover,
-.koma-timeline-handle-bar[data-state="drag"] {
+.koma-timeline-handle-bar:hover {
   background: var(--ring);
 }
 
@@ -474,7 +473,7 @@ main {
 }
 
 .koma-timeline:hover .koma-timeline-edge,
-.koma-timeline-edge[data-state="drag"] {
+.koma-timeline-edge--dragging {
   opacity: 1;
 }
 
