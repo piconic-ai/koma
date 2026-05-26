@@ -158,7 +158,13 @@ export function computeBarWidth(params: {
   }
 
   if (allAtMin) {
-    return { holds, maxWidthPct: null, atMin: true, blocked: false }
+    const minTotal = frameIds.length * MIN_HOLD
+    const startTotal = startHolds.reduce((s, h) => s + h, 0)
+    const minWidth = startTotal > 0 ? (minTotal / startTotal) * startWidth : startWidth
+    const maxWidthPct = minWidth < wrapperWidth
+      ? (minWidth / wrapperWidth) * 100
+      : null
+    return { holds, maxWidthPct, atMin: true, blocked: false }
   }
 
   const maxWidthPct = newWidth < wrapperWidth

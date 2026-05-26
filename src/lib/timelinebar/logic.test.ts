@@ -212,10 +212,10 @@ describe('computeBarWidth', () => {
     expect(r.atMin).toBe(false)
   })
 
-  test('shrink to min → atMin, no maxWidthPct change', () => {
+  test('shrink to min → atMin, maxWidthPct reflects min holds', () => {
     const r = computeBarWidth({ ...base, newWidth: 10 })
     expect(r.atMin).toBe(true)
-    expect(r.maxWidthPct).toBeNull()
+    expect(r.maxWidthPct).not.toBeNull()
     expect(r.blocked).toBe(false)
     r.holds.forEach(h => expect(h.hold).toBe(MIN_HOLD))
   })
@@ -242,13 +242,15 @@ describe('computeBarWidth', () => {
     r.holds.forEach(h => expect(h.hold).toBe(MIN_HOLD))
   })
 
-  test('hold=51 shrink → bar width not changed (atMin)', () => {
+  test('hold=51 shrink → bar width reflects min holds (atMin)', () => {
     const r = computeBarWidth({
       ...base,
       startHolds: [51, 51, 51],
       newWidth: 900,
     })
-    expect(r.maxWidthPct).toBeNull()
+    // 3 * MIN_HOLD / (3 * 51) * 1000 / 1000 * 100 ≈ 98%
+    expect(r.maxWidthPct).not.toBeNull()
+    expect(r.maxWidthPct).toBeCloseTo((3 * MIN_HOLD) / (3 * 51) * 100, 0)
   })
 })
 
@@ -320,7 +322,7 @@ describe('edge drag scenarios', () => {
       newWidth: 10,
       expectAtMin: true,
       expectBlocked: false,
-      expectMaxWidth: null,
+      expectMaxWidth: (3 * MIN_HOLD) / (2500 + 2500 + 3000) * 100,
     },
     {
       name: 'already at min → shrink blocked',
@@ -333,14 +335,14 @@ describe('edge drag scenarios', () => {
       expectMaxWidth: null,
     },
     {
-      name: 'hold=51 → shrinks to 50, no bar shrink',
+      name: 'hold=51 → shrinks to 50, bar reflects min width',
       startHolds: [51, 51, 51],
       wrapperWidth: 1000,
       startWidth: 1000,
       newWidth: 900,
       expectAtMin: true,
       expectBlocked: false,
-      expectMaxWidth: null,
+      expectMaxWidth: (3 * MIN_HOLD) / (3 * 51) * 100,
     },
     {
       name: 'extend beyond wrapper',

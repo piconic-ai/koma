@@ -186,7 +186,7 @@ export function TimelineBar(props: TimelineBarProps) {
 
             holds = result.holds
             setAtMin(result.atMin)
-            setMaxWidthPct(result.atMin ? null : result.maxWidthPct)
+            setMaxWidthPct(result.maxWidthPct)
           }
 
           setFrames(prev => prev.map(f => {
