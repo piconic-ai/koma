@@ -188,22 +188,6 @@ main {
   color: #00b769;
 }
 
-.koma-lang-label {
-  display: inline-flex;
-  align-items: center;
-  gap: 8px;
-  font-size: 14px;
-  color: var(--muted-foreground, currentColor);
-}
-
-.koma-lang-select {
-  padding: 6px 10px;
-  border-radius: var(--radius);
-  border: 1px solid var(--border);
-  background: var(--card);
-  color: var(--foreground);
-  font: inherit;
-}
 
 .koma-app-header-right {
   display: inline-flex;

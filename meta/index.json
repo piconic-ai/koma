@@ -1,6 +1,6 @@
 {
   "version": 1,
-  "generatedAt": "2026-05-24T13:07:35.253Z",
+  "generatedAt": "2026-05-26T03:09:01.113Z",
   "components": [
     {
       "name": "button",
@@ -88,6 +88,29 @@
       "subComponents": [
         "ResizablePanel",
         "ResizableHandle"
+      ]
+    },
+    {
+      "name": "select",
+      "title": "Select",
+      "category": "input",
+      "description": "Select Components A custom select dropdown with multiple sub-components. Inspired by shadcn/ui Select with CSS variable theming support. State management uses createContext/useContext for parent-child communication. Root Select manages open/value state, children consume via context. Features: - ESC key to close - Arrow key navigation - Type-ahead search - Accessibility (role=\"combobox\", role=\"listbox\", role=\"option\") - Controlled/uncontrolled value - Portal for Content (escape overflow clipping) - data-state attribute-driven styling",
+      "tags": [
+        "stateful",
+        "multi-component",
+        "portal",
+        "context",
+        "aria"
+      ],
+      "stateful": true,
+      "subComponents": [
+        "SelectTrigger",
+        "SelectValue",
+        "SelectContent",
+        "SelectItem",
+        "SelectGroup",
+        "SelectLabel",
+        "SelectSeparator"
       ]
     },
     {
