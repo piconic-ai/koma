@@ -1,6 +1,6 @@
 'use client'
 
-import { createSignal, createEffect } from '@barefootjs/client'
+import { createSignal, createMemo } from '@barefootjs/client'
 import {
   holdOf,
   formatDuration,
@@ -9,6 +9,7 @@ import {
   computeBarWidth,
   clientXToRatio,
   computeSegmentDrag,
+  computeExtensionHolds,
   TRANSITION_MS,
 } from '../src/lib/timelinebar/logic'
 
@@ -62,10 +63,8 @@ export function TimelineBar(props: TimelineBarProps) {
   const [maxWidthPct, setMaxWidthPct] = createSignal<number | null>(null)
   const [edgeDragging, setEdgeDragging] = createSignal(false)
 
-  createEffect(() => setFrames(props.frames))
-
-  const totalHold = () => frames().reduce((sum, f) => sum + holdOf(f), 0)
-  const totalDuration = () => totalHold() + Math.max(0, frames().length - 1) * TRANSITION_MS
+  const totalHold = createMemo(() => frames().reduce((sum, f) => sum + holdOf(f), 0))
+  const totalDuration = createMemo(() => totalHold() + Math.max(0, frames().length - 1) * TRANSITION_MS)
 
   const barStyle = () => {
     const mw = maxWidthPct()
@@ -160,22 +159,41 @@ export function TimelineBar(props: TimelineBarProps) {
         },
         onMove: (ev, start) => {
           const newWidth = Math.max(60, ev.clientX - start.barLeft)
-          const result = computeBarWidth({
-            newWidth,
-            startWidth: start.startWidth,
-            wrapperWidth: start.wrapperWidth,
-            startHolds: start.startHolds,
-            frameIds: start.frameIds,
-          })
+          let holds: Array<{ id: string; hold: number }>
 
-          if (result.blocked) {
-            setAtMin(true)
-            return
+          if (newWidth > start.startWidth) {
+            holds = computeExtensionHolds(
+              start.startHolds,
+              start.frameIds,
+              newWidth - start.startWidth,
+              start.startWidth,
+            )
+            setAtMin(false)
+            setMaxWidthPct(null)
+          } else {
+            const result = computeBarWidth({
+              newWidth,
+              startWidth: start.startWidth,
+              wrapperWidth: start.wrapperWidth,
+              startHolds: start.startHolds,
+              frameIds: start.frameIds,
+            })
+
+            if (result.blocked) {
+              setAtMin(true)
+              return
+            }
+
+            holds = result.holds
+            setAtMin(result.atMin)
+            setMaxWidthPct(result.atMin ? null : result.maxWidthPct)
           }
 
-          setAtMin(result.atMin)
-          setMaxWidthPct(result.atMin ? null : result.maxWidthPct)
-          props.onLayout(result.holds)
+          setFrames(prev => prev.map(f => {
+            const h = holds.find(u => u.id === f.id)
+            return h ? { ...f, hold: h.hold } : f
+          }))
+          props.onLayout(holds)
         },
         onEnd: () => {
           setEdgeDragging(false)
@@ -205,7 +223,7 @@ export function TimelineBar(props: TimelineBarProps) {
         data-timeline-bar
         style={barStyle()}
       >
-        {frames().map((frame, i) => (
+        {props.frames.map((frame, i) => (
           <div key={frame.id} data-key={frame.id} style="display:contents">
             {i > 0 && (
               <div
@@ -236,7 +254,7 @@ export function TimelineBar(props: TimelineBarProps) {
         />
       </div>
       <span className="koma-timeline-total">
-        {Number.isFinite(totalDuration()) ? formatDuration(totalDuration()) : '—'}
+        {formatDuration(totalDuration())}
       </span>
     </div>
   )
