@@ -23,12 +23,13 @@ interface TimelineBarProps {
   onTogglePlay: () => void
 }
 
-// ── Generic drag helper ──────────────────────────────────
-function setupDrag(
+// ── Generic drag helper with start/move/end ──────────────
+function setupDrag<T>(
   el: HTMLElement,
   callbacks: {
-    onMove: (ev: PointerEvent) => void
-    onEnd: () => void
+    onStart: (ev: PointerEvent) => T
+    onMove: (ev: PointerEvent, state: T) => void
+    onEnd: (state: T) => void
   },
 ) {
   el.addEventListener('pointerdown', (e: PointerEvent) => {
@@ -36,12 +37,14 @@ function setupDrag(
     e.stopPropagation()
     el.setPointerCapture(e.pointerId)
 
-    const onMove = (ev: PointerEvent) => callbacks.onMove(ev)
+    const state = callbacks.onStart(e)
+
+    const onMove = (ev: PointerEvent) => callbacks.onMove(ev, state)
     const cleanup = () => {
       el.removeEventListener('pointermove', onMove)
       el.removeEventListener('pointerup', cleanup)
       el.removeEventListener('pointercancel', cleanup)
-      callbacks.onEnd()
+      callbacks.onEnd(state)
     }
 
     el.addEventListener('pointermove', onMove)
@@ -69,12 +72,22 @@ export function TimelineBar(props: TimelineBarProps) {
     return mw !== null ? `max-width:${mw}%` : ''
   }
 
+  // ── Seek to frame start ────────────────────────────────
+  const seekToFrameStart = (frameIndex: number) => {
+    const fr = frames()
+    const th = totalHold()
+    if (th <= 0 || props.totalMs <= 0) return
+    let accHold = 0
+    for (let k = 0; k < frameIndex; k++) accHold += holdOf(fr[k])
+    props.onSeek(Math.round(holdRatioToElapsed(accHold / th, fr)))
+  }
+
   // ── Event listeners (registered once in handleMount) ───
   const handleMount = (el: HTMLElement) => {
     const bar = el.querySelector('[data-timeline-bar]') as HTMLElement
     const playhead = bar?.querySelector('[data-playhead]') as HTMLElement
 
-    // Timeupdate → signals (registered once, no leak)
+    // Timeupdate → signals
     window.addEventListener('koma:timeupdate', (e: Event) => {
       const d = (e as CustomEvent).detail
       setIsPlaying(d.playing)
@@ -89,8 +102,11 @@ export function TimelineBar(props: TimelineBarProps) {
     // Playhead drag
     if (playhead) {
       setupDrag(playhead, {
-        onMove: (ev) => {
+        onStart: () => {
           setIsDragging(true)
+          return null
+        },
+        onMove: (ev) => {
           const ratio = clientXToRatio(ev.clientX, bar.getBoundingClientRect())
           setPlayheadPct(ratio * 100)
           if (props.totalMs > 0) {
@@ -128,19 +144,29 @@ export function TimelineBar(props: TimelineBarProps) {
       })
     }
 
-    // Edge drag
+    // Edge drag — capture start values at pointerdown
     const edgeHandle = bar?.querySelector('[data-timeline-edge]') as HTMLElement
     if (edgeHandle) {
       setupDrag(edgeHandle, {
-        onMove: (ev) => {
+        onStart: () => {
           setEdgeDragging(true)
-          const startHolds = props.frames.map(f => holdOf(f))
-          const frameIds = props.frames.map(f => f.id)
-          const barLeft = bar.getBoundingClientRect().left
-          const startWidth = bar.getBoundingClientRect().width
-          const wrapperWidth = el.getBoundingClientRect().width
-          const newWidth = Math.max(60, ev.clientX - barLeft)
-          const result = computeBarWidth({ newWidth, startWidth, wrapperWidth, startHolds, frameIds })
+          return {
+            startHolds: props.frames.map(f => holdOf(f)),
+            frameIds: props.frames.map(f => f.id),
+            barLeft: bar.getBoundingClientRect().left,
+            startWidth: bar.getBoundingClientRect().width,
+            wrapperWidth: el.getBoundingClientRect().width,
+          }
+        },
+        onMove: (ev, start) => {
+          const newWidth = Math.max(60, ev.clientX - start.barLeft)
+          const result = computeBarWidth({
+            newWidth,
+            startWidth: start.startWidth,
+            wrapperWidth: start.wrapperWidth,
+            startHolds: start.startHolds,
+            frameIds: start.frameIds,
+          })
 
           if (result.blocked) {
             setAtMin(true)
@@ -148,14 +174,13 @@ export function TimelineBar(props: TimelineBarProps) {
           }
 
           setAtMin(result.atMin)
-          if (!result.atMin) {
-            setMaxWidthPct(result.maxWidthPct)
-          }
+          setMaxWidthPct(result.atMin ? null : result.maxWidthPct)
           props.onLayout(result.holds)
         },
         onEnd: () => {
           setEdgeDragging(false)
           setAtMin(false)
+          setMaxWidthPct(null)
         },
       })
     }
@@ -193,9 +218,7 @@ export function TimelineBar(props: TimelineBarProps) {
               style={`flex-basis:${totalHold() > 0 ? (holdOf(frame) / totalHold()) * 100 : 0}%;flex-grow:0;flex-shrink:0`}
               onClick={() => {
                 props.onSelect(frame.id)
-                if (totalHold() > 0 && props.totalMs > 0) {
-                  props.onSeek(Math.round(holdRatioToElapsed(i / frames().length, frames())))
-                }
+                seekToFrameStart(i)
               }}
             >
               <span className="koma-timeline-label">{i + 1}</span>
