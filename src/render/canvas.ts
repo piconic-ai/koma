@@ -97,7 +97,7 @@ function drawTokenLine(
   void fontSize
 }
 
-function truncateTokenLine(tokens: TokenLine, chars: number): TokenLine {
+export function truncateTokenLine(tokens: TokenLine, chars: number): TokenLine {
   if (chars < 0) return tokens
   const result: TokenLine = []
   let remaining = chars

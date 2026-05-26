@@ -137,4 +137,80 @@ describe('collapseTransitions', () => {
       }
     }
   })
+
+  test('totalDurationMs equals sum of hold durations only', () => {
+    const t = buildTimeline(spec())
+    const collapsed = collapseTransitions(t)
+    const holdSum = collapsed.segments
+      .filter(s => s.type === 'hold')
+      .reduce((sum, s) => sum + s.durationMs, 0)
+    expect(collapsed.totalDurationMs).toBe(holdSum)
+  })
+})
+
+describe('buildTimeline: edge cases', () => {
+  test('final frame padding does not apply when hold already exceeds minimum', () => {
+    const t = buildTimeline({
+      language: 'ts',
+      frames: [{ id: 'a', code: 'x', hold: 10000 }],
+    })
+    expect(t.segments[0].durationMs).toBe(10000)
+  })
+
+  test('transition carries the correct line roles from diff', () => {
+    const t = buildTimeline({
+      language: 'ts',
+      frames: [
+        { id: 'a', code: 'a\nb' },
+        { id: 'b', code: 'a\nc' },
+      ],
+    })
+    const transition = t.segments.find(s => s.type === 'transition')
+    expect(transition).toBeDefined()
+    if (transition?.type === 'transition') {
+      const keeps = transition.transition.lines.filter(l => l.type === 'keep')
+      expect(keeps.some(k => k.line === 'a')).toBe(true)
+    }
+  })
+
+  test('transition.fromFrameId and toFrameId match the frames', () => {
+    const t = buildTimeline({
+      language: 'ts',
+      frames: [
+        { id: 'first', code: 'x' },
+        { id: 'second', code: 'y' },
+      ],
+    })
+    const transition = t.segments[1]
+    expect(transition.type).toBe('transition')
+    if (transition.type === 'transition') {
+      expect(transition.transition.fromFrameId).toBe('first')
+      expect(transition.transition.toFrameId).toBe('second')
+    }
+  })
+})
+
+describe('locateInTimeline: edge cases', () => {
+  test('negative elapsed clamps to 0', () => {
+    const t = buildTimeline({
+      language: 'ts',
+      frames: [{ id: 'a', code: 'x', hold: 1000 }],
+    })
+    const pos = locateInTimeline(t, -500)
+    expect(pos.segmentIndex).toBe(0)
+    expect(pos.segmentProgress).toBe(0)
+    expect(pos.elapsedMs).toBe(0)
+  })
+
+  test('zero-duration segment produces progress=1', () => {
+    const t = buildTimeline({
+      language: 'ts',
+      frames: [
+        { id: 'a', code: 'x', hold: 1000 },
+        { id: 'b', code: 'y', transition: { duration: 0 } },
+      ],
+    })
+    const transitionSeg = t.segments.find(s => s.type === 'transition')
+    expect(transitionSeg?.durationMs).toBe(0)
+  })
 })
