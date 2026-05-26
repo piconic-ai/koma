@@ -17,11 +17,6 @@ interface TimelineBarProps {
   frames: Array<{ id: string; code: string; hold?: number }>
   onLayout: (holds: Array<{ id: string; hold: number }>) => void
   onSelect: (frameId: string) => void
-  elapsedMs: number
-  totalMs: number
-  playing: boolean
-  onSeek: (ms: number) => void
-  onTogglePlay: () => void
 }
 
 // ── Generic drag helper with start/move/end ──────────────
@@ -54,6 +49,12 @@ function setupDrag<T>(
   })
 }
 
+const seek = (ms: number) =>
+  window.dispatchEvent(new CustomEvent('koma:seek', { detail: { ms } }))
+
+const togglePlay = () =>
+  window.dispatchEvent(new CustomEvent('koma:toggleplay'))
+
 export function TimelineBar(props: TimelineBarProps) {
   const [atMin, setAtMin] = createSignal(false)
   const [frames, setFrames] = createSignal(props.frames)
@@ -75,10 +76,10 @@ export function TimelineBar(props: TimelineBarProps) {
   const seekToFrameStart = (frameIndex: number) => {
     const fr = frames()
     const th = totalHold()
-    if (th <= 0 || props.totalMs <= 0) return
+    if (th <= 0) return
     let accHold = 0
     for (let k = 0; k < frameIndex; k++) accHold += holdOf(fr[k])
-    props.onSeek(Math.round(holdRatioToElapsed(accHold / th, fr)))
+    seek(Math.round(holdRatioToElapsed(accHold / th, fr)))
   }
 
   // ── Event listeners (registered once in handleMount) ───
@@ -86,7 +87,6 @@ export function TimelineBar(props: TimelineBarProps) {
     const bar = el.querySelector('[data-timeline-bar]') as HTMLElement
     const playhead = bar?.querySelector('[data-playhead]') as HTMLElement
 
-    // Timeupdate → signals
     window.addEventListener('koma:timeupdate', (e: Event) => {
       const d = (e as CustomEvent).detail
       setIsPlaying(d.playing)
@@ -95,7 +95,6 @@ export function TimelineBar(props: TimelineBarProps) {
       }
     })
 
-    // Clear at-min on any click
     document.addEventListener('click', () => setAtMin(false))
 
     // Playhead drag
@@ -108,9 +107,7 @@ export function TimelineBar(props: TimelineBarProps) {
         onMove: (ev) => {
           const ratio = clientXToRatio(ev.clientX, bar.getBoundingClientRect())
           setPlayheadPct(ratio * 100)
-          if (props.totalMs > 0) {
-            props.onSeek(Math.round(holdRatioToElapsed(ratio, props.frames)))
-          }
+          seek(Math.round(holdRatioToElapsed(ratio, props.frames)))
         },
         onEnd: () => setIsDragging(false),
       })
@@ -210,7 +207,7 @@ export function TimelineBar(props: TimelineBarProps) {
         type="button"
         className="koma-timeline-play"
         aria-label={isPlaying() ? 'Pause' : 'Play'}
-        onClick={() => props.onTogglePlay()}
+        onClick={togglePlay}
       >
         {isPlaying() ? (
           <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><rect x="6" y="4" width="4" height="16" rx="1" /><rect x="14" y="4" width="4" height="16" rx="1" /></svg>
@@ -224,7 +221,7 @@ export function TimelineBar(props: TimelineBarProps) {
         style={barStyle()}
       >
         {props.frames.map((frame, i) => (
-          <div key={frame.id} data-key={frame.id} style="display:contents">
+          <div key={frame.id} style="display:contents">
             {i > 0 && (
               <div
                 data-seg-handle={i - 1}
@@ -236,7 +233,8 @@ export function TimelineBar(props: TimelineBarProps) {
               style={`flex-basis:${totalHold() > 0 ? (holdOf(frame) / totalHold()) * 100 : 0}%;flex-grow:0;flex-shrink:0`}
               onClick={() => {
                 props.onSelect(frame.id)
-                seekToFrameStart(i)
+                const idx = props.frames.findIndex(f => f.id === frame.id)
+                if (idx >= 0) seekToFrameStart(idx)
               }}
             >
               <span className="koma-timeline-label">{i + 1}</span>

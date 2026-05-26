@@ -184,7 +184,6 @@ export function Player(props: PlayerProps) {
     prevSpecKey = key
   })
 
-
   onCleanup(stop)
 
   const togglePlay = () => {
