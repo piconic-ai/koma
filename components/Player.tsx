@@ -148,10 +148,10 @@ export function Player(props: PlayerProps) {
       const total = timeline().totalDurationMs
       const next = elapsedMs() + (ts - lastTs)
       if (next >= total) {
-        setElapsedMs(total)
-        setPlaying(false)
-        stop()
+        setElapsedMs(0)
+        lastTs = null
         renderCanvas()
+        rafId = requestAnimationFrame(step)
         return
       }
       setElapsedMs(next)
