@@ -395,8 +395,7 @@ main {
   inset: 0 -4px;
 }
 
-.koma-timeline-handle-bar:hover,
-.koma-timeline-handle-bar[data-state="drag"] {
+.koma-timeline-handle-bar:hover {
   background: var(--ring);
 }
 
@@ -474,7 +473,7 @@ main {
 }
 
 .koma-timeline:hover .koma-timeline-edge,
-.koma-timeline-edge[data-state="drag"] {
+.koma-timeline-edge--dragging {
   opacity: 1;
 }
 
@@ -513,12 +512,12 @@ main {
   inset: 0 -6px;
 }
 
-.koma-timeline[data-at-min] {
+.koma-timeline--at-min {
   outline: 2px solid var(--destructive);
   outline-offset: -2px;
 }
 
-.koma-timeline[data-at-min] .koma-timeline-edge {
+.koma-timeline--at-min .koma-timeline-edge {
   background: var(--destructive);
   opacity: 1;
 }
@@ -533,7 +532,7 @@ main {
   transition: color 0.15s;
 }
 
-.koma-timeline[data-at-min] ~ .koma-timeline-total {
+.koma-timeline--at-min ~ .koma-timeline-total {
   color: var(--destructive);
 }
 
