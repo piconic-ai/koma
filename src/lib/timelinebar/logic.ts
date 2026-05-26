@@ -56,6 +56,27 @@ export function scaleAllHolds(
   }))
 }
 
+export const MIN_EXTEND_MS_PER_PX = 5
+
+export function computeExtensionHolds(
+  startHolds: number[],
+  frameIds: string[],
+  pixelsPast: number,
+  startWidth: number,
+): Array<{ id: string; hold: number }> {
+  const totalStartHold = startHolds.reduce((s, h) => s + h, 0)
+  const normalMsPerPx = startWidth > 0 ? totalStartHold / startWidth : 0
+  const msPerPx = Math.max(MIN_EXTEND_MS_PER_PX, normalMsPerPx)
+  const additionalMs = pixelsPast * msPerPx
+  const scale = totalStartHold > 0
+    ? (totalStartHold + additionalMs) / totalStartHold
+    : 1
+  return frameIds.map((id, i) => ({
+    id,
+    hold: Math.max(MIN_HOLD, Math.round(startHolds[i] * scale)),
+  }))
+}
+
 export function computeEdgeDrag(
   startHolds: number[],
   frameIds: string[],

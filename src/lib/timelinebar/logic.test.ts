@@ -11,8 +11,10 @@ import {
   elapsedToHoldRatio,
   holdRatioToElapsed,
   computeBarWidth,
+  computeExtensionHolds,
   MIN_HOLD,
   MIN_HOLD_MS,
+  MIN_EXTEND_MS_PER_PX,
   HOLD_PER_LINE_MS,
   TRANSITION_MS,
   type FrameInput,
@@ -802,5 +804,55 @@ describe('round-trip: elapsedToHoldRatio ↔ holdRatioToElapsed', () => {
         expect(backRatio).toBeCloseTo(ratio, 3)
       })
     })
+  })
+})
+
+// ── computeExtensionHolds ───────────────────────────────
+
+describe('computeExtensionHolds', () => {
+  test('small holds get meaningful increase from modest drag', () => {
+    const holds = computeExtensionHolds([54, 54, 54], ['a', 'b', 'c'], 100, 1200)
+    const total = holds.reduce((s, h) => s + h.hold, 0)
+    expect(total).toBeGreaterThan(54 * 3 + 400)
+  })
+
+  test('auto-sized holds use normal proportional scaling', () => {
+    const startHolds = [2500, 2500, 3000]
+    const startWidth = 1200
+    const totalStart = startHolds.reduce((s, h) => s + h, 0)
+    const normalMsPerPx = totalStart / startWidth
+    const pixelsPast = 100
+    const holds = computeExtensionHolds(startHolds, ['a', 'b', 'c'], pixelsPast, startWidth)
+    const totalResult = holds.reduce((s, h) => s + h.hold, 0)
+    const expectedTotal = Math.round(totalStart + pixelsPast * normalMsPerPx)
+    expect(totalResult).toBeCloseTo(expectedTotal, -1)
+  })
+
+  test('holds never go below MIN_HOLD', () => {
+    const holds = computeExtensionHolds([0, 0, 0], ['a', 'b', 'c'], 0, 1200)
+    holds.forEach(h => expect(h.hold).toBeGreaterThanOrEqual(MIN_HOLD))
+  })
+
+  test('preserves proportions between frames', () => {
+    const holds = computeExtensionHolds([100, 200, 300], ['a', 'b', 'c'], 100, 1200)
+    expect(holds[1].hold / holds[0].hold).toBeCloseTo(2, 0)
+    expect(holds[2].hold / holds[0].hold).toBeCloseTo(3, 0)
+  })
+
+  test('pixelsPast=0 returns original holds', () => {
+    const holds = computeExtensionHolds([54, 54, 54], ['a', 'b', 'c'], 0, 1200)
+    expect(holds.map(h => h.hold)).toEqual([54, 54, 54])
+  })
+
+  test('minimum ms/px rate guarantees responsiveness', () => {
+    const holds = computeExtensionHolds([MIN_HOLD, MIN_HOLD], ['a', 'b'], 200, 1200)
+    const total = holds.reduce((s, h) => s + h.hold, 0)
+    expect(total).toBeGreaterThanOrEqual(MIN_HOLD * 2 + 200 * MIN_EXTEND_MS_PER_PX)
+  })
+
+  test('startWidth=0 still applies minimum ms/px rate', () => {
+    const holds = computeExtensionHolds([54, 54], ['a', 'b'], 100, 0)
+    const total = holds.reduce((s, h) => s + h.hold, 0)
+    expect(total).toBeGreaterThan(54 * 2)
   })
 })
