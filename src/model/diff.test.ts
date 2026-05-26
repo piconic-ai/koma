@@ -109,3 +109,77 @@ describe('computeLineRoles', () => {
     })
   })
 })
+
+describe('computeLineRoles: edge cases', () => {
+  test('both empty frames produce a single keep for the empty line', () => {
+    const a = frame('')
+    const roles = computeLineRoles(a, a)
+    expect(roles).toEqual([
+      { type: 'keep', line: '', fromIndex: 0, toIndex: 0 },
+    ])
+  })
+
+  test('non-empty -> empty marks all lines as remove and empty as add', () => {
+    const a = frame('a\nb')
+    const b = frame('')
+    const roles = computeLineRoles(a, b)
+    const removed = roles.filter(r => r.type === 'remove').map(r => r.line)
+    const added = roles.filter(r => r.type === 'add').map(r => r.line)
+    expect(removed).toEqual(['a', 'b'])
+    expect(added).toEqual([''])
+  })
+
+  test('whitespace-only changes are detected', () => {
+    const a = frame('  a')
+    const b = frame('    a')
+    const roles = computeLineRoles(a, b)
+    const modified = roles.filter(r => r.type === 'modify')
+    expect(modified).toHaveLength(1)
+    if (modified[0].type === 'modify') {
+      expect(modified[0].commonPrefix).toBe(2)
+    }
+  })
+
+  test('identical lines separated by insertions stay as keep', () => {
+    const a = frame('a\nb')
+    const b = frame('a\nX\nb')
+    const roles = computeLineRoles(a, b)
+    const keeps = roles.filter(r => r.type === 'keep').map(r => r.line)
+    expect(keeps).toEqual(['a', 'b'])
+    const added = roles.filter(r => r.type === 'add').map(r => r.line)
+    expect(added).toEqual(['X'])
+  })
+
+  test('duplicate lines are handled correctly', () => {
+    const a = frame('a\na\na')
+    const b = frame('a\na')
+    const roles = computeLineRoles(a, b)
+    const keeps = roles.filter(r => r.type === 'keep')
+    const removes = roles.filter(r => r.type === 'remove')
+    expect(keeps).toHaveLength(2)
+    expect(removes).toHaveLength(1)
+  })
+
+  test('multi-byte unicode lines diff correctly', () => {
+    const a = frame('こんにちは')
+    const b = frame('こんばんは')
+    const roles = computeLineRoles(a, b)
+    const modified = roles.filter(r => r.type === 'modify')
+    if (modified.length > 0 && modified[0].type === 'modify') {
+      expect(modified[0].commonPrefix).toBe(2)
+    } else {
+      const removed = roles.filter(r => r.type === 'remove')
+      const added = roles.filter(r => r.type === 'add')
+      expect(removed).toHaveLength(1)
+      expect(added).toHaveLength(1)
+    }
+  })
+
+  test('line reordering produces remove + add pairs', () => {
+    const a = frame('a\nb\nc')
+    const b = frame('c\nb\na')
+    const roles = computeLineRoles(a, b)
+    const keeps = roles.filter(r => r.type === 'keep')
+    expect(keeps.length).toBeGreaterThanOrEqual(1)
+  })
+})

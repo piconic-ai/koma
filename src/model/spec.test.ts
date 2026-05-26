@@ -133,3 +133,79 @@ describe('setLanguage', () => {
     expect(next.frames).toBe(a.frames)
   })
 })
+
+describe('immutability', () => {
+  test('addFrame does not mutate the original spec', () => {
+    const original = emptySpec()
+    const originalFrameCount = original.frames.length
+    addFrame(original)
+    expect(original.frames).toHaveLength(originalFrameCount)
+  })
+
+  test('removeFrame does not mutate the original spec', () => {
+    const original = addFrame(emptySpec())
+    const originalFrameCount = original.frames.length
+    removeFrame(original, original.frames[0].id)
+    expect(original.frames).toHaveLength(originalFrameCount)
+  })
+
+  test('updateFrame does not mutate the original frame', () => {
+    const original = emptySpec()
+    const id = original.frames[0].id
+    updateFrame(original, id, { code: 'changed' })
+    expect(original.frames[0].code).toBe('')
+  })
+
+  test('moveFrame does not mutate the original frames array', () => {
+    const original = addFrame(emptySpec())
+    const originalOrder = original.frames.map(f => f.id)
+    moveFrame(original, original.frames[0].id, 'down')
+    expect(original.frames.map(f => f.id)).toEqual(originalOrder)
+  })
+})
+
+describe('edge cases', () => {
+  test('removing all frames results in an empty array', () => {
+    const spec = emptySpec()
+    const result = removeFrame(spec, spec.frames[0].id)
+    expect(result.frames).toHaveLength(0)
+  })
+
+  test('duplicateFrame preserves hold and transition overrides', () => {
+    const spec = emptySpec()
+    const id = spec.frames[0].id
+    const withOverrides = updateFrame(spec, id, {
+      code: 'test',
+      hold: 1500,
+      transition: { duration: 200 },
+    })
+    const duped = duplicateFrame(withOverrides, id)
+    expect(duped.frames[1].code).toBe('test')
+    expect(duped.frames[1].hold).toBe(1500)
+    expect(duped.frames[1].transition).toEqual({ duration: 200 })
+    expect(duped.frames[1].id).not.toBe(id)
+  })
+
+  test('addFrame at boundary index inserts after that position', () => {
+    const base = addFrame(addFrame(emptySpec()))
+    const lastId = base.frames[base.frames.length - 1].id
+    const result = addFrame(base, base.frames.length - 1)
+    expect(result.frames).toHaveLength(4)
+    // The new frame is inserted after the last frame
+    expect(result.frames[base.frames.length - 1].id).toBe(lastId)
+    // The new frame is at the end
+    expect(result.frames[result.frames.length - 1].id).not.toBe(lastId)
+  })
+
+  test('moveFrame with unknown id is a no-op', () => {
+    const spec = emptySpec()
+    const result = moveFrame(spec, 'nonexistent', 'up')
+    expect(result).toEqual(spec)
+  })
+
+  test('updateFrame with unknown id is a no-op', () => {
+    const spec = emptySpec()
+    const result = updateFrame(spec, 'nonexistent', { code: 'changed' })
+    expect(result.frames[0].code).toBe('')
+  })
+})

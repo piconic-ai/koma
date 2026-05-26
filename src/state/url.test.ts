@@ -59,4 +59,47 @@ describe('encodeToHash / decodeFromHash', () => {
     expect(decodeFromHash(hash)).not.toBeNull()
     expect(decodeFromHash('#' + hash)).not.toBeNull()
   })
+
+  test('round-trips frame.hold and frame.transition', () => {
+    const spec: Spec = {
+      language: 'go',
+      frames: [
+        { id: 'a', code: 'x', hold: 500, transition: { duration: 200 } },
+        { id: 'b', code: 'y' },
+      ],
+    }
+    const decoded = decodeFromHash(encodeToHash(spec))
+    expect(decoded!.frames[0].hold).toBe(500)
+    expect(decoded!.frames[0].transition).toEqual({ duration: 200 })
+    expect(decoded!.frames[1].hold).toBeUndefined()
+  })
+
+  test('round-trips all supported languages', () => {
+    const languages: Spec['language'][] = [
+      'ts', 'tsx', 'js', 'jsx', 'py', 'rs', 'go',
+      'rb', 'pl', 'html', 'css', 'sh', 'json', 'text',
+    ]
+    for (const lang of languages) {
+      const spec: Spec = { language: lang, frames: [{ id: 'x', code: 'test' }] }
+      const decoded = decodeFromHash(encodeToHash(spec))
+      expect(decoded!.language).toBe(lang)
+    }
+  })
+
+  test('strips frame ids on encode (not leaked into hash)', () => {
+    const hash = encodeToHash(sample)
+    const json = atob(hash.replace(/-/g, '+').replace(/_/g, '/'))
+    const parsed = JSON.parse(json)
+    expect(parsed.frames[0]).not.toHaveProperty('id')
+  })
+
+  test('returns null for JSON that lacks frames array', () => {
+    const hash = btoa(JSON.stringify({ language: 'ts' }))
+    expect(decodeFromHash(hash)).toBeNull()
+  })
+
+  test('returns null for JSON that lacks language', () => {
+    const hash = btoa(JSON.stringify({ frames: [{ code: 'x' }] }))
+    expect(decodeFromHash(hash)).toBeNull()
+  })
 })

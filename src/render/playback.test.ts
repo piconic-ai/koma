@@ -81,3 +81,68 @@ describe('typingForLine', () => {
     expect(at1.displayLine).toBeUndefined()
   })
 })
+
+describe('typingForLine: boundary conditions', () => {
+  test('remove at exactly 0.3 becomes invisible', () => {
+    const t = typingForLine({ type: 'remove', line: 'hello', fromIndex: 0 }, 0.3)
+    expect(t.visible).toBe(false)
+  })
+
+  test('add at exactly 0.3 becomes visible (erase phase ends, type phase begins)', () => {
+    const t = typingForLine({ type: 'add', line: 'hello', toIndex: 0 }, 0.3)
+    expect(t.visible).toBe(true)
+    expect(t.visibleChars).toBe(0)
+  })
+
+  test('add at just past 0.3 becomes visible with 0 chars', () => {
+    const t = typingForLine({ type: 'add', line: 'hello', toIndex: 0 }, 0.301)
+    expect(t.visible).toBe(true)
+    expect(t.visibleChars).toBe(0)
+  })
+
+  test('remove with empty line', () => {
+    const t = typingForLine({ type: 'remove', line: '', fromIndex: 0 }, 0.15)
+    expect(t.visibleChars).toBe(0)
+    expect(t.showCursor).toBe(false)
+  })
+
+  test('add with empty line', () => {
+    const t = typingForLine({ type: 'add', line: '', toIndex: 0 }, 1)
+    expect(t.visibleChars).toBe(0)
+    expect(t.showCursor).toBe(false)
+  })
+
+  test('keep is always fully visible regardless of progress', () => {
+    for (const p of [0, 0.3, 0.5, 1]) {
+      const t = typingForLine({ type: 'keep', line: 'x', fromIndex: 0, toIndex: 0 }, p)
+      expect(t.visibleChars).toBe(-1)
+      expect(t.visible).toBe(true)
+      expect(t.showCursor).toBe(false)
+    }
+  })
+
+  test('modify at exactly the erase-type boundary (0.3)', () => {
+    const role = { type: 'modify' as const, line: 'ab_new', oldLine: 'ab_old', commonPrefix: 2, fromIndex: 0, toIndex: 0 }
+    const t = typingForLine(role, 0.3)
+    expect(t.visibleChars).toBe(2)
+    expect(t.visible).toBe(true)
+  })
+
+  test('modify with identical prefix and no suffix change', () => {
+    const role = { type: 'modify' as const, line: 'abc', oldLine: 'abx', commonPrefix: 2, fromIndex: 0, toIndex: 0 }
+    const t = typingForLine(role, 1)
+    expect(t.visibleChars).toBe(3)
+    expect(t.showCursor).toBe(false)
+  })
+})
+
+describe('getStageState: empty timeline', () => {
+  test('returns defensive hold for empty segments', () => {
+    const emptyTimeline = { segments: [], totalDurationMs: 0 }
+    const state = getStageState(emptyTimeline, 0)
+    expect(state.kind).toBe('hold')
+    if (state.kind === 'hold') {
+      expect(state.frame.code).toBe('')
+    }
+  })
+})
