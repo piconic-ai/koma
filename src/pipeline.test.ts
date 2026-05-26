@@ -1,4 +1,4 @@
-import { describe, expect, test } from 'vitest'
+import { describe, expect, test } from 'bun:test'
 import type { Spec } from './model/types'
 import { DEFAULTS } from './model/types'
 import { buildTimeline, locateInTimeline } from './model/timeline'
