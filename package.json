@@ -3,12 +3,12 @@
   "private": true,
   "type": "module",
   "scripts": {
-    "dev": "node scripts/build-export-bundle.mjs && concurrently -k -n build,uno,server -c blue,magenta,green \"node node_modules/@barefootjs/cli/dist/index.js build --watch\" \"unocss --watch\" \"npx wrangler dev --live-reload\"",
-    "build": "node node_modules/@barefootjs/cli/dist/index.js build && unocss && node scripts/build-export-bundle.mjs",
-    "deploy": "node node_modules/@barefootjs/cli/dist/index.js build && unocss && node scripts/build-export-bundle.mjs && npx wrangler deploy",
-    "watch": "concurrently -k -n build,uno -c blue,magenta \"node node_modules/@barefootjs/cli/dist/index.js build --watch\" \"unocss --watch\"",
-    "build:export": "node scripts/build-export-bundle.mjs",
-    "test": "vitest run"
+    "dev": "bun scripts/build-export-bundle.mjs && concurrently -k -n build,uno,server -c blue,magenta,green \"bun node_modules/@barefootjs/cli/dist/index.js build --watch\" \"unocss --watch\" \"bunx wrangler dev --live-reload\"",
+    "build": "bun node_modules/@barefootjs/cli/dist/index.js build && unocss && bun scripts/build-export-bundle.mjs",
+    "deploy": "bun node_modules/@barefootjs/cli/dist/index.js build && unocss && bun scripts/build-export-bundle.mjs && bunx wrangler deploy",
+    "watch": "concurrently -k -n build,uno -c blue,magenta \"bun node_modules/@barefootjs/cli/dist/index.js build --watch\" \"unocss --watch\"",
+    "build:export": "bun scripts/build-export-bundle.mjs",
+    "test": "bun test"
   },
   "dependencies": {
     "@barefootjs/cli": "^0.1.2",
@@ -20,14 +20,14 @@
   },
   "devDependencies": {
     "@barefootjs/test": "^0.1.2",
+    "@types/bun": "latest",
     "shiki": "^4.1.0",
     "@cloudflare/workers-types": "^4.20250101.0",
     "@unocss/cli": "^66.0.0",
     "@unocss/preset-wind4": "^66.0.0",
     "concurrently": "^9.0.0",
     "typescript": "^5.6.0",
-    "unocss": "^66.0.0",
-    "vitest": "^2.0.0"
+    "unocss": "^66.0.0"
   },
   "overrides": {
     "@barefootjs/cli": "^0.1.2",

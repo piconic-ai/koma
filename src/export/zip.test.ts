@@ -1,4 +1,4 @@
-import { describe, expect, test } from 'vitest'
+import { describe, expect, test } from 'bun:test'
 import { ZipWriter } from './zip'
 
 const u8 = (s: string) => new TextEncoder().encode(s)

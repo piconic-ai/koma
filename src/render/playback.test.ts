@@ -1,4 +1,4 @@
-import { describe, expect, test } from 'vitest'
+import { describe, expect, test } from 'bun:test'
 import { buildTimeline } from '../model/timeline'
 import { DEFAULTS, type Spec } from '../model/types'
 import { getStageState, typingForLine } from './playback'

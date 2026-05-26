@@ -1,4 +1,4 @@
-import { describe, expect, test } from 'vitest'
+import { describe, expect, test } from 'bun:test'
 import { decodeFromHash, encodeToHash } from './url'
 import type { Spec } from '../model/types'
 
