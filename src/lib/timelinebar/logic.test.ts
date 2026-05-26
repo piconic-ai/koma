@@ -13,6 +13,7 @@ import {
   holdRatioToElapsed,
   hoverTimeLabel,
   computeBarWidth,
+  computeBarWidthPx,
   computeExtensionHolds,
   computeSegmentDrag,
   MIN_HOLD,
@@ -20,6 +21,7 @@ import {
   MIN_EXTEND_MS_PER_PX,
   HOLD_PER_LINE_MS,
   TRANSITION_MS,
+  PX_PER_SECOND,
   type FrameInput,
 } from './logic'
 
@@ -958,5 +960,44 @@ describe('hoverTimeLabel', () => {
   test('single frame ratio=0.5 → half hold', () => {
     const single = [{ id: 'a', code: 'x', hold: 4000 }]
     expect(hoverTimeLabel(0.5, single)).toBe('2.0s')
+  })
+})
+
+// ── computeBarWidthPx ───────────────────────────────────
+
+describe('computeBarWidthPx', () => {
+  test('3 default frames → proportional to total duration', () => {
+    const frames: FrameInput[] = [
+      { id: 'a', code: 'x', hold: 2500 },
+      { id: 'b', code: 'y', hold: 2500 },
+      { id: 'c', code: 'z', hold: 3000 },
+    ]
+    const totalMs = 2500 + 2500 + 3000 + 2 * TRANSITION_MS
+    const expected = Math.round(totalMs / 1000 * PX_PER_SECOND)
+    expect(computeBarWidthPx(frames)).toBe(expected)
+  })
+
+  test('empty frames → minimum 60px', () => {
+    expect(computeBarWidthPx([])).toBe(60)
+  })
+
+  test('single short frame → at least 60px', () => {
+    const frames: FrameInput[] = [{ id: 'a', code: 'x', hold: 50 }]
+    expect(computeBarWidthPx(frames)).toBeGreaterThanOrEqual(60)
+  })
+
+  test('many frames → wider than single frame', () => {
+    const few: FrameInput[] = [{ id: 'a', code: 'x', hold: 2000 }]
+    const many: FrameInput[] = Array.from({ length: 10 }, (_, i) => ({
+      id: `f${i}`, code: 'x', hold: 2000,
+    }))
+    expect(computeBarWidthPx(many)).toBeGreaterThan(computeBarWidthPx(few))
+  })
+
+  test('width scales linearly with duration', () => {
+    const short: FrameInput[] = [{ id: 'a', code: 'x', hold: 5000 }]
+    const long: FrameInput[] = [{ id: 'a', code: 'x', hold: 10000 }]
+    const ratio = computeBarWidthPx(long) / computeBarWidthPx(short)
+    expect(ratio).toBeCloseTo(2, 0)
   })
 })

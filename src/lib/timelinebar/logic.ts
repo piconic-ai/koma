@@ -183,6 +183,13 @@ export function computeBarWidth(params: {
   return { holds, maxWidthPct, atMin: false, blocked: false }
 }
 
+export const PX_PER_SECOND = 80
+
+export function computeBarWidthPx(frames: FrameInput[]): number {
+  const totalMs = computeTotalMs(frames)
+  return Math.max(60, Math.round(totalMs / 1000 * PX_PER_SECOND))
+}
+
 export function clientXToRatio(clientX: number, rect: { left: number; width: number }): number {
   return Math.max(0, Math.min(1, (clientX - rect.left) / rect.width))
 }
