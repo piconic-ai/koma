@@ -112,6 +112,7 @@ export function App({ initialSpec }: AppProps) {
       <footer className="koma-timeline-footer" ref={handleFooterRef}>
         <TimelineBar
           frames={spec().frames}
+          selectedFrameId={selectedFrameId()}
           onLayout={(holds) => {
             setSpec(s => {
               let updated = s

@@ -356,6 +356,16 @@ main {
   cursor: pointer;
 }
 
+.koma-timeline-segment--at-min {
+  outline: 2px solid var(--destructive);
+  outline-offset: -2px;
+}
+
+.koma-timeline-segment--selected {
+  outline: 2px solid oklch(0.85 0.15 85);
+  outline-offset: -2px;
+}
+
 .koma-timeline-label {
   font-size: 10px;
   font-weight: 500;

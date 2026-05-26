@@ -12,6 +12,10 @@ export function holdOf(frame: { code: string; hold?: number }): number {
   return frame.hold ?? autoHold(frame.code)
 }
 
+export function isAtMinHold(frame: { code: string; hold?: number }): boolean {
+  return holdOf(frame) <= MIN_HOLD
+}
+
 export function formatDuration(ms: number): string {
   const s = ms / 1000
   return s < 10 ? `${s.toFixed(1)}s` : `${Math.round(s)}s`
