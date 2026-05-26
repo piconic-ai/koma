@@ -11,6 +11,7 @@ import {
   computeSegmentDrag,
   computeExtensionHolds,
   isAtMinHold,
+  hoverTimeLabel,
   TRANSITION_MS,
 } from '../src/lib/timelinebar/logic'
 
@@ -78,6 +79,8 @@ export function TimelineBar(props: TimelineBarProps) {
   const [isDragging, setIsDragging] = createSignal(false)
   const [maxWidthPct, setMaxWidthPct] = createSignal<number | null>(null)
   const [edgeDragging, setEdgeDragging] = createSignal(false)
+  const [hoverLabel, setHoverLabel] = createSignal<string | null>(null)
+  const [hoverLeftPx, setHoverLeftPx] = createSignal(0)
 
   const totalHold = createMemo(() => frames().reduce((sum, f) => sum + holdOf(f), 0))
   const totalDuration = createMemo(() => totalHold() + Math.max(0, frames().length - 1) * TRANSITION_MS)
@@ -111,6 +114,18 @@ export function TimelineBar(props: TimelineBarProps) {
     })
 
     document.addEventListener('click', () => setAtMin(false))
+
+    // Hover tooltip
+    if (bar) {
+      bar.addEventListener('mousemove', (e: MouseEvent) => {
+        const barRect = bar.getBoundingClientRect()
+        const wrapperRect = el.getBoundingClientRect()
+        const ratio = clientXToRatio(e.clientX, barRect)
+        setHoverLabel(hoverTimeLabel(ratio, props.frames))
+        setHoverLeftPx(e.clientX - wrapperRect.left)
+      })
+      bar.addEventListener('mouseleave', () => setHoverLabel(null))
+    }
 
     // Playhead drag
     if (playhead) {
@@ -275,6 +290,14 @@ export function TimelineBar(props: TimelineBarProps) {
           className={`koma-timeline-edge ${edgeDragging() ? 'koma-timeline-edge--dragging' : ''}`}
         />
       </div>
+      {hoverLabel() !== null && (
+        <div
+          className="koma-timeline-tooltip"
+          style={`left:${hoverLeftPx()}px`}
+        >
+          {hoverLabel()}
+        </div>
+      )}
       <span className="koma-timeline-total">
         {formatDuration(totalDuration())}
       </span>
