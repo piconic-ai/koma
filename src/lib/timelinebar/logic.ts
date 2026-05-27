@@ -1,5 +1,5 @@
-export const HOLD_PER_LINE_MS = 600
-export const MIN_HOLD_MS = 2500
+export const HOLD_PER_LINE_MS = 200
+export const MIN_HOLD_MS = 600
 export const TRANSITION_MS = 400
 export const MIN_HOLD = 50
 
