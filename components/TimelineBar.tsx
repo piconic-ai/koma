@@ -271,7 +271,6 @@ export function TimelineBar(props: TimelineBarProps) {
           autoScrollRAF = null
           setEdgeDragging(false)
           setAtMin(false)
-          setMaxWidthPct(null)
         },
       })
     }
