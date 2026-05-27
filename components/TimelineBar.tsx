@@ -4,7 +4,7 @@ import { createSignal, createMemo } from '@barefootjs/client'
 import {
   holdOf,
   formatDuration,
-  elapsedToHoldRatio,
+  elapsedToPlayheadPct,
   holdRatioToElapsed,
   computeBarWidth,
   computeBarWidthPx,
@@ -114,7 +114,7 @@ export function TimelineBar(props: TimelineBarProps) {
       const d = (e as CustomEvent).detail
       setIsPlaying(d.playing)
       if (!isDragging()) {
-        setPlayheadPct(elapsedToHoldRatio(d.elapsed, props.frames))
+        setPlayheadPct(elapsedToPlayheadPct(d.elapsed, props.frames))
       }
     })
 
