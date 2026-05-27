@@ -6,13 +6,13 @@ import {
   formatDuration,
   elapsedToPlayheadPct,
   holdRatioToElapsed,
-  computeBarWidth,
   computeBarWidthPct,
   clientXToRatio,
   computeSegmentDrag,
-  computeExtensionHolds,
   isAtMinHold,
   hoverTimeLabel,
+  BASE_DURATION_MS,
+  MIN_HOLD,
   TRANSITION_MS,
 } from '../src/lib/timelinebar/logic'
 
@@ -190,37 +190,23 @@ export function TimelineBar(props: TimelineBarProps) {
       const applyEdgeDrag = (clientX: number, start: {
         startHolds: number[], frameIds: string[],
         barLeft: number, startScrollLeft: number,
-        startWidth: number, wrapperWidth: number,
+        startTotalHold: number, transitions: number,
+        wrapperWidth: number,
       }) => {
         const scrollDelta = scrollContainer.scrollLeft - start.startScrollLeft
-        const newWidth = Math.max(60, clientX - start.barLeft + scrollDelta)
-        let holds: Array<{ id: string; hold: number }>
-
-        if (newWidth > start.startWidth) {
-          holds = computeExtensionHolds(
-            start.startHolds,
-            start.frameIds,
-            newWidth - start.startWidth,
-            start.startWidth,
-          )
-          setAtMin(false)
-        } else {
-          const result = computeBarWidth({
-            newWidth,
-            startWidth: start.startWidth,
-            wrapperWidth: start.wrapperWidth,
-            startHolds: start.startHolds,
-            frameIds: start.frameIds,
-          })
-
-          if (result.blocked) {
-            setAtMin(true)
-            return
-          }
-
-          holds = result.holds
-          setAtMin(result.atMin)
-        }
+        const desiredPx = Math.max(60, clientX - start.barLeft + scrollDelta)
+        const desiredTotalMs = (desiredPx / start.wrapperWidth) * BASE_DURATION_MS
+        const desiredTotalHold = Math.max(
+          start.frameIds.length * MIN_HOLD,
+          desiredTotalMs - start.transitions,
+        )
+        const scale = start.startTotalHold > 0 ? desiredTotalHold / start.startTotalHold : 1
+        const holds = start.frameIds.map((id, i) => ({
+          id,
+          hold: Math.max(MIN_HOLD, Math.round(start.startHolds[i] * scale)),
+        }))
+        const allAtMin = holds.every(h => h.hold <= MIN_HOLD)
+        setAtMin(allAtMin)
 
         setFrames(prev => prev.map(f => {
           const h = holds.find(u => u.id === f.id)
@@ -232,12 +218,17 @@ export function TimelineBar(props: TimelineBarProps) {
       setupDrag(edgeHandle, {
         onStart: () => {
           setEdgeDragging(true)
+          const startHolds = props.frames.map(f => holdOf(f))
+          const frameIds = props.frames.map(f => f.id)
+          const startTotalHold = startHolds.reduce((s, h) => s + h, 0)
+          const transitions = Math.max(0, frameIds.length - 1) * TRANSITION_MS
           const start = {
-            startHolds: props.frames.map(f => holdOf(f)),
-            frameIds: props.frames.map(f => f.id),
+            startHolds,
+            frameIds,
             barLeft: bar.getBoundingClientRect().left,
             startScrollLeft: scrollContainer.scrollLeft,
-            startWidth: bar.getBoundingClientRect().width,
+            startTotalHold,
+            transitions,
             wrapperWidth: scrollContainer.getBoundingClientRect().width,
           }
 
