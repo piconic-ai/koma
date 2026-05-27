@@ -1,6 +1,9 @@
-export const HOLD_PER_LINE_MS = 140
-export const MIN_HOLD_MS = 700
-export const TRANSITION_MS = 400
+import { DEFAULTS } from '../../model/types'
+
+export const HOLD_PER_LINE_MS = DEFAULTS.holdPerLineMs
+export const MIN_HOLD_MS = DEFAULTS.minHoldMs
+export const TRANSITION_MS = DEFAULTS.transitionMs
+export const FINAL_FRAME_MIN_HOLD_MS = DEFAULTS.finalFrameMinHoldMs
 export const MIN_HOLD = 50
 
 export function autoHold(code: string): number {
@@ -23,14 +26,26 @@ export function formatDuration(ms: number): string {
 
 export type FrameInput = { id: string; code: string; hold?: number }
 
+export function effectiveHolds(frames: FrameInput[]): number[] {
+  if (frames.length === 0) return []
+  const holds = frames.map(f => holdOf(f))
+  const lastIdx = holds.length - 1
+  if (holds[lastIdx] < FINAL_FRAME_MIN_HOLD_MS) {
+    holds[lastIdx] = FINAL_FRAME_MIN_HOLD_MS
+  }
+  return holds
+}
+
 export function computeSegmentPcts(frames: FrameInput[]): number[] {
-  const totalHold = frames.reduce((sum, f) => sum + holdOf(f), 0)
+  const holds = effectiveHolds(frames)
+  const totalHold = holds.reduce((sum, h) => sum + h, 0)
   if (totalHold <= 0) return frames.map(() => 0)
-  return frames.map(f => (holdOf(f) / totalHold) * 100)
+  return holds.map(h => (h / totalHold) * 100)
 }
 
 export function computeTotalMs(frames: FrameInput[]): number {
-  const totalHold = frames.reduce((sum, f) => sum + holdOf(f), 0)
+  const holds = effectiveHolds(frames)
+  const totalHold = holds.reduce((sum, h) => sum + h, 0)
   const transitions = Math.max(0, frames.length - 1) * TRANSITION_MS
   return totalHold + transitions
 }
@@ -99,27 +114,25 @@ export function elapsedToPlayheadPct(
   elapsed: number,
   frames: FrameInput[],
 ): number {
-  const totalDuration = computeTotalMs(frames)
-  if (totalDuration <= 0) return 0
-  if (elapsed <= 0) return 0
-  return Math.min(100, (elapsed / totalDuration) * 100)
+  return elapsedToHoldRatio(elapsed, frames)
 }
 
 export function elapsedToHoldRatio(
   elapsed: number,
   frames: FrameInput[],
 ): number {
-  const total = frames.reduce((s, f) => s + holdOf(f), 0)
+  const holds = effectiveHolds(frames)
+  const total = holds.reduce((s, h) => s + h, 0)
   if (total <= 0) return 0
   if (elapsed <= 0) return 0
   let rem = elapsed
   let accHold = 0
-  for (let k = 0; k < frames.length; k++) {
-    const fHold = holdOf(frames[k])
+  for (let k = 0; k < holds.length; k++) {
+    const fHold = holds[k]
     if (rem <= fHold) { accHold += rem; break }
     rem -= fHold
     accHold += fHold
-    if (k < frames.length - 1) {
+    if (k < holds.length - 1) {
       if (rem <= TRANSITION_MS) break
       rem -= TRANSITION_MS
     }
@@ -131,22 +144,23 @@ export function holdRatioToElapsed(
   barRatio: number,
   frames: FrameInput[],
 ): number {
-  const totalHold = frames.reduce((s, f) => s + holdOf(f), 0)
+  const holds = effectiveHolds(frames)
+  const totalHold = holds.reduce((s, h) => s + h, 0)
   if (totalHold <= 0) return 0
   if (barRatio <= 0) return 0
   const clampedRatio = Math.min(barRatio, 1)
   const holdMs = clampedRatio * totalHold
   let elapsed = 0
   let accHold = 0
-  for (let k = 0; k < frames.length; k++) {
-    const fHold = holdOf(frames[k])
+  for (let k = 0; k < holds.length; k++) {
+    const fHold = holds[k]
     if (accHold + fHold >= holdMs) {
       elapsed += holdMs - accHold
       break
     }
     accHold += fHold
     elapsed += fHold
-    if (k < frames.length - 1) elapsed += TRANSITION_MS
+    if (k < holds.length - 1) elapsed += TRANSITION_MS
   }
   return elapsed
 }
