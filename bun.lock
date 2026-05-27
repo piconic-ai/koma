@@ -4,21 +4,21 @@
     "": {
       "name": "koma",
       "dependencies": {
-        "@barefootjs/chart": "^0.1.3",
-        "@barefootjs/cli": "^0.1.3",
-        "@barefootjs/client": "^0.1.3",
-        "@barefootjs/form": "^0.1.3",
-        "@barefootjs/go-template": "^0.1.3",
-        "@barefootjs/hono": "^0.1.3",
-        "@barefootjs/jsx": "^0.1.3",
-        "@barefootjs/mojolicious": "^0.1.3",
-        "@barefootjs/shared": "^0.1.3",
-        "@barefootjs/streaming": "^0.1.3",
-        "@barefootjs/xyflow": "^0.1.3",
+        "@barefootjs/chart": "^0.2.0",
+        "@barefootjs/cli": "^0.2.0",
+        "@barefootjs/client": "^0.2.0",
+        "@barefootjs/form": "^0.2.0",
+        "@barefootjs/go-template": "^0.2.0",
+        "@barefootjs/hono": "^0.2.0",
+        "@barefootjs/jsx": "^0.2.0",
+        "@barefootjs/mojolicious": "^0.2.0",
+        "@barefootjs/shared": "^0.2.0",
+        "@barefootjs/streaming": "^0.2.0",
+        "@barefootjs/xyflow": "^0.2.0",
         "hono": "^4.6.0",
       },
       "devDependencies": {
-        "@barefootjs/test": "^0.1.3",
+        "@barefootjs/test": "^0.2.0",
         "@cloudflare/workers-types": "^4.20250101.0",
         "@types/bun": "latest",
         "@unocss/cli": "^66.0.0",
@@ -30,46 +30,32 @@
       },
     },
   },
-  "overrides": {
-    "@barefootjs/chart": "^0.1.2",
-    "@barefootjs/cli": "^0.1.2",
-    "@barefootjs/client": "^0.1.2",
-    "@barefootjs/form": "^0.1.2",
-    "@barefootjs/go-template": "^0.1.2",
-    "@barefootjs/hono": "^0.1.2",
-    "@barefootjs/jsx": "^0.1.2",
-    "@barefootjs/mojolicious": "^0.1.2",
-    "@barefootjs/shared": "^0.1.2",
-    "@barefootjs/streaming": "^0.1.2",
-    "@barefootjs/test": "^0.1.2",
-    "@barefootjs/xyflow": "^0.1.2",
-  },
   "packages": {
     "@antfu/install-pkg": ["@antfu/install-pkg@1.1.0", "", { "dependencies": { "package-manager-detector": "^1.3.0", "tinyexec": "^1.0.1" } }, "sha512-MGQsmw10ZyI+EJo45CdSER4zEb+p31LpDAFp2Z3gkSd1yqVZGi0Ebx++YTEMonJy4oChEMLsxZ64j8FH6sSqtQ=="],
 
-    "@barefootjs/chart": ["@barefootjs/chart@0.1.3", "", { "dependencies": { "d3-array": "^3.2.4", "d3-scale": "^4.0.2", "d3-shape": "^3.2.0" }, "peerDependencies": { "@barefootjs/client": ">=0.1.3" } }, "sha512-89vNn6YZunZoKioW6QJjvloK5ZCkdbngBFlsPTcnPQuFmXLBmlMfQDgJHxHfRJBTZQ5RHA6oGNLhUxuyihgSEw=="],
+    "@barefootjs/chart": ["@barefootjs/chart@0.2.0", "", { "dependencies": { "d3-array": "^3.2.4", "d3-scale": "^4.0.2", "d3-shape": "^3.2.0" }, "peerDependencies": { "@barefootjs/client": ">=0.2.0" } }, "sha512-brrXp54evD5QWZsoV6Qpu5/tgi9QmSMDAxfQC3fgm9J2s98g76/stsZg19YMMD5JW89XVgm4cctmNtgxADjOIQ=="],
 
-    "@barefootjs/cli": ["@barefootjs/cli@0.1.3", "", { "dependencies": { "esbuild": "^0.25.0", "typescript": "^5.0.0" }, "bin": { "bf": "dist/index.js" } }, "sha512-nrlRvcEXJYM1ktNDcnIEIHHOwBFbgWZ4hfRcmhapdp8mtT5CKhVEZ1F373tWnKwbHjp3B8RTJJNPQNEqkoD0Dg=="],
+    "@barefootjs/cli": ["@barefootjs/cli@0.2.0", "", { "dependencies": { "esbuild": "^0.25.0", "typescript": "^5.0.0" }, "bin": { "bf": "dist/index.js" } }, "sha512-UPFpOctJEdVIEHEp35nYj6mR6ulMYm22GJ5+50+GUyxw6HN2xGxQPaPOOHFrNGKQRpv8uNqncx+ed1bZw3FSvw=="],
 
-    "@barefootjs/client": ["@barefootjs/client@0.1.3", "", { "dependencies": { "@barefootjs/shared": "0.1.3" }, "peerDependencies": { "@barefootjs/jsx": "0.1.3" }, "optionalPeers": ["@barefootjs/jsx"] }, "sha512-W1T429bkypWMXy8rRXmD2cc53mUUxyTFNxpEPJylmwQrPAODFZfTnyRU29ApTUrKuc4yxtW0Cb0l8fnIWV3foA=="],
+    "@barefootjs/client": ["@barefootjs/client@0.2.0", "", { "dependencies": { "@barefootjs/shared": "0.2.0" }, "peerDependencies": { "@barefootjs/jsx": "0.2.0" }, "optionalPeers": ["@barefootjs/jsx"] }, "sha512-cWrjhR0BLTbvaNkZQk0CAfB9hxsfD8C8sBwtLT7ZgDgiji/PhvZZCaZXBkvQgtI4FXOuPjSRIWzkH4CvkDGK4Q=="],
 
-    "@barefootjs/form": ["@barefootjs/form@0.1.3", "", { "dependencies": { "@standard-schema/utils": "^0.3.0" }, "peerDependencies": { "@barefootjs/client": ">=0.1.3", "@standard-schema/spec": "^1.0.0" } }, "sha512-xY79druWUHkEaupqoJM1SOMGZamgHStqnCP/Er033tyXNCx61bR+rJ8JoRnfCnmMWC9EZXEyNDbKbj5ErQWyYA=="],
+    "@barefootjs/form": ["@barefootjs/form@0.2.0", "", { "dependencies": { "@standard-schema/utils": "^0.3.0" }, "peerDependencies": { "@barefootjs/client": ">=0.2.0", "@standard-schema/spec": "^1.0.0" } }, "sha512-wzLDLmDvyuCo/ObdLnHUTYxe2Gw9E5C3FAwGEhElgn5EX8lgQHstmlLoVpEUklshLqb2XicSHrwYTurPcl+FAw=="],
 
-    "@barefootjs/go-template": ["@barefootjs/go-template@0.1.3", "", { "peerDependencies": { "@barefootjs/jsx": "0.1.3", "typescript": "^5.0.0" } }, "sha512-hOAZDrEEqU5De4ynTImk5pV106AQz3yMXTe+BZlDHKPlrMQiQ6c6bQ43oOrcYvaaV0gDAH2AsmLOtrZY4Xbocg=="],
+    "@barefootjs/go-template": ["@barefootjs/go-template@0.2.0", "", { "peerDependencies": { "@barefootjs/jsx": "0.2.0", "typescript": "^5.0.0" } }, "sha512-o7peePpy4cIY7cDz+DFoIwQ6JLhZ+sHUkW08kiLGNAPpdbc11/Vb1SJ2zJ43b/G6V1C8K5q0BHULv07UABnSnQ=="],
 
-    "@barefootjs/hono": ["@barefootjs/hono@0.1.3", "", { "peerDependencies": { "@barefootjs/client": "0.1.3", "@barefootjs/jsx": "0.1.3", "@barefootjs/shared": "0.1.3", "hono": "^4.0.0" } }, "sha512-UwVQ5gdyjFCIe4ktNsqVIGbm3Jbmb+YwhKgF/nmteaeRTdOU15d5/LVkf9Nyh7xcO18BJn5bx7GnpiBomCOCTA=="],
+    "@barefootjs/hono": ["@barefootjs/hono@0.2.0", "", { "peerDependencies": { "@barefootjs/client": "0.2.0", "@barefootjs/jsx": "0.2.0", "@barefootjs/shared": "0.2.0", "hono": "^4.0.0" } }, "sha512-q/u57kZULiSYAa1EDSujD2M7ebfeoHtQPeHHWfw2TAWW/cXQcwpu2WOVDEA4YZdDBm2XaZQ+iMByYMWGXvO1fA=="],
 
-    "@barefootjs/jsx": ["@barefootjs/jsx@0.1.3", "", { "dependencies": { "@barefootjs/shared": "0.1.3" }, "peerDependencies": { "@barefootjs/client": "0.1.3", "typescript": "^5.0.0" } }, "sha512-A3vIF2GO/4CroM6zvQk2K9lpP/GqoZalCGajdpzREkIf79YpUaHb7Cl6IUJRs+Fp+TvP5wnTm7Nv0kODh19urA=="],
+    "@barefootjs/jsx": ["@barefootjs/jsx@0.2.0", "", { "dependencies": { "@barefootjs/shared": "0.2.0" }, "peerDependencies": { "@barefootjs/client": "0.2.0", "typescript": "^5.0.0" } }, "sha512-rlx7n2v6qQHExjmV4EK4FYtiaP/S199W7pj8+CakI7v9hBp7vudwSoqVsfzVy/Izci6PEHaSfUsCN2+GgM28gg=="],
 
-    "@barefootjs/mojolicious": ["@barefootjs/mojolicious@0.1.3", "", { "dependencies": { "@barefootjs/shared": "0.1.3" }, "peerDependencies": { "@barefootjs/jsx": "0.1.3" } }, "sha512-yQcmlIQF+LZbYT6CjMKE1urWO3pFYdCjqKkamS7xBnnSqgI7GorTYVj8EJAPWve3gTql5Np3feeSfC0sUHF8Bg=="],
+    "@barefootjs/mojolicious": ["@barefootjs/mojolicious@0.2.0", "", { "dependencies": { "@barefootjs/shared": "0.2.0" }, "peerDependencies": { "@barefootjs/jsx": "0.2.0" } }, "sha512-JaR34rurZczEzSGgB0WQyXokvcZWdfiomigMFKp5CoySWo+QwZ5HgMjYlZal7P36/Y+FRoRfufcaz3ANXa1sIQ=="],
 
-    "@barefootjs/shared": ["@barefootjs/shared@0.1.3", "", {}, "sha512-shggqLELMZQQgYNwCAoO+KYRo+MtWWeBnajjneadwtQhEqQahHmjR9PG7ULhCTv/B7FrVH/ohsdjBJfWdrR0fQ=="],
+    "@barefootjs/shared": ["@barefootjs/shared@0.2.0", "", {}, "sha512-j4WaIPrY6xZWLBA9qnUq4z+L9F5lWF8xRYM80uUR5DfpjWhGs4mdlBGA5idRPFGa1/y/p5LT+GKZ/N/I2TW3ng=="],
 
-    "@barefootjs/streaming": ["@barefootjs/streaming@0.1.3", "", { "dependencies": { "@barefootjs/shared": "0.1.3" } }, "sha512-Lgm9jWGJKVB+AcxKg56N6IDd9SJcx0PLbtOye3vfVhJJmO6rHBQbm4W7RNsIHa1T/4X5du5tK9sRI+1aELNtsA=="],
+    "@barefootjs/streaming": ["@barefootjs/streaming@0.2.0", "", { "dependencies": { "@barefootjs/shared": "0.2.0" } }, "sha512-Sc4HJyHoJRAULSZuCHSa5szwhTqIcuthdBXk/gdJ7p++GXcLmhwtGqCyHdJreQEJ9Wmj01jEJaofnM7EHE4zjQ=="],
 
-    "@barefootjs/test": ["@barefootjs/test@0.1.3", "", { "dependencies": { "@barefootjs/jsx": "0.1.3" } }, "sha512-NfHIW3UNY399MrfwZEVLo887Ho/bWTOLH643xdA9BTol5dbOW0Kjg2ZF4NAGOwyQUQvWxnKqn3ohkwK3UKrvRg=="],
+    "@barefootjs/test": ["@barefootjs/test@0.2.0", "", { "dependencies": { "@barefootjs/jsx": "0.2.0" } }, "sha512-UOXqtFbdqz3XYEKd8yj6tnV0YrQ7R1Ukds3CWN7jeaO91i2dyS3d9eIszWynFRkId3/QJYYyf1/IYqUDnxnyRw=="],
 
-    "@barefootjs/xyflow": ["@barefootjs/xyflow@0.1.3", "", { "dependencies": { "@xyflow/system": "^0.0.76" }, "peerDependencies": { "@barefootjs/client": ">=0.1.3", "@barefootjs/jsx": ">=0.1.3" } }, "sha512-Q45N9l5axUcsLZlGOpOmnU0M8dw4SpBqjnIiUZbQ756DRnv+6Vx5R2jNMVsES4DjxD6ouJo67uCZKVapa4krGw=="],
+    "@barefootjs/xyflow": ["@barefootjs/xyflow@0.2.0", "", { "dependencies": { "@xyflow/system": "^0.0.76" }, "peerDependencies": { "@barefootjs/client": ">=0.2.0", "@barefootjs/jsx": ">=0.2.0" } }, "sha512-UOncgp/CRXKkCQu+wV/22HY4WyZgwegS/7hIKWsq8TF6pbOwT0Sx+kw4BkXGBX5g7b/ZVLx+xW0YygJih1VdTg=="],
 
     "@cloudflare/workers-types": ["@cloudflare/workers-types@4.20260524.1", "", {}, "sha512-9o939wce6hAlfNAIG4W58bySW7twgkqgPkxmSNrk/DV0eEexjTPyqChGdsQeKZEXJAjxSUFklaebMYJWg1GM0g=="],
 
