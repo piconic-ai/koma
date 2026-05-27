@@ -436,11 +436,18 @@ main {
   opacity: 0.85;
 }
 
-.koma-timeline-wrapper .koma-timeline {
+.koma-timeline-scroll {
   flex: 1 1 auto;
   min-width: 60px;
-  margin-top: 0;
+  overflow-x: auto;
+  overflow-y: hidden;
+  scrollbar-width: thin;
+}
+
+.koma-timeline-scroll .koma-timeline {
+  min-width: 60px;
   position: relative;
+  flex-shrink: 0;
 }
 
 .koma-timeline-edge {
