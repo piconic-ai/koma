@@ -295,13 +295,14 @@ main {
   border-color: var(--destructive);
 }
 
-.koma-code-input {
+textarea.koma-code-input {
   width: 100%;
   min-height: 2em;
   field-sizing: content;
   padding: 12px 14px;
   border: none;
   border-radius: 0;
+  box-shadow: none;
   background: #0d1117;
   color: #c9d1d9;
   font-family: 'JetBrains Mono', 'Fira Code', ui-monospace, Menlo, monospace;
@@ -314,8 +315,10 @@ main {
   overflow-x: auto;
 }
 
-.koma-code-input:focus {
+textarea.koma-code-input:focus {
   outline: none;
+  border: none;
+  box-shadow: none;
 }
 
 /* timeline bar */

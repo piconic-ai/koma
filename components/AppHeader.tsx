@@ -86,7 +86,7 @@ export function AppHeader(props: AppHeaderProps) {
       <div className="koma-app-header-right">
         <Select value={props.language} onValueChange={(v: string) => props.onLanguageChange(v as Language)}>
           <SelectTrigger className="w-[160px]">
-            <SelectValue placeholder="Language..." />
+            <SelectValue placeholder={LANGUAGE_OPTIONS.find(o => o.value === props.language)?.label ?? 'Language...'} />
           </SelectTrigger>
           <SelectContent align="end">
             {LANGUAGE_OPTIONS.map(opt => (
