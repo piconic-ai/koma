@@ -445,9 +445,8 @@ main {
 }
 
 .koma-timeline-scroll .koma-timeline {
-  min-width: 100%;
+  flex: 1 1 auto;
   position: relative;
-  flex-shrink: 0;
 }
 
 .koma-timeline-edge {

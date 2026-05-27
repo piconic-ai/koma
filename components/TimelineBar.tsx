@@ -90,7 +90,7 @@ export function TimelineBar(props: TimelineBarProps) {
 
   const barStyle = () => {
     const mw = maxWidthPct()
-    const base = `width:${barWidthPx()}px`
+    const base = `min-width:${barWidthPx()}px`
     return mw !== null ? `${base};max-width:${mw}%` : base
   }
 
