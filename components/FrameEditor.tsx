@@ -1,35 +1,35 @@
 'use client'
 
 import { createEffect } from '@barefootjs/client'
+import { Button } from '@/components/ui/button'
+import { XIcon } from '@/components/ui/icon'
+import { Textarea } from '@/components/ui/textarea'
+import { applyTabIndent } from '../src/lib/tab-indent'
 import type { Frame, Language } from '../src/model/types'
 
-interface FrameEditorProps {
+export interface FrameEditorProps {
   frame: Frame
   language: Language
   index: number
   total: number
   selected: boolean
   onCode: (code: string) => void
-  onDuplicate: () => void
   onRemove: () => void
 }
 
 export function FrameEditor(props: FrameEditorProps) {
-  const onCodeInput = (e: Event) => {
-    const t = e.currentTarget as HTMLTextAreaElement
-    props.onCode(t.value)
+  const handleInput = (e: Event) => {
+    props.onCode((e.currentTarget as HTMLTextAreaElement).value)
   }
 
-  const onCodeKey = (e: KeyboardEvent) => {
+  const handleKeyDown = (e: KeyboardEvent) => {
     if (e.key !== 'Tab' || e.shiftKey) return
     e.preventDefault()
-    const t = e.currentTarget as HTMLTextAreaElement
-    const { selectionStart: start, selectionEnd: end, value } = t
-    const insertion = '  '
-    const next = value.slice(0, start) + insertion + value.slice(end)
-    t.value = next
-    t.selectionStart = t.selectionEnd = start + insertion.length
-    props.onCode(next)
+    const el = e.currentTarget as HTMLTextAreaElement
+    const result = applyTabIndent(el.value, el.selectionStart, el.selectionEnd)
+    el.value = result.value
+    el.selectionStart = el.selectionEnd = result.cursor
+    props.onCode(result.value)
   }
 
   const handleMount = (el: HTMLElement) => {
@@ -37,7 +37,7 @@ export function FrameEditor(props: FrameEditorProps) {
       if (props.selected) {
         el.setAttribute('data-selected', '')
         el.scrollIntoView({ behavior: 'smooth', block: 'center' })
-        const textarea = el.querySelector('.koma-code-input') as HTMLTextAreaElement | null
+        const textarea = el.querySelector('[data-slot="textarea"]') as HTMLTextAreaElement | null
         if (textarea) textarea.focus()
       } else {
         el.removeAttribute('data-selected')
@@ -48,32 +48,26 @@ export function FrameEditor(props: FrameEditorProps) {
   return (
     <div className="koma-frame-editor" ref={handleMount}>
       <div className="koma-frame-toolbar">
-        <button
+        <Button
           type="button"
-          className="koma-iconbtn"
-          onClick={props.onDuplicate}
-          aria-label="Duplicate frame"
-        >
-          ⧉
-        </button>
-        <button
-          type="button"
-          className="koma-iconbtn koma-iconbtn-danger"
+          variant="ghost"
+          size="icon-sm"
+          className="koma-iconbtn-danger"
           disabled={props.total <= 1}
           onClick={props.onRemove}
           aria-label="Delete frame"
         >
-          ✕
-        </button>
+          <XIcon size="sm" />
+        </Button>
       </div>
 
-      <textarea
+      <Textarea
         className="koma-code-input"
         spellcheck={false}
         data-language={props.language}
         value={props.frame.code}
-        onInput={onCodeInput}
-        onKeyDown={onCodeKey}
+        onInput={handleInput}
+        onKeyDown={handleKeyDown}
         rows={1}
         aria-label={`Frame ${props.index + 1} code`}
       />

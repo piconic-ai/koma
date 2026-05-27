@@ -7,7 +7,6 @@ import { AppHeader } from '@/components/AppHeader'
 import { TimelineBar } from '@/components/TimelineBar'
 import {
   addFrame,
-  duplicateFrame,
   removeFrame,
   setLanguage,
   updateFrame,
@@ -88,7 +87,6 @@ export function App({ initialSpec }: AppProps) {
             total={spec().frames.length}
             selected={selectedFrameId() === frame.id}
             onCode={code => setSpec(s => updateFrame(s, frame.id, { code }))}
-            onDuplicate={() => setSpec(s => duplicateFrame(s, frame.id))}
             onRemove={() => setSpec(s => removeFrame(s, frame.id))}
           />
         ))}

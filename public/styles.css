@@ -290,25 +290,6 @@ main {
   opacity: 1;
 }
 
-.koma-iconbtn {
-  width: 24px;
-  height: 24px;
-  border-radius: 4px;
-  border: none;
-  background: rgba(255, 255, 255, 0.08);
-  color: #c9d1d9;
-  font-size: 12px;
-  cursor: pointer;
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-}
-
-.koma-iconbtn[disabled] {
-  opacity: 0.4;
-  cursor: not-allowed;
-}
-
 .koma-iconbtn-danger:hover:not([disabled]) {
   background: color-mix(in oklch, var(--destructive) 20%, var(--background));
   border-color: var(--destructive);

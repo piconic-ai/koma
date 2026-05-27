@@ -1,0 +1,22 @@
+# BarefootJS UI
+
+> Signal-based UI components. shadcn/ui patterns with SolidJS-style reactivity.
+
+## Input
+
+- [Button](https://ui.barefootjs.dev/r/button.md): Button Component A versatile button component with multiple visual variants and sizes. Inspired by shadcn/ui with CSS variable theming support.
+- [Select](https://ui.barefootjs.dev/r/select.md) (stateful): Select Components A custom select dropdown with multiple sub-components. Inspired by shadcn/ui Select with CSS variable theming support. State management uses createContext/useContext for parent-child communication. Root Select manages open/value state, children consume via context. Features: - ESC key to close - Arrow key navigation - Type-ahead search - Accessibility (role="combobox", role="listbox", role="option") - Controlled/uncontrolled value - Portal for Content (escape overflow clipping) - data-state attribute-driven styling
+- [Textarea](https://ui.barefootjs.dev/r/textarea.md): Textarea Component A styled multi-line text input component with error state support. Inspired by shadcn/ui with CSS variable theming support.
+
+## Display
+
+- [Icon](https://ui.barefootjs.dev/r/icon.md): Icon Components SVG icons based on Lucide icon definitions. Each icon component directly returns an SVG element. Based on lucide-static v0.562.0 icon definitions.
+- [Slot](https://ui.barefootjs.dev/r/slot.md): Slot Component A polymorphic component that merges its props with its child element. Inspired by @radix-ui/react-slot. This enables the `asChild` pattern used by components like Button and Badge.
+
+## Layout
+
+- [Resizable](https://ui.barefootjs.dev/r/resizable.md): Resizable Panel Components Accessible resizable panel groups with drag and keyboard support. Inspired by shadcn/ui wrapping react-resizable-panels.
+
+## Overlay
+
+- [Popover](https://ui.barefootjs.dev/r/popover.md): Popover Components A floating panel that appears relative to a trigger element. Inspired by shadcn/ui Popover with CSS variable theming support. State management uses createContext/useContext for parent-child communication. Root Popover manages open state, children consume via context. Features: - ESC key to close - Click outside to close - Non-modal (no scroll lock, no focus trap) - Accessibility (aria-expanded, data-state)

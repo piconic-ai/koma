@@ -1,6 +1,6 @@
 {
   "version": 1,
-  "generatedAt": "2026-05-26T03:09:01.113Z",
+  "generatedAt": "2026-05-27T10:56:47.328Z",
   "components": [
     {
       "name": "button",
@@ -119,6 +119,16 @@
       "category": "display",
       "description": "Slot Component A polymorphic component that merges its props with its child element. Inspired by @radix-ui/react-slot. This enables the `asChild` pattern used by components like Button and Badge.",
       "tags": [],
+      "stateful": false
+    },
+    {
+      "name": "textarea",
+      "title": "Textarea",
+      "category": "input",
+      "description": "Textarea Component A styled multi-line text input component with error state support. Inspired by shadcn/ui with CSS variable theming support.",
+      "tags": [
+        "aria"
+      ],
       "stateful": false
     }
   ]
