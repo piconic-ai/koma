@@ -445,9 +445,8 @@ main {
 }
 
 .koma-timeline-scroll .koma-timeline {
-  min-width: 60px;
+  flex: 0 0 auto;
   position: relative;
-  flex-shrink: 0;
 }
 
 .koma-timeline-edge {
@@ -550,7 +549,7 @@ main {
   transition: color 0.15s;
 }
 
-.koma-timeline--at-min ~ .koma-timeline-total {
+.koma-timeline-wrapper:has(.koma-timeline--at-min) .koma-timeline-total {
   color: var(--destructive);
 }
 

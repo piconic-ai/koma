@@ -7,7 +7,7 @@ import {
   elapsedToPlayheadPct,
   holdRatioToElapsed,
   computeBarWidth,
-  computeBarWidthPx,
+  computeBarWidthPct,
   clientXToRatio,
   computeSegmentDrag,
   computeExtensionHolds,
@@ -86,11 +86,11 @@ export function TimelineBar(props: TimelineBarProps) {
   const totalHold = createMemo(() => frames().reduce((sum, f) => sum + holdOf(f), 0))
   const totalDuration = createMemo(() => totalHold() + Math.max(0, frames().length - 1) * TRANSITION_MS)
 
-  const barWidthPx = createMemo(() => computeBarWidthPx(frames()))
+  const barWidthPct = createMemo(() => computeBarWidthPct(frames()))
 
   const barStyle = () => {
     const mw = maxWidthPct()
-    const base = `width:${barWidthPx()}px`
+    const base = `width:${barWidthPct()}%`
     return mw !== null ? `${base};max-width:${mw}%` : base
   }
 
@@ -247,6 +247,9 @@ export function TimelineBar(props: TimelineBarProps) {
 
   return (
     <div className="koma-timeline-wrapper" ref={handleMount}>
+      <span className="koma-timeline-total">
+        {formatDuration(totalDuration())}
+      </span>
       <button
         type="button"
         className="koma-timeline-play"
@@ -305,9 +308,6 @@ export function TimelineBar(props: TimelineBarProps) {
           {hoverLabel()}
         </div>
       )}
-      <span className="koma-timeline-total">
-        {formatDuration(totalDuration())}
-      </span>
     </div>
   )
 }
