@@ -255,14 +255,50 @@ main {
 }
 
 
+.koma-editors-wrapper {
+  display: flex;
+  align-items: stretch;
+  justify-content: center;
+  width: 100%;
+}
+
+.koma-editors-handle {
+  width: 6px;
+  flex-shrink: 0;
+  cursor: col-resize;
+  position: relative;
+  transition: background 0.15s;
+}
+
+.koma-editors-handle::after {
+  content: '';
+  position: absolute;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 2px;
+  height: 32px;
+  border-radius: 1px;
+  background: var(--border);
+  transition: background 0.15s, height 0.15s;
+}
+
+.koma-editors-handle--left::after { right: 2px; }
+.koma-editors-handle--right::after { left: 2px; }
+
+.koma-editors-handle:hover::after {
+  background: var(--foreground);
+  height: 48px;
+}
+
 .koma-editors {
   display: flex;
   flex-direction: column;
   gap: 16px;
   padding: 24px;
   max-width: 688px;
-  margin: 0 auto;
   width: 100%;
+  flex: 1;
+  min-width: 0;
 }
 
 .koma-preview-dock {

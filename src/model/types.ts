@@ -34,7 +34,7 @@ export type Frame = {
   }
 }
 
-export type CanvasWidth = 1080 | 1280 | 1920
+export type CanvasWidth = number
 
 export type Spec = {
   language: Language

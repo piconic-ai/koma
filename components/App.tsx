@@ -1,6 +1,6 @@
 'use client'
 
-import { createEffect, createSignal, onCleanup, onMount } from '@barefootjs/client'
+import { createEffect, createMemo, createSignal, onCleanup, onMount } from '@barefootjs/client'
 import { Player } from '@/components/Player'
 import { FrameEditor } from '@/components/FrameEditor'
 import { AppHeader } from '@/components/AppHeader'
@@ -12,6 +12,7 @@ import {
   updateFrame,
 } from '../src/model/spec'
 import type { CanvasWidth, Language, Spec } from '../src/model/types'
+
 import { decodeFromHash, encodeToHash } from '../src/state/url'
 
 interface AppProps {
@@ -26,6 +27,32 @@ export function App({ initialSpec }: AppProps) {
   let appEl: HTMLElement | null = null
   let dockEl: HTMLElement | null = null
   let footerEl: HTMLElement | null = null
+
+  const editorWidth = createMemo(() => spec().width ?? 1080)
+  const editorStyle = () => `max-width:${Math.round(editorWidth() * 0.64)}px`
+
+  const handleEdgeDrag = (e: PointerEvent, side: 'left' | 'right') => {
+    e.preventDefault()
+    const startX = e.clientX
+    const startWidth = editorWidth()
+    const el = (e.currentTarget as HTMLElement)
+    el.setPointerCapture(e.pointerId)
+
+    const onMove = (ev: PointerEvent) => {
+      const dx = side === 'right' ? ev.clientX - startX : startX - ev.clientX
+      const raw = startWidth + dx * 2
+      const clamped = Math.max(640, Math.min(1920, Math.round(raw / 10) * 10))
+      setSpec(s => ({ ...s, width: clamped as CanvasWidth }))
+    }
+    const onUp = () => {
+      el.removeEventListener('pointermove', onMove)
+      el.removeEventListener('pointerup', onUp)
+      el.removeEventListener('pointercancel', onUp)
+    }
+    el.addEventListener('pointermove', onMove)
+    el.addEventListener('pointerup', onUp)
+    el.addEventListener('pointercancel', onUp)
+  }
 
   const updateDockHeight = () => {
     if (!dockEl || !footerEl) return
@@ -77,35 +104,43 @@ export function App({ initialSpec }: AppProps) {
     <div className="koma-app" ref={(el: HTMLElement) => { appEl = el }}>
       <AppHeader
         language={spec().language}
-        width={spec().width ?? 1080}
         spec={spec()}
         onLanguageChange={(v: Language) => setSpec(s => setLanguage(s, v))}
-        onWidthChange={(v: CanvasWidth) => setSpec(s => ({ ...s, width: v }))}
       />
 
-      <section className="koma-editors" aria-label="Frame editors">
-        {spec().frames.map((frame, i) => (
-          <FrameEditor
-            key={frame.id}
-            frame={frame}
-            language={spec().language}
-            index={i}
-            total={spec().frames.length}
-            selected={selectedFrameId() === frame.id}
-            onCode={code => setSpec(s => updateFrame(s, frame.id, { code }))}
-            onRemove={() => setSpec(s => removeFrame(s, frame.id))}
-          />
-        ))}
+      <div className="koma-editors-wrapper">
+        <div
+          className="koma-editors-handle koma-editors-handle--left"
+          onPointerDown={(e: PointerEvent) => handleEdgeDrag(e, 'left')}
+        />
+        <section className="koma-editors" aria-label="Frame editors" style={editorStyle()}>
+          {spec().frames.map((frame, i) => (
+            <FrameEditor
+              key={frame.id}
+              frame={frame}
+              language={spec().language}
+              index={i}
+              total={spec().frames.length}
+              selected={selectedFrameId() === frame.id}
+              onCode={code => setSpec(s => updateFrame(s, frame.id, { code }))}
+              onRemove={() => setSpec(s => removeFrame(s, frame.id))}
+            />
+          ))}
 
-        <button
-          type="button"
-          className="koma-add-frame"
-          onClick={() => setSpec(s => addFrame(s))}
-          aria-label="Add frame"
-        >
-          +
-        </button>
-      </section>
+          <button
+            type="button"
+            className="koma-add-frame"
+            onClick={() => setSpec(s => addFrame(s))}
+            aria-label="Add frame"
+          >
+            +
+          </button>
+        </section>
+        <div
+          className="koma-editors-handle koma-editors-handle--right"
+          onPointerDown={(e: PointerEvent) => handleEdgeDrag(e, 'right')}
+        />
+      </div>
 
       <div className="koma-preview-dock" ref={handleDockRef}>
         <aside className="koma-preview" aria-label="Preview">
