@@ -187,56 +187,88 @@ export function TimelineBar(props: TimelineBarProps) {
     // Edge drag — capture start values at pointerdown
     const edgeHandle = bar?.querySelector('[data-timeline-edge]') as HTMLElement
     if (edgeHandle) {
+      const SCROLL_ZONE = 40
+      const SCROLL_SPEED = 8
+      let autoScrollRAF: number | null = null
+      let lastClientX = 0
+
+      const applyEdgeDrag = (clientX: number, start: {
+        startHolds: number[], frameIds: string[],
+        barLeft: number, startScrollLeft: number,
+        startWidth: number, wrapperWidth: number,
+      }) => {
+        const scrollDelta = scrollContainer.scrollLeft - start.startScrollLeft
+        const newWidth = Math.max(60, clientX - start.barLeft + scrollDelta)
+        let holds: Array<{ id: string; hold: number }>
+
+        if (newWidth > start.startWidth) {
+          holds = computeExtensionHolds(
+            start.startHolds,
+            start.frameIds,
+            newWidth - start.startWidth,
+            start.startWidth,
+          )
+          setAtMin(false)
+          setMaxWidthPct(null)
+        } else {
+          const result = computeBarWidth({
+            newWidth,
+            startWidth: start.startWidth,
+            wrapperWidth: start.wrapperWidth,
+            startHolds: start.startHolds,
+            frameIds: start.frameIds,
+          })
+
+          if (result.blocked) {
+            setAtMin(true)
+            return
+          }
+
+          holds = result.holds
+          setAtMin(result.atMin)
+          setMaxWidthPct(result.maxWidthPct)
+        }
+
+        setFrames(prev => prev.map(f => {
+          const h = holds.find(u => u.id === f.id)
+          return h ? { ...f, hold: h.hold } : f
+        }))
+        props.onLayout(holds)
+      }
+
       setupDrag(edgeHandle, {
         onStart: () => {
           setEdgeDragging(true)
-          return {
+          const start = {
             startHolds: props.frames.map(f => holdOf(f)),
             frameIds: props.frames.map(f => f.id),
             barLeft: bar.getBoundingClientRect().left,
+            startScrollLeft: scrollContainer.scrollLeft,
             startWidth: bar.getBoundingClientRect().width,
             wrapperWidth: scrollContainer.getBoundingClientRect().width,
           }
+
+          const tick = () => {
+            if (!edgeDragging()) return
+            const scrollRect = scrollContainer.getBoundingClientRect()
+            const overshoot = lastClientX - scrollRect.right + SCROLL_ZONE
+            if (overshoot > 0) {
+              scrollContainer.scrollLeft += Math.min(overshoot, SCROLL_SPEED)
+              applyEdgeDrag(lastClientX, start)
+            }
+            autoScrollRAF = requestAnimationFrame(tick)
+          }
+          autoScrollRAF = requestAnimationFrame(tick)
+
+          return start
         },
         onMove: (ev, start) => {
-          const newWidth = Math.max(60, ev.clientX - start.barLeft)
-          let holds: Array<{ id: string; hold: number }>
-
-          if (newWidth > start.startWidth) {
-            holds = computeExtensionHolds(
-              start.startHolds,
-              start.frameIds,
-              newWidth - start.startWidth,
-              start.startWidth,
-            )
-            setAtMin(false)
-            setMaxWidthPct(null)
-          } else {
-            const result = computeBarWidth({
-              newWidth,
-              startWidth: start.startWidth,
-              wrapperWidth: start.wrapperWidth,
-              startHolds: start.startHolds,
-              frameIds: start.frameIds,
-            })
-
-            if (result.blocked) {
-              setAtMin(true)
-              return
-            }
-
-            holds = result.holds
-            setAtMin(result.atMin)
-            setMaxWidthPct(result.maxWidthPct)
-          }
-
-          setFrames(prev => prev.map(f => {
-            const h = holds.find(u => u.id === f.id)
-            return h ? { ...f, hold: h.hold } : f
-          }))
-          props.onLayout(holds)
+          lastClientX = ev.clientX
+          applyEdgeDrag(ev.clientX, start)
         },
         onEnd: () => {
+          if (autoScrollRAF !== null) cancelAnimationFrame(autoScrollRAF)
+          autoScrollRAF = null
           setEdgeDragging(false)
           setAtMin(false)
           setMaxWidthPct(null)
