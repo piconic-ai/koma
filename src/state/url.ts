@@ -43,9 +43,13 @@ const newId = (): string => {
 }
 
 export function encodeToHash(spec: Spec): string {
+  let frames = spec.frames.map(({ id: _id, ...rest }) => rest)
+  while (frames.length > 1 && !frames[frames.length - 1].code.trim()) {
+    frames = frames.slice(0, -1)
+  }
   const payload: SerializedSpec = {
     language: spec.language,
-    frames: spec.frames.map(({ id: _id, ...rest }) => rest),
+    frames,
     ...(spec.width && spec.width !== 1080 ? { width: spec.width } : {}),
   }
   return utf8ToBase64Url(JSON.stringify(payload))
