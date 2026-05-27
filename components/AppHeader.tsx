@@ -5,7 +5,7 @@ import {
   Select, SelectTrigger, SelectValue,
   SelectContent, SelectItem,
 } from '@/components/ui/select'
-import type { Language, Spec } from '../src/model/types'
+import type { CanvasWidth, Language, Spec } from '../src/model/types'
 
 type ExportProgress = { current: number; total: number }
 type ExportOptions = { reduceMotion?: boolean }
@@ -45,10 +45,18 @@ const LANGUAGE_OPTIONS: Array<{ value: Language; label: string }> = [
   { value: 'text', label: 'Plain text' },
 ]
 
+const WIDTH_OPTIONS: Array<{ value: string; label: string }> = [
+  { value: '1080', label: '1080px' },
+  { value: '1280', label: '1280px' },
+  { value: '1920', label: '1920px' },
+]
+
 interface AppHeaderProps {
   language: Language
+  width: CanvasWidth
   spec: Spec
   onLanguageChange: (v: Language) => void
+  onWidthChange: (v: CanvasWidth) => void
 }
 
 export function AppHeader(props: AppHeaderProps) {
@@ -90,6 +98,18 @@ export function AppHeader(props: AppHeaderProps) {
           </SelectTrigger>
           <SelectContent align="end">
             {LANGUAGE_OPTIONS.map(opt => (
+              <SelectItem key={opt.value} value={opt.value}>
+                {opt.label}
+              </SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
+        <Select value={String(props.width)} onValueChange={(v: string) => props.onWidthChange(Number(v) as CanvasWidth)}>
+          <SelectTrigger className="w-[100px]">
+            <SelectValue placeholder={`${props.width}px`} />
+          </SelectTrigger>
+          <SelectContent align="end">
+            {WIDTH_OPTIONS.map(opt => (
               <SelectItem key={opt.value} value={opt.value}>
                 {opt.label}
               </SelectItem>

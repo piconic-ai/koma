@@ -65,7 +65,10 @@ export function Player(props: PlayerProps) {
       elapsedMs: elapsedMs(),
       tokensByFrame: tokensByFrame(),
       frames: props.spec.frames,
-      options: { height: heightForFrames(props.spec.frames) },
+      options: {
+        ...(props.spec.width ? { width: props.spec.width, codeWidth: props.spec.width - 180 } : {}),
+        height: heightForFrames(props.spec.frames, props.spec.width ? { width: props.spec.width } : {}),
+      },
     })
   }
 

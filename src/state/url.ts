@@ -12,7 +12,7 @@
 import type { Frame, Spec } from '../model/types'
 
 type SerializedFrame = Omit<Frame, 'id'>
-type SerializedSpec = { language: Spec['language']; frames: SerializedFrame[] }
+type SerializedSpec = { language: Spec['language']; frames: SerializedFrame[]; width?: number }
 
 const utf8ToBase64Url = (s: string): string => {
   const bytes = new TextEncoder().encode(s)
@@ -46,6 +46,7 @@ export function encodeToHash(spec: Spec): string {
   const payload: SerializedSpec = {
     language: spec.language,
     frames: spec.frames.map(({ id: _id, ...rest }) => rest),
+    ...(spec.width && spec.width !== 1080 ? { width: spec.width } : {}),
   }
   return utf8ToBase64Url(JSON.stringify(payload))
 }
@@ -64,6 +65,7 @@ export function decodeFromHash(hash: string): Spec | null {
         ...f,
         id: newId(),
       })),
+      ...(parsed.width ? { width: parsed.width as Spec['width'] } : {}),
     }
   } catch {
     return null
