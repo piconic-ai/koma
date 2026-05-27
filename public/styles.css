@@ -156,6 +156,19 @@ main {
   padding-bottom: var(--dock-height, 340px);
 }
 
+.koma-editors,
+.koma-preview-dock,
+.koma-timeline-footer {
+  opacity: 0;
+  transition: opacity 0.15s ease-out;
+}
+
+.koma-app[data-ready] .koma-editors,
+.koma-app[data-ready] .koma-preview-dock,
+.koma-app[data-ready] .koma-timeline-footer {
+  opacity: 1;
+}
+
 .koma-app-header {
   display: flex;
   align-items: center;

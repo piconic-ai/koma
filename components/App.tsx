@@ -23,6 +23,7 @@ export function App({ initialSpec }: AppProps) {
   const [spec, setSpec] = createSignal<Spec>(initialSpec)
   const [selectedFrameId, setSelectedFrameId] = createSignal<string | null>(null)
 
+  let appEl: HTMLElement | null = null
   let dockEl: HTMLElement | null = null
   let footerEl: HTMLElement | null = null
 
@@ -40,6 +41,8 @@ export function App({ initialSpec }: AppProps) {
 
     const fromHash = decodeFromHash(window.location.hash)
     if (fromHash) setSpec(fromHash)
+
+    requestAnimationFrame(() => appEl?.setAttribute('data-ready', ''))
 
     // Dock height tracking
     updateDockHeight()
@@ -70,7 +73,7 @@ export function App({ initialSpec }: AppProps) {
   })
 
   return (
-    <div className="koma-app">
+    <div className="koma-app" ref={(el: HTMLElement) => { appEl = el }}>
       <AppHeader
         language={spec().language}
         spec={spec()}
