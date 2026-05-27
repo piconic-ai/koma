@@ -78,6 +78,27 @@ export type Defaults = {
   padding: number
 }
 
+export const PREVIEW_TIMING = {
+  holdPerLineMs: 140,
+  minHoldMs: 700,
+  transitionMs: 400,
+  finalFrameMinHoldMs: 700,
+} as const
+
+export const PREVIEW_DEFAULTS: Defaults = {
+  ...PREVIEW_TIMING,
+  fps: 30,
+  width: 1080,
+  height: 1080,
+  bitrate: 2_000_000,
+  fontFamily: 'JetBrains Mono, monospace',
+  fontSize: 18,
+  lineHeight: 1.6,
+  theme: 'github-dark',
+  showWindowChrome: true,
+  padding: 32,
+}
+
 export const DEFAULTS: Defaults = {
   holdPerLineMs: 600,
   minHoldMs: 2500,

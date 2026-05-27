@@ -90,7 +90,7 @@ describe('computeSegmentPcts', () => {
 
 describe('effectiveHolds', () => {
   test('pads last frame when below FINAL_FRAME_MIN_HOLD_MS', () => {
-    const frames = f3(2000, 2000, 1000)
+    const frames = f3(2000, 2000, 500)
     const holds = effectiveHolds(frames)
     expect(holds).toEqual([2000, 2000, FH])
   })
@@ -125,7 +125,7 @@ describe('effectiveHolds', () => {
 
 describe('computeTotalMs with final-frame padding', () => {
   test('single frame with hold < FH → total = FH', () => {
-    const frames: FrameInput[] = [{ id: 'a', code: 'x', hold: 1000 }]
+    const frames: FrameInput[] = [{ id: 'a', code: 'x', hold: 200 }]
     expect(computeTotalMs(frames)).toBe(FH)
   })
 
@@ -140,8 +140,7 @@ describe('computeTotalMs with final-frame padding', () => {
   })
 
   test('3 frames where last is padded', () => {
-    const frames = f3(2000, 2000, 1000)
-    // effectiveHolds = [2000, 2000, 3000], total = 7000 + 2*TRANSITION_MS
+    const frames = f3(2000, 2000, 500)
     expect(computeTotalMs(frames)).toBe(2000 + 2000 + FH + 2 * TRANSITION_MS)
   })
 })
@@ -151,7 +150,7 @@ describe('computeTotalMs with final-frame padding', () => {
 describe('computeTotalMs', () => {
   test.each([
     { frames: f3(2500, 2500, 3000), expected: 8000 + 2 * TRANSITION_MS },
-    { frames: [f('a', 1000)], expected: FH }, // single frame: hold 1000 padded to FH
+    { frames: [f('a', 200)], expected: FH }, // single frame: hold 200 padded to FH
     { frames: [], expected: 0 },
     { frames: f3(50, 50, 50), expected: 50 + 50 + FH + 2 * TRANSITION_MS }, // last frame padded
   ])('$expected ms for given frames', ({ frames, expected }) => {
@@ -1042,10 +1041,8 @@ describe('hoverTimeLabel', () => {
 
 describe('computeBarWidthPct', () => {
   test('single frame at BASE_DURATION_MS → ≈100%', () => {
-    // hold=BASE_DURATION_MS → padded to FH if < FH.
-    // With FH=3000 and BASE_DURATION_MS=2900, effective hold = 3000, pct = 3000/2900*100
     const frames: FrameInput[] = [{ id: 'a', code: 'x', hold: BASE_DURATION_MS }]
-    expect(computeBarWidthPct(frames)).toBeCloseTo((FH / BASE_DURATION_MS) * 100, 0)
+    expect(computeBarWidthPct(frames)).toBeCloseTo(100, 0)
   })
 
   test('empty frames → 0%', () => {

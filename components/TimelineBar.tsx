@@ -3,7 +3,9 @@
 import { createSignal, createMemo } from '@barefootjs/client'
 import {
   holdOf,
+  effectiveHolds,
   formatDuration,
+  computeTotalMs,
   elapsedToPlayheadPct,
   holdRatioToElapsed,
   computeBarWidthPct,
@@ -82,8 +84,9 @@ export function TimelineBar(props: TimelineBarProps) {
   const [hoverLabel, setHoverLabel] = createSignal<string | null>(null)
   const [hoverLeftPx, setHoverLeftPx] = createSignal(0)
 
-  const totalHold = createMemo(() => frames().reduce((sum, f) => sum + holdOf(f), 0))
-  const totalDuration = createMemo(() => totalHold() + Math.max(0, frames().length - 1) * TRANSITION_MS)
+  const holds = createMemo(() => effectiveHolds(frames()))
+  const totalHold = createMemo(() => holds().reduce((sum, h) => sum + h, 0))
+  const totalDuration = createMemo(() => computeTotalMs(frames()))
 
   const barWidthPct = createMemo(() => computeBarWidthPct(frames()))
 
@@ -293,7 +296,7 @@ export function TimelineBar(props: TimelineBarProps) {
               )}
               <div
                 className={`koma-timeline-segment${isAtMinHold(frame) ? ' koma-timeline-segment--at-min' : ''}${props.selectedFrameId === frame.id ? ' koma-timeline-segment--selected' : ''}`}
-                style={`flex-basis:${totalHold() > 0 ? (holdOf(frame) / totalHold()) * 100 : 0}%;flex-grow:0;flex-shrink:0`}
+                style={`flex-basis:${totalHold() > 0 ? ((holds()[i] ?? holdOf(frame)) / totalHold()) * 100 : 0}%;flex-grow:0;flex-shrink:0`}
                 onClick={() => {
                   props.onSelect(frame.id)
                   const idx = props.frames.findIndex(f => f.id === frame.id)
