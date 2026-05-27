@@ -29,7 +29,8 @@ export function App({ initialSpec }: AppProps) {
   let footerEl: HTMLElement | null = null
 
   const editorWidth = createMemo(() => spec().width ?? 1080)
-  const editorStyle = () => `max-width:${Math.round(editorWidth() * 0.64)}px`
+  const contentMaxWidth = () => Math.round(editorWidth() * 0.64)
+  const editorStyle = () => `max-width:${contentMaxWidth()}px`
 
   const handleEdgeDrag = (e: PointerEvent, side: 'left' | 'right') => {
     e.preventDefault()
@@ -143,7 +144,7 @@ export function App({ initialSpec }: AppProps) {
       </div>
 
       <div className="koma-preview-dock" ref={handleDockRef}>
-        <aside className="koma-preview" aria-label="Preview">
+        <aside className="koma-preview" aria-label="Preview" style={`max-width:${contentMaxWidth()}px`}>
           <Player spec={spec()} />
         </aside>
       </div>

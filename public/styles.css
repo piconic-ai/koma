@@ -317,7 +317,7 @@ main {
 .koma-preview {
   width: 100%;
   max-width: 688px;
-  padding: 0 24px;
+  padding: 0;
   min-width: 0;
   overflow: hidden;
 }
