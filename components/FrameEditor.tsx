@@ -18,6 +18,8 @@ export interface FrameEditorProps {
 }
 
 export function FrameEditor(props: FrameEditorProps) {
+  let textareaEl: HTMLTextAreaElement | null = null
+
   const handleInput = (e: Event) => {
     props.onCode((e.currentTarget as HTMLTextAreaElement).value)
   }
@@ -32,21 +34,19 @@ export function FrameEditor(props: FrameEditorProps) {
     props.onCode(result.value)
   }
 
-  const handleMount = (el: HTMLElement) => {
-    createEffect(() => {
-      if (props.selected) {
-        el.setAttribute('data-selected', '')
-        el.scrollIntoView({ behavior: 'smooth', block: 'center' })
-        const textarea = el.querySelector('[data-slot="textarea"]') as HTMLTextAreaElement | null
-        if (textarea) textarea.focus()
-      } else {
-        el.removeAttribute('data-selected')
-      }
-    })
+  const handleTextareaRef = (el: HTMLTextAreaElement) => {
+    textareaEl = el
   }
 
+  createEffect(() => {
+    if (props.selected && textareaEl) {
+      textareaEl.closest('.koma-frame-editor')?.scrollIntoView({ behavior: 'smooth', block: 'center' })
+      textareaEl.focus()
+    }
+  })
+
   return (
-    <div className="koma-frame-editor" ref={handleMount}>
+    <div className="koma-frame-editor" data-selected={props.selected ? '' : undefined}>
       <div className="koma-frame-toolbar">
         <Button
           type="button"
@@ -62,6 +62,7 @@ export function FrameEditor(props: FrameEditorProps) {
       </div>
 
       <Textarea
+        ref={handleTextareaRef}
         className="koma-code-input"
         spellcheck={false}
         data-language={props.language}
