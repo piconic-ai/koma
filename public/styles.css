@@ -445,7 +445,7 @@ main {
 }
 
 .koma-timeline-scroll .koma-timeline {
-  flex: 1 1 auto;
+  flex: 0 0 auto;
   position: relative;
 }
 
