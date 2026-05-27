@@ -1053,3 +1053,61 @@ describe('elapsedToPlayheadPct', () => {
     expect(elapsedToPlayheadPct(totalDuration + 1000, frames)).toBe(100)
   })
 })
+
+// ── Edge drag cursor tracking: pixel → hold → barWidthPct round-trip ──
+
+describe('edge drag cursor tracking', () => {
+  const startHolds = [700, 700, 700]
+  const frameIds = ['a', 'b', 'c']
+  const startTotalHold = 2100
+  const transitions = 2 * TRANSITION_MS
+  const wrapperWidth = 1000
+
+  const simulateDrag = (desiredPx: number) => {
+    const desiredTotalMs = (desiredPx / wrapperWidth) * BASE_DURATION_MS
+    const desiredTotalHold = Math.max(
+      frameIds.length * MIN_HOLD,
+      desiredTotalMs - transitions,
+    )
+    const scale = startTotalHold > 0 ? desiredTotalHold / startTotalHold : 1
+    const holds: FrameInput[] = frameIds.map((id, i) => ({
+      id,
+      code: 'x',
+      hold: Math.max(MIN_HOLD, Math.round(startHolds[i] * scale)),
+    }))
+    return { holds, desiredPx }
+  }
+
+  test('bar edge matches cursor at 50% width', () => {
+    const { holds, desiredPx } = simulateDrag(500)
+    const barPct = computeBarWidthPct(holds)
+    const barPx = (barPct / 100) * wrapperWidth
+    expect(barPx).toBeCloseTo(desiredPx, 0)
+  })
+
+  test('bar edge matches cursor at 100% width', () => {
+    const { holds, desiredPx } = simulateDrag(1000)
+    const barPct = computeBarWidthPct(holds)
+    const barPx = (barPct / 100) * wrapperWidth
+    expect(barPx).toBeCloseTo(desiredPx, 0)
+  })
+
+  test('bar edge matches cursor at 150% width (scrollable)', () => {
+    const { holds, desiredPx } = simulateDrag(1500)
+    const barPct = computeBarWidthPct(holds)
+    const barPx = (barPct / 100) * wrapperWidth
+    expect(barPx).toBeCloseTo(desiredPx, 0)
+  })
+
+  test('shrink to minimum clamps holds at MIN_HOLD', () => {
+    const { holds } = simulateDrag(10)
+    holds.forEach(h => expect(h.hold).toBeGreaterThanOrEqual(MIN_HOLD))
+  })
+
+  test('holds never go below MIN_HOLD at any drag position', () => {
+    for (const px of [1, 50, 100, 300, 500, 1000, 2000]) {
+      const { holds } = simulateDrag(px)
+      holds.forEach(h => expect(h.hold).toBeGreaterThanOrEqual(MIN_HOLD))
+    }
+  })
+})
