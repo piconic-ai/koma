@@ -193,6 +193,12 @@ main {
   gap: 6px;
 }
 
+.koma-app-wordmark {
+  font-family: sans-serif;
+  font-weight: 450;
+  color: rgba(31, 35, 40, 0.5);
+}
+
 .koma-app-logo {
   display: block;
   flex-shrink: 0;
