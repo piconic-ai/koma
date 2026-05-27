@@ -78,7 +78,6 @@ export function TimelineBar(props: TimelineBarProps) {
   const [isPlaying, setIsPlaying] = createSignal(false)
   const [playheadPct, setPlayheadPct] = createSignal(0)
   const [isDragging, setIsDragging] = createSignal(false)
-  const [maxWidthPct, setMaxWidthPct] = createSignal<number | null>(null)
   const [edgeDragging, setEdgeDragging] = createSignal(false)
   const [hoverLabel, setHoverLabel] = createSignal<string | null>(null)
   const [hoverLeftPx, setHoverLeftPx] = createSignal(0)
@@ -88,11 +87,7 @@ export function TimelineBar(props: TimelineBarProps) {
 
   const barWidthPct = createMemo(() => computeBarWidthPct(frames()))
 
-  const barStyle = () => {
-    const mw = maxWidthPct()
-    const base = `width:${barWidthPct()}%`
-    return mw !== null ? `${base};max-width:${mw}%` : base
-  }
+  const barStyle = () => `width:${barWidthPct()}%`
 
   // ── Seek to frame start ────────────────────────────────
   const seekToFrameStart = (frameIndex: number) => {
@@ -209,7 +204,6 @@ export function TimelineBar(props: TimelineBarProps) {
             start.startWidth,
           )
           setAtMin(false)
-          setMaxWidthPct(null)
         } else {
           const result = computeBarWidth({
             newWidth,
@@ -226,7 +220,6 @@ export function TimelineBar(props: TimelineBarProps) {
 
           holds = result.holds
           setAtMin(result.atMin)
-          setMaxWidthPct(result.maxWidthPct)
         }
 
         setFrames(prev => prev.map(f => {
@@ -271,7 +264,6 @@ export function TimelineBar(props: TimelineBarProps) {
           autoScrollRAF = null
           setEdgeDragging(false)
           setAtMin(false)
-          setMaxWidthPct(null)
         },
       })
     }
