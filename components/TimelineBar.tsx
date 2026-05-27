@@ -1,6 +1,6 @@
 'use client'
 
-import { createSignal, createMemo } from '@barefootjs/client'
+import { createSignal } from '@barefootjs/client'
 import {
   holdOf,
   effectiveHolds,
@@ -76,7 +76,6 @@ const togglePlay = () =>
 
 export function TimelineBar(props: TimelineBarProps) {
   const [atMin, setAtMin] = createSignal(false)
-  const [frames, setFrames] = createSignal(props.frames)
   const [isPlaying, setIsPlaying] = createSignal(false)
   const [playheadPct, setPlayheadPct] = createSignal(0)
   const [isDragging, setIsDragging] = createSignal(false)
@@ -84,17 +83,15 @@ export function TimelineBar(props: TimelineBarProps) {
   const [hoverLabel, setHoverLabel] = createSignal<string | null>(null)
   const [hoverLeftPx, setHoverLeftPx] = createSignal(0)
 
-  const holds = createMemo(() => effectiveHolds(frames()))
-  const totalHold = createMemo(() => holds().reduce((sum, h) => sum + h, 0))
-  const totalDuration = createMemo(() => computeTotalMs(frames()))
-
-  const barWidthPct = createMemo(() => computeBarWidthPct(frames()))
+  const frameHolds = () => effectiveHolds(props.frames)
+  const totalHold = () => frameHolds().reduce((sum, h) => sum + h, 0)
+  const totalDuration = () => computeTotalMs(props.frames)
+  const barWidthPct = () => computeBarWidthPct(props.frames)
 
   const barStyle = () => `width:${barWidthPct()}%`
 
-  // ── Seek to frame start ────────────────────────────────
   const seekToFrameStart = (frameIndex: number) => {
-    const fr = frames()
+    const fr = props.frames
     const th = totalHold()
     if (th <= 0) return
     let accHold = 0
@@ -210,11 +207,6 @@ export function TimelineBar(props: TimelineBarProps) {
         }))
         const allAtMin = holds.every(h => h.hold <= MIN_HOLD)
         setAtMin(allAtMin)
-
-        setFrames(prev => prev.map(f => {
-          const h = holds.find(u => u.id === f.id)
-          return h ? { ...f, hold: h.hold } : f
-        }))
         props.onLayout(holds)
       }
 
@@ -296,7 +288,7 @@ export function TimelineBar(props: TimelineBarProps) {
               )}
               <div
                 className={`koma-timeline-segment${isAtMinHold(frame) ? ' koma-timeline-segment--at-min' : ''}${props.selectedFrameId === frame.id ? ' koma-timeline-segment--selected' : ''}`}
-                style={`flex-basis:${totalHold() > 0 ? ((holds()[i] ?? holdOf(frame)) / totalHold()) * 100 : 0}%;flex-grow:0;flex-shrink:0`}
+                style={`flex-basis:${totalHold() > 0 ? ((frameHolds()[i] ?? holdOf(frame)) / totalHold()) * 100 : 0}%;flex-grow:0;flex-shrink:0`}
                 onClick={() => {
                   props.onSelect(frame.id)
                   const idx = props.frames.findIndex(f => f.id === frame.id)
