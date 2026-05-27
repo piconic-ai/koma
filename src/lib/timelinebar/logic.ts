@@ -141,6 +141,11 @@ export function holdRatioToElapsed(
   return elapsed
 }
 
+export function hoverTimeLabel(ratio: number, frames: FrameInput[]): string {
+  const elapsed = holdRatioToElapsed(ratio, frames)
+  return formatDuration(Math.round(elapsed))
+}
+
 export function computeBarWidth(params: {
   newWidth: number
   startWidth: number

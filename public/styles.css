@@ -414,6 +414,7 @@ main {
   display: flex;
   align-items: center;
   gap: 6px;
+  position: relative;
 }
 
 .koma-timeline-play {
@@ -469,6 +470,22 @@ main {
 .koma-timeline:hover .koma-timeline-edge,
 .koma-timeline-edge--dragging {
   opacity: 1;
+}
+
+.koma-timeline-tooltip {
+  position: absolute;
+  bottom: 100%;
+  margin-bottom: 6px;
+  transform: translateX(-50%);
+  padding: 2px 6px;
+  border-radius: 4px;
+  background: var(--foreground);
+  color: var(--background);
+  font-size: 11px;
+  font-family: 'JetBrains Mono', ui-monospace, Menlo, monospace;
+  white-space: nowrap;
+  pointer-events: none;
+  z-index: 5;
 }
 
 .koma-timeline-playhead {

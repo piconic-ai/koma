@@ -11,6 +11,7 @@ import {
   computeEdgeDrag,
   elapsedToHoldRatio,
   holdRatioToElapsed,
+  hoverTimeLabel,
   computeBarWidth,
   computeExtensionHolds,
   computeSegmentDrag,
@@ -924,5 +925,38 @@ describe('idempotency: drag functions return consistent results', () => {
     const r1 = computeBarWidth(params)
     const r2 = computeBarWidth(params)
     expect(r1).toEqual(r2)
+  })
+})
+
+// ── hoverTimeLabel ──────────────────────────────────────
+
+describe('hoverTimeLabel', () => {
+  const frames: FrameInput[] = [
+    { id: 'a', code: 'x', hold: 2000 },
+    { id: 'b', code: 'y', hold: 2000 },
+    { id: 'c', code: 'z', hold: 2000 },
+  ]
+
+  test('ratio=0 → 0.0s', () => {
+    expect(hoverTimeLabel(0, frames)).toBe('0.0s')
+  })
+
+  test('ratio=0.5 → mid-timeline', () => {
+    const label = hoverTimeLabel(0.5, frames)
+    expect(label).toMatch(/^\d+\.\d+s$/)
+  })
+
+  test('ratio=1 → total duration', () => {
+    const label = hoverTimeLabel(1, frames)
+    expect(label).toBe(formatDuration(2000 + TRANSITION_MS + 2000 + TRANSITION_MS + 2000))
+  })
+
+  test('empty frames → 0.0s', () => {
+    expect(hoverTimeLabel(0.5, [])).toBe('0.0s')
+  })
+
+  test('single frame ratio=0.5 → half hold', () => {
+    const single = [{ id: 'a', code: 'x', hold: 4000 }]
+    expect(hoverTimeLabel(0.5, single)).toBe('2.0s')
   })
 })
