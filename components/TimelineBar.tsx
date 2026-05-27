@@ -7,6 +7,7 @@ import {
   elapsedToHoldRatio,
   holdRatioToElapsed,
   computeBarWidth,
+  computeBarWidthPx,
   clientXToRatio,
   computeSegmentDrag,
   computeExtensionHolds,
@@ -85,9 +86,12 @@ export function TimelineBar(props: TimelineBarProps) {
   const totalHold = createMemo(() => frames().reduce((sum, f) => sum + holdOf(f), 0))
   const totalDuration = createMemo(() => totalHold() + Math.max(0, frames().length - 1) * TRANSITION_MS)
 
+  const barWidthPx = createMemo(() => computeBarWidthPx(frames()))
+
   const barStyle = () => {
     const mw = maxWidthPct()
-    return mw !== null ? `max-width:${mw}%` : ''
+    const base = `width:${barWidthPx()}px`
+    return mw !== null ? `${base};max-width:${mw}%` : base
   }
 
   // ── Seek to frame start ────────────────────────────────
@@ -102,6 +106,7 @@ export function TimelineBar(props: TimelineBarProps) {
 
   // ── Event listeners (registered once in handleMount) ───
   const handleMount = (el: HTMLElement) => {
+    const scrollContainer = el.querySelector('[data-timeline-scroll]') as HTMLElement
     const bar = el.querySelector('[data-timeline-bar]') as HTMLElement
     const playhead = bar?.querySelector('[data-playhead]') as HTMLElement
 
@@ -190,7 +195,7 @@ export function TimelineBar(props: TimelineBarProps) {
             frameIds: props.frames.map(f => f.id),
             barLeft: bar.getBoundingClientRect().left,
             startWidth: bar.getBoundingClientRect().width,
-            wrapperWidth: el.getBoundingClientRect().width,
+            wrapperWidth: scrollContainer.getBoundingClientRect().width,
           }
         },
         onMove: (ev, start) => {
@@ -254,41 +259,43 @@ export function TimelineBar(props: TimelineBarProps) {
           <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><path d="M6 4l14 8-14 8z" /></svg>
         )}
       </button>
-      <div
-        className={`koma-timeline ${atMin() ? 'koma-timeline--at-min' : ''}`}
-        data-timeline-bar
-        style={barStyle()}
-      >
-        {props.frames.map((frame, i) => (
-          <div key={frame.id} style="display:contents">
-            {i > 0 && (
+      <div className="koma-timeline-scroll" data-timeline-scroll>
+        <div
+          className={`koma-timeline ${atMin() ? 'koma-timeline--at-min' : ''}`}
+          data-timeline-bar
+          style={barStyle()}
+        >
+          {props.frames.map((frame, i) => (
+            <div key={frame.id} style="display:contents">
+              {i > 0 && (
+                <div
+                  data-seg-handle={i - 1}
+                  className="koma-timeline-handle-bar"
+                />
+              )}
               <div
-                data-seg-handle={i - 1}
-                className="koma-timeline-handle-bar"
-              />
-            )}
-            <div
-              className={`koma-timeline-segment${isAtMinHold(frame) ? ' koma-timeline-segment--at-min' : ''}${props.selectedFrameId === frame.id ? ' koma-timeline-segment--selected' : ''}`}
-              style={`flex-basis:${totalHold() > 0 ? (holdOf(frame) / totalHold()) * 100 : 0}%;flex-grow:0;flex-shrink:0`}
-              onClick={() => {
-                props.onSelect(frame.id)
-                const idx = props.frames.findIndex(f => f.id === frame.id)
-                if (idx >= 0) seekToFrameStart(idx)
-              }}
-            >
-              <span className="koma-timeline-label">{i + 1}</span>
+                className={`koma-timeline-segment${isAtMinHold(frame) ? ' koma-timeline-segment--at-min' : ''}${props.selectedFrameId === frame.id ? ' koma-timeline-segment--selected' : ''}`}
+                style={`flex-basis:${totalHold() > 0 ? (holdOf(frame) / totalHold()) * 100 : 0}%;flex-grow:0;flex-shrink:0`}
+                onClick={() => {
+                  props.onSelect(frame.id)
+                  const idx = props.frames.findIndex(f => f.id === frame.id)
+                  if (idx >= 0) seekToFrameStart(idx)
+                }}
+              >
+                <span className="koma-timeline-label">{i + 1}</span>
+              </div>
             </div>
-          </div>
-        ))}
-        <div
-          data-playhead
-          className="koma-timeline-playhead"
-          style={`left:${playheadPct()}%`}
-        />
-        <div
-          data-timeline-edge
-          className={`koma-timeline-edge ${edgeDragging() ? 'koma-timeline-edge--dragging' : ''}`}
-        />
+          ))}
+          <div
+            data-playhead
+            className="koma-timeline-playhead"
+            style={`left:${playheadPct()}%`}
+          />
+          <div
+            data-timeline-edge
+            className={`koma-timeline-edge ${edgeDragging() ? 'koma-timeline-edge--dragging' : ''}`}
+          />
+        </div>
       </div>
       {hoverLabel() !== null && (
         <div
