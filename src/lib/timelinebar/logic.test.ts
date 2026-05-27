@@ -14,7 +14,7 @@ import {
   holdRatioToElapsed,
   hoverTimeLabel,
   computeBarWidth,
-  computeBarWidthPx,
+  computeBarWidthPct,
   computeExtensionHolds,
   computeSegmentDrag,
   MIN_HOLD,
@@ -22,7 +22,7 @@ import {
   MIN_EXTEND_MS_PER_PX,
   HOLD_PER_LINE_MS,
   TRANSITION_MS,
-  PX_PER_SECOND,
+  BASE_DURATION_MS,
   type FrameInput,
 } from './logic'
 
@@ -964,27 +964,25 @@ describe('hoverTimeLabel', () => {
   })
 })
 
-// ── computeBarWidthPx ───────────────────────────────────
+// ── computeBarWidthPct ───────────────────────────────────
 
-describe('computeBarWidthPx', () => {
-  test('3 default frames → proportional to total duration', () => {
+describe('computeBarWidthPct', () => {
+  test('default 3 frames ≈ 100%', () => {
     const frames: FrameInput[] = [
-      { id: 'a', code: 'x', hold: 2500 },
-      { id: 'b', code: 'y', hold: 2500 },
-      { id: 'c', code: 'z', hold: 3000 },
+      { id: 'a', code: 'x', hold: 700 },
+      { id: 'b', code: 'y', hold: 700 },
+      { id: 'c', code: 'z', hold: 700 },
     ]
-    const totalMs = 2500 + 2500 + 3000 + 2 * TRANSITION_MS
-    const expected = Math.round(totalMs / 1000 * PX_PER_SECOND)
-    expect(computeBarWidthPx(frames)).toBe(expected)
+    expect(computeBarWidthPct(frames)).toBeCloseTo(100, 0)
   })
 
-  test('empty frames → minimum 60px', () => {
-    expect(computeBarWidthPx([])).toBe(60)
+  test('empty frames → 0%', () => {
+    expect(computeBarWidthPct([])).toBe(0)
   })
 
-  test('single short frame → at least 60px', () => {
-    const frames: FrameInput[] = [{ id: 'a', code: 'x', hold: 50 }]
-    expect(computeBarWidthPx(frames)).toBeGreaterThanOrEqual(60)
+  test('half duration → ~50%', () => {
+    const frames: FrameInput[] = [{ id: 'a', code: 'x', hold: BASE_DURATION_MS / 2 }]
+    expect(computeBarWidthPct(frames)).toBeCloseTo(50, 0)
   })
 
   test('many frames → wider than single frame', () => {
@@ -992,13 +990,13 @@ describe('computeBarWidthPx', () => {
     const many: FrameInput[] = Array.from({ length: 10 }, (_, i) => ({
       id: `f${i}`, code: 'x', hold: 2000,
     }))
-    expect(computeBarWidthPx(many)).toBeGreaterThan(computeBarWidthPx(few))
+    expect(computeBarWidthPct(many)).toBeGreaterThan(computeBarWidthPct(few))
   })
 
-  test('width scales linearly with duration', () => {
+  test('double duration → double width', () => {
     const short: FrameInput[] = [{ id: 'a', code: 'x', hold: 5000 }]
     const long: FrameInput[] = [{ id: 'a', code: 'x', hold: 10000 }]
-    const ratio = computeBarWidthPx(long) / computeBarWidthPx(short)
+    const ratio = computeBarWidthPct(long) / computeBarWidthPct(short)
     expect(ratio).toBeCloseTo(2, 0)
   })
 })

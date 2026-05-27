@@ -549,7 +549,7 @@ main {
   transition: color 0.15s;
 }
 
-.koma-timeline--at-min ~ .koma-timeline-total {
+.koma-timeline-wrapper:has(.koma-timeline--at-min) .koma-timeline-total {
   color: var(--destructive);
 }
 
