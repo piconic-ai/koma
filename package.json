@@ -1,5 +1,6 @@
 {
   "name": "koma",
+  "description": "Code, frame by frame",
   "private": true,
   "type": "module",
   "scripts": {
