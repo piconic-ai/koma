@@ -9,6 +9,7 @@ import {
   redistributeHolds,
   scaleAllHolds,
   computeEdgeDrag,
+  elapsedToPlayheadPct,
   elapsedToHoldRatio,
   holdRatioToElapsed,
   hoverTimeLabel,
@@ -999,5 +1000,58 @@ describe('computeBarWidthPx', () => {
     const long: FrameInput[] = [{ id: 'a', code: 'x', hold: 10000 }]
     const ratio = computeBarWidthPx(long) / computeBarWidthPx(short)
     expect(ratio).toBeCloseTo(2, 0)
+  })
+})
+
+// ── elapsedToPlayheadPct ────────────────────────────────
+
+describe('elapsedToPlayheadPct', () => {
+  const frames: FrameInput[] = [
+    { id: 'a', code: 'x', hold: 2000 },
+    { id: 'b', code: 'y', hold: 2000 },
+    { id: 'c', code: 'z', hold: 2000 },
+  ]
+  const totalDuration = 2000 + TRANSITION_MS + 2000 + TRANSITION_MS + 2000
+
+  test('elapsed=0 → 0%', () => {
+    expect(elapsedToPlayheadPct(0, frames)).toBe(0)
+  })
+
+  test('elapsed=totalDuration → 100%', () => {
+    expect(elapsedToPlayheadPct(totalDuration, frames)).toBe(100)
+  })
+
+  test('mid-timeline → ~50%', () => {
+    expect(elapsedToPlayheadPct(totalDuration / 2, frames)).toBeCloseTo(50, 1)
+  })
+
+  test('advances during transition (not frozen)', () => {
+    const endOfFrame1 = 2000
+    const midTransition = endOfFrame1 + TRANSITION_MS / 2
+    const pctEnd = elapsedToPlayheadPct(endOfFrame1, frames)
+    const pctMid = elapsedToPlayheadPct(midTransition, frames)
+    expect(pctMid).toBeGreaterThan(pctEnd)
+  })
+
+  test('advances linearly during transition', () => {
+    const endOfFrame1 = 2000
+    const quarterTrans = endOfFrame1 + TRANSITION_MS / 4
+    const halfTrans = endOfFrame1 + TRANSITION_MS / 2
+    const delta1 = elapsedToPlayheadPct(quarterTrans, frames) - elapsedToPlayheadPct(endOfFrame1, frames)
+    const delta2 = elapsedToPlayheadPct(halfTrans, frames) - elapsedToPlayheadPct(quarterTrans, frames)
+    expect(delta1).toBeCloseTo(delta2, 5)
+  })
+
+  test('empty frames → 0%', () => {
+    expect(elapsedToPlayheadPct(1000, [])).toBe(0)
+  })
+
+  test('single frame has no transitions', () => {
+    const single = [{ id: 'a', code: 'x', hold: 4000 }]
+    expect(elapsedToPlayheadPct(2000, single)).toBe(50)
+  })
+
+  test('capped at 100%', () => {
+    expect(elapsedToPlayheadPct(totalDuration + 1000, frames)).toBe(100)
   })
 })

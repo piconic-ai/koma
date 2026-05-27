@@ -95,6 +95,16 @@ export function computeEdgeDrag(
   return { holds, allAtMin, startAllAtMin }
 }
 
+export function elapsedToPlayheadPct(
+  elapsed: number,
+  frames: FrameInput[],
+): number {
+  const totalDuration = computeTotalMs(frames)
+  if (totalDuration <= 0) return 0
+  if (elapsed <= 0) return 0
+  return Math.min(100, (elapsed / totalDuration) * 100)
+}
+
 export function elapsedToHoldRatio(
   elapsed: number,
   frames: FrameInput[],
