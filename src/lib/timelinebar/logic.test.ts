@@ -76,9 +76,8 @@ describe('computeSegmentPcts', () => {
     expect(computeSegmentPcts([])).toEqual([])
   })
 
-  test('all zero holds → last frame padded to FH', () => {
-    // f3(0,0,0) → effectiveHolds = [0, 0, 3000] → totalHold = 3000
-    expect(computeSegmentPcts(f3(0, 0, 0))).toEqual([0, 0, 100])
+  test('all zero holds → all 0%', () => {
+    expect(computeSegmentPcts(f3(0, 0, 0))).toEqual([0, 0, 0])
   })
 
   test('never NaN', () => {
@@ -89,59 +88,33 @@ describe('computeSegmentPcts', () => {
 // ── effectiveHolds ──────────────────────────────────────
 
 describe('effectiveHolds', () => {
-  test('pads last frame when below FINAL_FRAME_MIN_HOLD_MS', () => {
-    const frames = f3(2000, 2000, 500)
-    const holds = effectiveHolds(frames)
-    expect(holds).toEqual([2000, 2000, FH])
+  test('no padding in preview mode (FH=0)', () => {
+    expect(effectiveHolds(f3(2000, 2000, 500))).toEqual([2000, 2000, 500])
   })
 
-  test('does not pad last frame when at or above FINAL_FRAME_MIN_HOLD_MS', () => {
-    const frames = f3(2000, 2000, 3000)
-    const holds = effectiveHolds(frames)
-    expect(holds).toEqual([2000, 2000, 3000])
+  test('preserves holds as-is', () => {
+    expect(effectiveHolds(f3(2000, 2000, 3000))).toEqual([2000, 2000, 3000])
   })
 
-  test('does not pad last frame when above FINAL_FRAME_MIN_HOLD_MS', () => {
-    const frames = f3(2000, 2000, 5000)
-    const holds = effectiveHolds(frames)
-    expect(holds).toEqual([2000, 2000, 5000])
-  })
-
-  test('single frame padded', () => {
-    const frames: FrameInput[] = [{ id: 'a', code: 'x', hold: 500 }]
-    expect(effectiveHolds(frames)).toEqual([FH])
+  test('single frame preserved', () => {
+    expect(effectiveHolds([{ id: 'a', code: 'x', hold: 500 }])).toEqual([500])
   })
 
   test('empty frames → empty array', () => {
     expect(effectiveHolds([])).toEqual([])
-  })
-
-  test('all zeros → last frame padded to FH', () => {
-    expect(effectiveHolds(f3(0, 0, 0))).toEqual([0, 0, FH])
   })
 })
 
 // ── computeTotalMs with final-frame padding ─────────────
 
 describe('computeTotalMs with final-frame padding', () => {
-  test('single frame with hold < FH → total = FH', () => {
-    const frames: FrameInput[] = [{ id: 'a', code: 'x', hold: 200 }]
-    expect(computeTotalMs(frames)).toBe(FH)
+  test('no padding in preview mode — holds used as-is', () => {
+    expect(computeTotalMs([{ id: 'a', code: 'x', hold: 200 }])).toBe(200)
   })
 
-  test('single frame with hold = FH → total = FH', () => {
-    const frames: FrameInput[] = [{ id: 'a', code: 'x', hold: FH }]
-    expect(computeTotalMs(frames)).toBe(FH)
-  })
-
-  test('single frame with hold > FH → total = hold', () => {
-    const frames: FrameInput[] = [{ id: 'a', code: 'x', hold: 5000 }]
-    expect(computeTotalMs(frames)).toBe(5000)
-  })
-
-  test('3 frames where last is padded', () => {
+  test('3 frames — sum of holds + transitions', () => {
     const frames = f3(2000, 2000, 500)
-    expect(computeTotalMs(frames)).toBe(2000 + 2000 + FH + 2 * TRANSITION_MS)
+    expect(computeTotalMs(frames)).toBe(2000 + 2000 + 500 + 2 * TRANSITION_MS)
   })
 })
 
@@ -150,9 +123,9 @@ describe('computeTotalMs with final-frame padding', () => {
 describe('computeTotalMs', () => {
   test.each([
     { frames: f3(2500, 2500, 3000), expected: 8000 + 2 * TRANSITION_MS },
-    { frames: [f('a', 200)], expected: FH }, // single frame: hold 200 padded to FH
+    { frames: [f('a', 1000)], expected: 1000 },
     { frames: [], expected: 0 },
-    { frames: f3(50, 50, 50), expected: 50 + 50 + FH + 2 * TRANSITION_MS }, // last frame padded
+    { frames: f3(50, 50, 50), expected: 150 + 2 * TRANSITION_MS },
   ])('$expected ms for given frames', ({ frames, expected }) => {
     expect(computeTotalMs(frames)).toBe(expected)
   })
@@ -554,19 +527,17 @@ describe('boundary: computeSegmentPcts', () => {
 // ── Boundary: computeTotalMs ─────────────────────────────
 
 describe('boundary: computeTotalMs', () => {
-  test('2 frames = 1 transition (last frame padded)', () => {
+  test('2 frames = 1 transition', () => {
     const frames = [
       { id: 'a', code: 'x', hold: 100 },
       { id: 'b', code: 'x', hold: 100 },
     ]
-    // effectiveHolds = [100, 3000], total = 3100 + TRANSITION_MS
-    expect(computeTotalMs(frames)).toBe(100 + FH + TRANSITION_MS)
+    expect(computeTotalMs(frames)).toBe(200 + TRANSITION_MS)
   })
 
-  test('10 frames = 9 transitions (last frame padded)', () => {
+  test('10 frames = 9 transitions', () => {
     const frames = Array.from({ length: 10 }, (_, i) => ({ id: `f${i}`, code: 'x', hold: 100 }))
-    // effectiveHolds = [100*9, 3000] = 900 + 3000 = 3900
-    expect(computeTotalMs(frames)).toBe(9 * 100 + FH + 9 * TRANSITION_MS)
+    expect(computeTotalMs(frames)).toBe(1000 + 9 * TRANSITION_MS)
   })
 })
 

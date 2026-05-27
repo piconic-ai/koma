@@ -82,7 +82,7 @@ export const PREVIEW_TIMING = {
   holdPerLineMs: 140,
   minHoldMs: 700,
   transitionMs: 400,
-  finalFrameMinHoldMs: 700,
+  finalFrameMinHoldMs: 0,
 } as const
 
 export const PREVIEW_DEFAULTS: Defaults = {
