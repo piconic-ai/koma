@@ -115,7 +115,7 @@ export function App({ initialSpec }: AppProps) {
           onPointerDown={(e: PointerEvent) => handleEdgeDrag(e, 'left')}
         />
         <section className="koma-editors" aria-label="Frame editors" style={editorStyle()}>
-          {spec().frames.map((frame, i) => (
+          {/* @client */ spec().frames.map((frame, i) => (
             <FrameEditor
               key={frame.id}
               frame={frame}
