@@ -21,7 +21,8 @@ interface AppProps {
 
 // @bf-ignore props-destructuring
 export function App({ initialSpec }: AppProps) {
-  const [spec, setSpec] = createSignal<Spec>(initialSpec)
+  const hashSpec = typeof window !== 'undefined' ? decodeFromHash(window.location.hash) : null
+  const [spec, setSpec] = createSignal<Spec>(hashSpec ?? initialSpec)
   const [selectedFrameId, setSelectedFrameId] = createSignal<string | null>(null)
 
   let appEl: HTMLElement | null = null
@@ -66,9 +67,6 @@ export function App({ initialSpec }: AppProps) {
 
   onMount(() => {
     if (typeof window === 'undefined') return
-
-    const fromHash = decodeFromHash(window.location.hash)
-    if (fromHash) setSpec(fromHash)
 
     requestAnimationFrame(() => appEl?.setAttribute('data-ready', ''))
 
@@ -115,7 +113,7 @@ export function App({ initialSpec }: AppProps) {
           onPointerDown={(e: PointerEvent) => handleEdgeDrag(e, 'left')}
         />
         <section className="koma-editors" aria-label="Frame editors" style={editorStyle()}>
-          {/* @client */ spec().frames.map((frame, i) => (
+          {spec().frames.map((frame, i) => (
             <FrameEditor
               key={frame.id}
               frame={frame}
