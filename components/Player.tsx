@@ -8,7 +8,7 @@ import {
   onMount,
 } from '@barefootjs/client'
 import { buildTimeline, collapseTransitions } from '../src/model/timeline'
-import { PREVIEW_DEFAULTS, type Frame, type Spec, type Timeline } from '../src/model/types'
+import { type Frame, type Spec, type Timeline } from '../src/model/types'
 import { renderToCanvas, heightForFrames } from '../src/render/canvas'
 import { getStageState } from '../src/render/playback'
 import {
@@ -25,7 +25,7 @@ export function Player(props: PlayerProps) {
   const [reduceMotion, setReduceMotion] = createSignal(false)
 
   const timeline = createMemo<Timeline>(() => {
-    const base = buildTimeline(props.spec, PREVIEW_DEFAULTS)
+    const base = buildTimeline(props.spec)
     return reduceMotion() ? collapseTransitions(base) : base
   })
 

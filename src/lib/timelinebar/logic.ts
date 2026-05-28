@@ -1,9 +1,9 @@
-import { PREVIEW_TIMING } from '../../model/types'
+import { DEFAULTS } from '../../model/types'
 
-export const HOLD_PER_LINE_MS = PREVIEW_TIMING.holdPerLineMs
-export const MIN_HOLD_MS = PREVIEW_TIMING.minHoldMs
-export const TRANSITION_MS = PREVIEW_TIMING.transitionMs
-export const FINAL_FRAME_MIN_HOLD_MS = PREVIEW_TIMING.finalFrameMinHoldMs
+export const HOLD_PER_LINE_MS = DEFAULTS.holdPerLineMs
+export const MIN_HOLD_MS = DEFAULTS.minHoldMs
+export const TRANSITION_MS = DEFAULTS.transitionMs
+export const FINAL_FRAME_MIN_HOLD_MS = DEFAULTS.finalFrameMinHoldMs
 export const MIN_HOLD = 50
 
 export function autoHold(code: string): number {

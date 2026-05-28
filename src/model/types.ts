@@ -81,32 +81,16 @@ export type Defaults = {
   padding: number
 }
 
-export const PREVIEW_TIMING = {
+// Single timing model shared by the interactive preview, the timeline
+// bar, and the video export — so what you see while editing is exactly
+// what you download. (Preview and export used to diverge: the preview
+// ran fast while the export padded holds, which made downloaded videos
+// run ~3x longer than the on-screen preview.)
+export const DEFAULTS: Defaults = {
   holdPerLineMs: 140,
   minHoldMs: 700,
   transitionMs: 400,
   finalFrameMinHoldMs: 0,
-} as const
-
-export const PREVIEW_DEFAULTS: Defaults = {
-  ...PREVIEW_TIMING,
-  fps: 30,
-  width: 1080,
-  height: 1080,
-  bitrate: 2_000_000,
-  fontFamily: 'JetBrains Mono, monospace',
-  fontSize: 18,
-  lineHeight: 1.6,
-  theme: 'github-dark',
-  showWindowChrome: true,
-  padding: 32,
-}
-
-export const DEFAULTS: Defaults = {
-  holdPerLineMs: 600,
-  minHoldMs: 2500,
-  transitionMs: 400,
-  finalFrameMinHoldMs: 3000,
   fps: 30,
   width: 1080,
   height: 1080,
