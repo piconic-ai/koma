@@ -215,6 +215,87 @@ main {
   gap: 12px;
 }
 
+.koma-info-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  padding: 0;
+  border-radius: var(--radius);
+  border: 1px solid transparent;
+  background: transparent;
+  color: rgba(31, 35, 40, 0.5);
+  cursor: pointer;
+}
+
+.koma-info-btn:hover {
+  background: var(--muted, var(--card));
+  color: var(--foreground);
+}
+
+.koma-info-popover {
+  width: 320px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  font-size: 13px;
+  line-height: 1.5;
+}
+
+.koma-info-lead {
+  margin: 0;
+  color: var(--foreground);
+}
+
+.koma-info-note {
+  margin: 0;
+  color: var(--muted-foreground, rgba(31, 35, 40, 0.6));
+}
+
+.koma-info-links {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding-top: 12px;
+  border-top: 1px solid var(--border);
+}
+
+.koma-info-link {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  color: var(--foreground);
+  text-decoration: none;
+  font-weight: 500;
+}
+
+.koma-info-link:hover {
+  text-decoration: underline;
+}
+
+.koma-info-contact {
+  margin: 0;
+  color: var(--muted-foreground, rgba(31, 35, 40, 0.6));
+}
+
+.koma-info-contact-list {
+  margin: 0;
+  padding-left: 18px;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.koma-info-contact-list a {
+  color: #00b769;
+  text-decoration: none;
+}
+
+.koma-info-contact-list a:hover {
+  text-decoration: underline;
+}
+
 .koma-export-group {
   display: inline-flex;
   gap: 6px;

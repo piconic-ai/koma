@@ -5,6 +5,8 @@ import {
   Select, SelectTrigger, SelectValue,
   SelectContent, SelectItem,
 } from '@/components/ui/select'
+import { Popover, PopoverTrigger, PopoverContent } from '@/components/ui/popover'
+import { InfoIcon, GitHubIcon } from '@/components/ui/icon'
 import type { Language, Spec } from '../src/model/types'
 
 type ExportProgress = { current: number; total: number }
@@ -53,6 +55,7 @@ interface AppHeaderProps {
 
 export function AppHeader(props: AppHeaderProps) {
   const [exportStatus, setExportStatus] = createSignal<string | null>(null)
+  const [infoOpen, setInfoOpen] = createSignal(false)
 
   const reducedMotion = () =>
     typeof window !== 'undefined' &&
@@ -84,6 +87,37 @@ export function AppHeader(props: AppHeaderProps) {
         <span className="koma-app-wordmark">koma</span>
       </h1>
       <div className="koma-app-header-right">
+        <Popover open={infoOpen()} onOpenChange={setInfoOpen}>
+          <PopoverTrigger className="koma-info-btn" aria-label="About piconic koma">
+            <InfoIcon size="sm" />
+          </PopoverTrigger>
+          <PopoverContent align="end" className="koma-info-popover">
+            <p className="koma-info-lead">
+              <strong>piconic koma</strong> stitches your frame-by-frame code into a single video.
+            </p>
+            <p className="koma-info-note">“koma” is Japanese for “frame.”</p>
+            <div className="koma-info-links">
+              <a
+                className="koma-info-link"
+                href="https://github.com/piconic-ai/koma"
+                target="_blank"
+                rel="noreferrer"
+              >
+                <GitHubIcon size="sm" />
+                <span>View the source on GitHub</span>
+              </a>
+              <p className="koma-info-contact">Questions or feedback? Reach out to kobaken:</p>
+              <ul className="koma-info-contact-list">
+                <li>
+                  <a href="https://x.com/kfly8" target="_blank" rel="noreferrer">x.com/kfly8</a>
+                </li>
+                <li>
+                  <a href="mailto:kentafly88@gmail.com">kentafly88@gmail.com</a>
+                </li>
+              </ul>
+            </div>
+          </PopoverContent>
+        </Popover>
         <Select value={props.language} onValueChange={(v: string) => props.onLanguageChange(v as Language)}>
           <SelectTrigger className="w-[160px]">
             <SelectValue placeholder={LANGUAGE_OPTIONS.find(o => o.value === props.language)?.label ?? 'Language...'} />
