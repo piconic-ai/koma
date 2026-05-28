@@ -21,6 +21,7 @@ interface AppProps {
 
 // @bf-ignore props-destructuring
 export function App({ initialSpec }: AppProps) {
+  const savedHash = typeof window !== 'undefined' ? window.location.hash : ''
   const [spec, setSpec] = createSignal<Spec>(initialSpec)
   const [selectedFrameId, setSelectedFrameId] = createSignal<string | null>(null)
 
@@ -67,20 +68,25 @@ export function App({ initialSpec }: AppProps) {
   onMount(() => {
     if (typeof window === 'undefined') return
 
-    const fromHash = decodeFromHash(window.location.hash)
+    const fromHash = decodeFromHash(savedHash)
     if (fromHash) {
-      setSpec(fromHash)
-      // Workaround: mapArray hydration doesn't remove SSR nodes when
-      // the array shrinks. Remove excess DOM nodes by count.
-      requestAnimationFrame(() => {
-        const editors = appEl?.querySelectorAll('.koma-frame-editor')
-        if (editors) {
-          const expected = fromHash.frames.length
-          for (let i = editors.length - 1; i >= expected; i--) {
-            editors[i].remove()
-          }
-        }
+      // Reuse SSR frame ids so mapArray can match keys during hydration.
+      fromHash.frames.forEach((f, i) => {
+        if (i < initialSpec.frames.length) f.id = initialSpec.frames[i].id
       })
+      setSpec(fromHash)
+      // Workaround: mapArray hydration doesn't remove orphaned SSR nodes.
+      // With matching keys, orphans are always at the end.
+      if (fromHash.frames.length < initialSpec.frames.length) {
+        requestAnimationFrame(() => {
+          const editors = appEl?.querySelectorAll('.koma-frame-editor')
+          if (editors) {
+            for (let i = editors.length - 1; i >= fromHash.frames.length; i--) {
+              editors[i].remove()
+            }
+          }
+        })
+      }
     }
 
     requestAnimationFrame(() => appEl?.setAttribute('data-ready', ''))
