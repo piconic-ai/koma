@@ -21,8 +21,7 @@ interface AppProps {
 
 // @bf-ignore props-destructuring
 export function App({ initialSpec }: AppProps) {
-  const hashSpec = typeof window !== 'undefined' ? decodeFromHash(window.location.hash) : null
-  const [spec, setSpec] = createSignal<Spec>(hashSpec ?? initialSpec)
+  const [spec, setSpec] = createSignal<Spec>(initialSpec)
   const [selectedFrameId, setSelectedFrameId] = createSignal<string | null>(null)
 
   let appEl: HTMLElement | null = null
@@ -67,6 +66,22 @@ export function App({ initialSpec }: AppProps) {
 
   onMount(() => {
     if (typeof window === 'undefined') return
+
+    const fromHash = decodeFromHash(window.location.hash)
+    if (fromHash) {
+      setSpec(fromHash)
+      // Workaround: mapArray hydration doesn't remove SSR nodes when
+      // the array shrinks. Remove excess DOM nodes by count.
+      requestAnimationFrame(() => {
+        const editors = appEl?.querySelectorAll('.koma-frame-editor')
+        if (editors) {
+          const expected = fromHash.frames.length
+          for (let i = editors.length - 1; i >= expected; i--) {
+            editors[i].remove()
+          }
+        }
+      })
+    }
 
     requestAnimationFrame(() => appEl?.setAttribute('data-ready', ''))
 
