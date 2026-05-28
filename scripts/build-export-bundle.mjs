@@ -1,15 +1,13 @@
 // Standalone export bundle.
 //
-// The bf inliner does not deduplicate transitive imports across
-// subtrees and currently emits multiple top-level
-// `const __bf_inline_N = ...` declarations with the same N when one
-// `'use client'` component reaches into a deep transitive tree.
-// Tracking: piconic-ai/barefootjs#1542
+// We pre-bundle the export module with esbuild and serve it from
+// /components/koma-export.js. AppHeader dynamically imports it on the
+// first Export click, keeping the heavy export pipeline out of the
+// eagerly-loaded component bundles (see src/export/index.ts).
 //
-// To keep the export pipeline working without depending on that fix
-// landing, we pre-bundle the export module with esbuild and serve it
-// from /components/. The App `await import`s the bundle at runtime,
-// which sidesteps bf's inliner entirely for this subtree.
+// It also avoided bf's inliner dup-identifier bug
+// (piconic-ai/barefootjs#1542, fixed in bf 0.4.0), but the on-demand
+// load is the reason to keep it.
 
 import { build } from 'esbuild'
 import { fileURLToPath } from 'node:url'

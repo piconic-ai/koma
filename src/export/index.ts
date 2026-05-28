@@ -1,12 +1,15 @@
 // Pre-bundled export entrypoint.
 //
 // This file is pre-bundled by `scripts/build-export-bundle.mjs` and
-// served as `/components/koma-export.js`. App dynamically imports the
-// bundle at runtime, sidestepping bf's transitive inliner (which has
-// a duplicate-identifier bug when one component reaches into multiple
-// transitive modules that share dependencies — piconic-ai/barefootjs#1542).
+// served as `/components/koma-export.js`. AppHeader dynamically imports
+// the bundle the first time the user clicks Export, so the heavy export
+// pipeline (canvas rendering, zip writer, lazily-fetched mp4-muxer and
+// shiki) stays out of the eagerly-loaded component bundles.
 //
-// Tracking: piconic-ai/barefootjs#1542
+// This also sidestepped bf's transitive inliner dup-identifier bug
+// (piconic-ai/barefootjs#1542, fixed in bf 0.4.0). Even with that fix,
+// keep the pre-bundle: a static import would inline the whole pipeline
+// into AppHeader and load it on every page visit, not on demand.
 
 import { buildTimeline, collapseTransitions } from '../model/timeline'
 import { DEFAULTS, type Spec } from '../model/types'
