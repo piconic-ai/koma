@@ -293,8 +293,10 @@ export async function exportAll(
     try {
       const mp4Blob = await exportMp4(spec, undefined, options)
       zip.add('koma.mp4', new Uint8Array(await mp4Blob.arrayBuffer()))
-    } catch {
-      // MP4 encoding failed — ship the zip with PNGs only
+    } catch (err) {
+      // MP4 encoding failed — ship the zip with PNGs only, but surface
+      // the reason so the failure isn't invisible.
+      console.error('koma: MP4 export failed, shipping PNG-only zip', err)
     }
   }
 

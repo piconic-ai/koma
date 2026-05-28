@@ -121,9 +121,14 @@ export function heightForFrames(
   const o = { ...DEFAULT_RENDER_OPTIONS, ...opts }
   const maxLines = Math.max(1, ...frames.map(f => f.code.split('\n').length))
   const lineGap = o.fontSize * o.lineHeight
-  return Math.ceil(
+  const raw = Math.ceil(
     80 + o.windowChromeHeight + o.paddingY * 2 + maxLines * lineGap,
   )
+  // H.264 (mp4 export) only accepts even dimensions; an odd height makes
+  // every codec candidate fail isConfigSupported, so the export silently
+  // drops to a PNG-only zip. Round up to even. The preview shares this
+  // height, so preview and download stay identical.
+  return raw + (raw % 2)
 }
 
 export type RenderInputs = {

@@ -82,4 +82,11 @@ describe('heightForFrames', () => {
     const h2 = heightForFrames(frames, { fontSize: 14 })
     expect(h1).toBeGreaterThan(h2)
   })
+
+  test('always returns an even height (H.264 mp4 export needs even dims)', () => {
+    for (let lines = 1; lines <= 12; lines++) {
+      const code = Array.from({ length: lines }, (_, i) => `line${i}`).join('\n')
+      expect(heightForFrames([{ id: 'a', code }]) % 2).toBe(0)
+    }
+  })
 })
