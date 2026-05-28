@@ -100,7 +100,7 @@ export function AppHeader(props: AppHeaderProps) {
               Built with{' '}
               <a href="https://hono.dev" target="_blank" rel="noreferrer">Hono</a>
               {' '}and{' '}
-              <a href="https://github.com/piconic-ai/barefootjs" target="_blank" rel="noreferrer">Barefoot.js</a>.
+              <a href="https://barefootjs.dev/" target="_blank" rel="noreferrer">Barefoot.js</a>.
             </p>
             <div className="koma-info-links">
               <a
