@@ -253,6 +253,15 @@ main {
   color: var(--muted-foreground, rgba(31, 35, 40, 0.6));
 }
 
+.koma-info-note a {
+  color: #00b769;
+  text-decoration: none;
+}
+
+.koma-info-note a:hover {
+  text-decoration: underline;
+}
+
 .koma-info-links {
   display: flex;
   flex-direction: column;

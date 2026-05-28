@@ -96,6 +96,12 @@ export function AppHeader(props: AppHeaderProps) {
               <strong>piconic koma</strong> stitches your frame-by-frame code into a single video.
             </p>
             <p className="koma-info-note">“koma” is Japanese for “frame.”</p>
+            <p className="koma-info-note">
+              Built with{' '}
+              <a href="https://hono.dev" target="_blank" rel="noreferrer">Hono</a>
+              {' '}and{' '}
+              <a href="https://github.com/piconic-ai/barefootjs" target="_blank" rel="noreferrer">Barefoot.js</a>.
+            </p>
             <div className="koma-info-links">
               <a
                 className="koma-info-link"
