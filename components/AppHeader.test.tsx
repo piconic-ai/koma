@@ -30,21 +30,21 @@ describe('AppHeader', () => {
   })
 
   test('groups the theme options by category', () => {
-    // Each category is rendered as a static label followed by a
-    // homogeneous `.map` of SelectItems — mixing label divs and items in
-    // one map prevents SelectItem from wiring up its click handler once
-    // compiled, so we keep the maps item-only.
+    // Hand-unrolled per category: a dynamic THEME_GROUPS.map with a wrapping
+    // element + nested item map miscompiles in bf (duplicate __compEl), so
+    // the groups stay flat and explicit.
     expect(AppHeaderSource).toContain('THEME_GROUPS[0].label')
     expect(AppHeaderSource).toContain('THEME_GROUPS[1].label')
     expect(result.find({ componentName: 'SelectItem' })).not.toBeNull()
   })
 
   test('shows a brand logo for each option and the selected trigger', () => {
-    // Dropdown items use the themeLogo() helper (static per item). The
-    // trigger uses a ternary on props.theme so the logo is reactive and
-    // swaps on selection — a plain function call wouldn't re-evaluate.
+    // Dropdown items go through the single themeLogo() source; the trigger
+    // must inline its logos (bf can't reach themeLogo from the reactive
+    // trigger scope), reactive via independent && branches per theme.
     expect(AppHeaderSource).toContain('{themeLogo(t.id)}')
-    expect(AppHeaderSource).toMatch(/props\.theme === 'hono'\s*\?\s*<HonoLogo/)
+    expect(AppHeaderSource).toMatch(/props\.theme === 'hono' && <HonoLogo/)
+    expect(AppHeaderSource).toMatch(/props\.theme === 'barefoot' && <BarefootLogo/)
     expect(AppHeaderSource).toMatch(/HonoLogo.*BarefootLogo.*PiconicLogo/s)
   })
 })

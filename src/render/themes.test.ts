@@ -1,5 +1,5 @@
 import { describe, expect, test } from 'bun:test'
-import { THEMES, THEME_GROUPS, DEFAULT_THEME_ID, resolveTheme } from './themes'
+import { THEMES, THEME_GROUPS, DEFAULT_THEME_ID, resolveTheme, SHIKI_THEMES_TO_LOAD } from './themes'
 
 describe('resolveTheme', () => {
   test('returns the default theme for undefined', () => {
@@ -23,22 +23,70 @@ describe('THEMES registry', () => {
     }
   })
 
-  test('the default theme has no overrides (keeps DEFAULT_RENDER_OPTIONS)', () => {
-    expect(THEMES[DEFAULT_THEME_ID].render).toEqual({})
-  })
-
   test('there is no transparent theme', () => {
     expect((THEMES as Record<string, unknown>).transparent).toBeUndefined()
   })
 
-  test('hono reproduces its flame as an outer gradient', () => {
-    expect(THEMES.hono.render.outerGradient).toEqual({ from: '#ff8844', to: '#ff3300' })
+  test('hono uses a vivid orange gradient (no vignette darkening)', () => {
+    expect(THEMES.hono.render.outerGradient).toEqual({ from: '#fb7a36', to: '#e84e18' })
+    expect(THEMES.hono.render.vignette).toBeUndefined()
+  })
+
+  test('every theme carries a shiki code theme and its own code background', () => {
+    for (const theme of Object.values(THEMES)) {
+      expect(theme.shikiTheme.length).toBeGreaterThan(0)
+      expect(theme.render.codeBackground).toMatch(/^#[0-9a-f]{6}$/i)
+    }
+  })
+
+  test('presets use distinct code styles', () => {
+    const shiki = Object.values(THEMES).map(t => t.shikiTheme)
+    expect(new Set(shiki).size).toBe(shiki.length)
+    expect(THEMES.piconic.shikiTheme).toBe('koma-mono-light')
+    expect(THEMES.hono.shikiTheme).toBe('github-dark')
+    expect(THEMES.barefoot.shikiTheme).toBe('dracula')
   })
 
   test('every theme has a homepage URL', () => {
     for (const theme of Object.values(THEMES)) {
       expect(theme.homepage).toMatch(/^https:\/\//)
     }
+  })
+
+  test('every theme declares the required render colors (no omissions)', () => {
+    for (const theme of Object.values(THEMES)) {
+      for (const key of ['outerBackground', 'codeBackground', 'textColor', 'cursorColor'] as const) {
+        expect(theme.render[key]).toMatch(/^#[0-9a-f]{3,8}$/i)
+      }
+    }
+  })
+
+  test('a custom shiki theme name matches the preset shikiTheme', () => {
+    for (const theme of Object.values(THEMES)) {
+      if (theme.customShikiTheme) {
+        expect(theme.shikiTheme).toBe(theme.customShikiTheme.name)
+      }
+    }
+  })
+})
+
+describe('SHIKI_THEMES_TO_LOAD (derived from the registry)', () => {
+  test('includes every preset’s syntax theme', () => {
+    const names = new Set(
+      SHIKI_THEMES_TO_LOAD.map(t => (typeof t === 'string' ? t : t.name)),
+    )
+    for (const theme of Object.values(THEMES)) {
+      expect(names.has(theme.shikiTheme)).toBe(true)
+    }
+  })
+
+  test('custom themes are passed as objects, bundled ones as names', () => {
+    expect(SHIKI_THEMES_TO_LOAD).toContain('github-dark')
+    expect(SHIKI_THEMES_TO_LOAD).toContain('dracula')
+    const custom = SHIKI_THEMES_TO_LOAD.find(
+      t => typeof t !== 'string' && t.name === 'koma-mono-light',
+    )
+    expect(custom).toBeDefined()
   })
 })
 

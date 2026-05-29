@@ -190,26 +190,26 @@ describe('renderToCanvas outer background', () => {
 describe('renderToCanvas window chrome', () => {
   const spec: Spec = { language: 'ts', frames: [{ id: 'a', code: 'const x = 1' }] }
 
-  test('draws the three traffic-light dots when chrome is shown', () => {
+  test('draws no window chrome by default', () => {
     const { canvas, calls } = makeRecordingCanvas()
     renderToCanvas(canvas, holdInputs(spec))
-    expect(calls.arc).toBe(3)
+    expect(calls.arc).toBe(0)
   })
 
-  test('skips chrome when showWindowChrome is false', () => {
+  test('draws the three traffic-light dots when chrome is explicitly enabled', () => {
     const { canvas, calls } = makeRecordingCanvas()
     renderToCanvas(canvas, {
       ...holdInputs(spec),
-      options: { showWindowChrome: false },
+      options: { showWindowChrome: true },
     })
-    expect(calls.arc).toBe(0)
+    expect(calls.arc).toBe(3)
   })
 
   test('uses overridden chrome colors', () => {
     const { canvas, calls } = makeRecordingCanvas()
     renderToCanvas(canvas, {
       ...holdInputs(spec),
-      options: { chromeBackground: '#123456' },
+      options: { showWindowChrome: true, chromeBackground: '#123456' },
     })
     expect(calls.fillStyles).toContain('#123456')
   })

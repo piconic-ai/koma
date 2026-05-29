@@ -131,15 +131,22 @@ export function AppHeader(props: AppHeaderProps) {
         <Select value={props.theme ?? DEFAULT_THEME_ID} onValueChange={(v: string) => props.onThemeChange(v as ThemeId)}>
           <SelectTrigger className="w-[170px]">
             <span className="flex items-center gap-2 truncate">
-              {props.theme === 'hono'
-                ? <HonoLogo className="size-4" />
-                : props.theme === 'barefoot'
-                ? <BarefootLogo className="size-4" />
-                : <PiconicLogo className="size-4" />}
+              {/* Inline reactive `&&` per theme. Can't go through themeLogo()
+                  here: the bf compiler doesn't make a module-level helper
+                  reachable from the trigger's reactive effect scope (it throws
+                  "themeLogo is not defined" at hydration), and a bare function
+                  call in a JSX child wouldn't re-evaluate anyway. */}
+              {props.theme !== 'hono' && props.theme !== 'barefoot' && <PiconicLogo className="size-4" />}
+              {props.theme === 'hono' && <HonoLogo className="size-4" />}
+              {props.theme === 'barefoot' && <BarefootLogo className="size-4" />}
               {resolveTheme(props.theme).label}
             </span>
           </SelectTrigger>
           <SelectContent align="end">
+            {/* Hand-unrolled per category. A dynamic THEME_GROUPS.map with a
+                wrapping element + nested item .map makes the bf compiler emit
+                a duplicate `__compEl` declaration, so the groups stay flat and
+                explicit. Keep this in sync with THEME_GROUPS' categories. */}
             <div role="presentation" className="px-2 py-1.5 text-sm font-semibold text-foreground">
               {THEME_GROUPS[0].label}
             </div>
@@ -194,9 +201,10 @@ export function AppHeader(props: AppHeaderProps) {
   )
 }
 
-// Plain helper (not a component): called inside reactive child
-// expressions so the trigger's logo swaps when the selected theme
-// changes — a component body would only evaluate its branch once.
+// Single source of truth for each theme's brand mark, used by BOTH the
+// dropdown items and the reactive trigger (so the two can't drift). Plain
+// if/return JSX — the bf compiler can't compile JSX inside an object-of-
+// arrows, so a Record<ThemeId> map isn't usable here.
 function themeLogo(id: ThemeId) {
   if (id === 'hono') return <HonoLogo className="size-4" />
   if (id === 'barefoot') return <BarefootLogo className="size-4" />

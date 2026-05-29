@@ -24,6 +24,15 @@ export const renderer = jsxRenderer(({ children, title }) => (
           tokens.css first so CSS variables are defined before any
           rule references them. */}
       <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+      {/* JetBrains Mono — the code font for the canvas renderer. Loaded as a
+          real web font so the preview and exported frames use it instead of
+          falling back to the system monospace. */}
+      <link rel="preconnect" href="https://fonts.googleapis.com" />
+      <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin="" />
+      <link
+        rel="stylesheet"
+        href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;700&display=swap"
+      />
       <link rel="stylesheet" href="/tokens.css" />
       <link rel="stylesheet" href="/styles.css" />
       <link rel="stylesheet" href="/uno.css" />
