@@ -467,6 +467,12 @@ textarea.koma-code-input:focus {
   box-shadow: none;
 }
 
+/* Inverted selection: swap text/background colors so the highlight is clearly visible on the dark editor */
+textarea.koma-code-input::selection {
+  background: #c9d1d9;
+  color: #0d1117;
+}
+
 /* timeline bar */
 .koma-timeline {
   display: flex;
