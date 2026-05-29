@@ -4,21 +4,21 @@
     "": {
       "name": "koma",
       "dependencies": {
-        "@barefootjs/chart": "^0.4.0",
-        "@barefootjs/cli": "^0.4.0",
-        "@barefootjs/client": "^0.4.0",
-        "@barefootjs/form": "^0.4.0",
-        "@barefootjs/go-template": "^0.4.0",
-        "@barefootjs/hono": "^0.4.0",
-        "@barefootjs/jsx": "^0.4.0",
-        "@barefootjs/mojolicious": "^0.4.0",
-        "@barefootjs/shared": "^0.4.0",
-        "@barefootjs/streaming": "^0.4.0",
-        "@barefootjs/xyflow": "^0.4.0",
+        "@barefootjs/chart": "^0.5.0",
+        "@barefootjs/cli": "^0.5.0",
+        "@barefootjs/client": "^0.5.0",
+        "@barefootjs/form": "^0.5.0",
+        "@barefootjs/go-template": "^0.5.0",
+        "@barefootjs/hono": "^0.5.0",
+        "@barefootjs/jsx": "^0.5.0",
+        "@barefootjs/mojolicious": "^0.5.0",
+        "@barefootjs/shared": "^0.5.0",
+        "@barefootjs/streaming": "^0.5.0",
+        "@barefootjs/xyflow": "^0.5.0",
         "hono": "^4.6.0",
       },
       "devDependencies": {
-        "@barefootjs/test": "^0.4.0",
+        "@barefootjs/test": "^0.5.0",
         "@cloudflare/workers-types": "^4.20250101.0",
         "@types/bun": "latest",
         "@unocss/cli": "^66.0.0",
@@ -33,29 +33,29 @@
   "packages": {
     "@antfu/install-pkg": ["@antfu/install-pkg@1.1.0", "", { "dependencies": { "package-manager-detector": "^1.3.0", "tinyexec": "^1.0.1" } }, "sha512-MGQsmw10ZyI+EJo45CdSER4zEb+p31LpDAFp2Z3gkSd1yqVZGi0Ebx++YTEMonJy4oChEMLsxZ64j8FH6sSqtQ=="],
 
-    "@barefootjs/chart": ["@barefootjs/chart@0.4.0", "", { "dependencies": { "d3-array": "^3.2.4", "d3-scale": "^4.0.2", "d3-shape": "^3.2.0" }, "peerDependencies": { "@barefootjs/client": ">=0.2.0" } }, "sha512-iywwKdpfCSAfT0n98RJmcMW8JpC2jIomaq4ZCWLZZW7NDirskv4gbddTrCv0vUpx3dDrGT+fSE9qbH2qf0y7ug=="],
+    "@barefootjs/chart": ["@barefootjs/chart@0.5.0", "", { "dependencies": { "d3-array": "^3.2.4", "d3-scale": "^4.0.2", "d3-shape": "^3.2.0" }, "peerDependencies": { "@barefootjs/client": ">=0.2.0" } }, "sha512-Dug0nK0cpGURJ7iZSlDHVaQd4sGXo0oH7T/kQxkTNqVXA7410T65usReuPHTMo1+R75/p/RfXIEQ7PJ1U1UZTQ=="],
 
-    "@barefootjs/cli": ["@barefootjs/cli@0.4.0", "", { "dependencies": { "esbuild": "^0.25.0", "typescript": "^5.0.0" }, "bin": { "bf": "dist/index.js" } }, "sha512-jV5T8dtvJLplToYWPMpDaYk3oYcU8JM8u3DlA85NSQxTbv2StLrjc8Ne47FMmxgWAfQtVJ5GHDFcnzgJB1AlcQ=="],
+    "@barefootjs/cli": ["@barefootjs/cli@0.5.0", "", { "dependencies": { "esbuild": "^0.25.0", "typescript": "^5.0.0" }, "bin": { "bf": "dist/index.js" } }, "sha512-e47QFwyCpmf3Dxwk/Nhl4GzEPrBfmRM+jrivinG4ivxNpkWiR4C7XBYpjT+Qk3EhPtnDJFUNonH0Y5b3EIC7oA=="],
 
-    "@barefootjs/client": ["@barefootjs/client@0.4.0", "", { "dependencies": { "@barefootjs/shared": "0.4.0" }, "peerDependencies": { "@barefootjs/jsx": ">=0.2.0" }, "optionalPeers": ["@barefootjs/jsx"] }, "sha512-Z/jOxzp/fqYEDiRBjs+EbXwX8J+tXZORh/1401psUCdLEbkykHWaWGoYt8HsLSTa+/SUuJ63pLsDr1wQfJusRw=="],
+    "@barefootjs/client": ["@barefootjs/client@0.5.0", "", { "dependencies": { "@barefootjs/shared": "0.5.0" }, "peerDependencies": { "@barefootjs/jsx": ">=0.2.0" }, "optionalPeers": ["@barefootjs/jsx"] }, "sha512-BeI8fC9CCrMBvamB1rVMsjwYfzPWcdxGq7cmsrXXq7GCUzySGMsWB7cyVs5FmCXIcKwD4kX7Hq6uHzrUDOPHNA=="],
 
-    "@barefootjs/form": ["@barefootjs/form@0.4.0", "", { "dependencies": { "@standard-schema/utils": "^0.3.0" }, "peerDependencies": { "@barefootjs/client": ">=0.2.0", "@standard-schema/spec": "^1.0.0" } }, "sha512-3ajWVP/qEELd3mHjkU+yUqq+vy8m7LT7udB+HpptomnJGTO5r2AmUJlSYhaQ9PTJWghfthAv3W3jbnS53kSYEQ=="],
+    "@barefootjs/form": ["@barefootjs/form@0.5.0", "", { "dependencies": { "@standard-schema/utils": "^0.3.0" }, "peerDependencies": { "@barefootjs/client": ">=0.2.0", "@standard-schema/spec": "^1.0.0" } }, "sha512-Luqcvk7a/49JKYLFXqtbCRfc//IGcoTMy6jGhb2TpNXBNAtYOKBKCc+OSYRH49dNl/vLlREx04PapzSrPMHOig=="],
 
-    "@barefootjs/go-template": ["@barefootjs/go-template@0.4.0", "", { "peerDependencies": { "@barefootjs/jsx": ">=0.2.0", "typescript": "^5.0.0" } }, "sha512-56XSKPgKLnjEwxjWzV2dLNQ2LxUo/gLZSyAzqNstnD69L0ZwoR2xeJOHh+syNsvXYQfnJVVTgKUnknAZsIxA7A=="],
+    "@barefootjs/go-template": ["@barefootjs/go-template@0.5.0", "", { "peerDependencies": { "@barefootjs/jsx": ">=0.2.0", "typescript": "^5.0.0" } }, "sha512-ZGbGhfyqxwJ++8KKe1jyXGdj+p29tL4Q5E5NSF2EA64fl7E3T46cHfJqf3cGDaKIRCkArbr8bElnomMd80BUVw=="],
 
-    "@barefootjs/hono": ["@barefootjs/hono@0.4.0", "", { "peerDependencies": { "@barefootjs/client": ">=0.2.0", "@barefootjs/jsx": ">=0.2.0", "@barefootjs/shared": ">=0.2.0", "hono": "^4.0.0" } }, "sha512-4X724yeCxdjwOz5V8nsyStW7ik1yTMdYphPwVdlWMdQfoODHZmkGfMT+jXHnyRfMNBMQXGXYkgnngOuFWCP+Zg=="],
+    "@barefootjs/hono": ["@barefootjs/hono@0.5.0", "", { "peerDependencies": { "@barefootjs/client": ">=0.2.0", "@barefootjs/jsx": ">=0.2.0", "@barefootjs/shared": ">=0.2.0", "hono": "^4.0.0" } }, "sha512-DrKenojrvjLoTH7nT7i00rGEPUMh4gj+hmgnQ5iPuKPgf8/SC/WIfP4GYF8xhN7nOFjwkPFyHec+QqpDn+sFCA=="],
 
-    "@barefootjs/jsx": ["@barefootjs/jsx@0.4.0", "", { "dependencies": { "@barefootjs/shared": "0.4.0" }, "peerDependencies": { "@barefootjs/client": ">=0.2.0", "typescript": "^5.0.0" } }, "sha512-2Jcld6tA41dkAFoYcS4SzpTv164tc51K7Mkfp/0VklBu2NArIXndtmxTs+MTcQ1IbiB3RU3SUxTkY0WcQ3D1Ag=="],
+    "@barefootjs/jsx": ["@barefootjs/jsx@0.5.0", "", { "dependencies": { "@barefootjs/shared": "0.5.0" }, "peerDependencies": { "@barefootjs/client": ">=0.2.0", "typescript": "^5.0.0" } }, "sha512-3QCyrg+urXTZRpn9dWLXoUUN0PvOzEf4gxsa6xwY9S4ZRClE0S0RwSkggoziqfG0blNXCJYnmjI4S0IbSFX5Tg=="],
 
-    "@barefootjs/mojolicious": ["@barefootjs/mojolicious@0.4.0", "", { "dependencies": { "@barefootjs/shared": "0.4.0" }, "peerDependencies": { "@barefootjs/jsx": ">=0.2.0" } }, "sha512-/eNmm6L31+pOOJsCT48HX52zrAUrhj5R71vWTpq/oNos0bR9ZLF1pM52c0CnY8BmkNN8FJBELbT9pdZLbZMALQ=="],
+    "@barefootjs/mojolicious": ["@barefootjs/mojolicious@0.5.0", "", { "dependencies": { "@barefootjs/shared": "0.5.0" }, "peerDependencies": { "@barefootjs/jsx": ">=0.2.0" } }, "sha512-aiAVKfT1yULNLACNLWr2UdGDMS3gvk2BbzvaW8oW1C8pmV0NfjAVQKNgh+eDSy4jW4u1R45Ss7fcSkppFpxrDg=="],
 
-    "@barefootjs/shared": ["@barefootjs/shared@0.4.0", "", {}, "sha512-RJW5HZKjhld2uFb8Hb3vHp+Az7TpXaGL8fR5arAUkVgJH3xyoUYC8naoSL5pO/xFw17WQCzIg8MIb+PPxHyIWw=="],
+    "@barefootjs/shared": ["@barefootjs/shared@0.5.0", "", {}, "sha512-QvEU8ZDMiFaUIXulAIZWcF9mtEJB2kIMumjdEarlBpjIDOp/KBB2WexZpxUPJx+OTUWYYcjP0lOarxv+xKeXEw=="],
 
-    "@barefootjs/streaming": ["@barefootjs/streaming@0.4.0", "", { "dependencies": { "@barefootjs/shared": "0.4.0" } }, "sha512-zNYmkVFDjvyFdIdFU/dapTDLpXbgtjXqjn1iI7gokvIPyH4nCWCzq7VrsU7wPK69kv2J/RRUrvNngMHmsCaRAg=="],
+    "@barefootjs/streaming": ["@barefootjs/streaming@0.5.0", "", { "dependencies": { "@barefootjs/shared": "0.5.0" } }, "sha512-Oyzqt9WCOimDo4v5s0VtEaWp83AgmBxMtAlyQJ8P/Ym+6QvGV90VLOgPG6J9ma/Q/YmkgXooBR4p/xf8hOPUCg=="],
 
-    "@barefootjs/test": ["@barefootjs/test@0.4.0", "", { "dependencies": { "@barefootjs/jsx": "0.4.0" } }, "sha512-yYsPsnc0dFevvJl6cDmA1EGt6FrHCX+hzM/B7MKoNL85ZN8rIwA5kVRcbmVu4Q9InoDmKtTbPM8wtey1avofdA=="],
+    "@barefootjs/test": ["@barefootjs/test@0.5.0", "", { "dependencies": { "@barefootjs/jsx": "0.5.0" } }, "sha512-ZomyYCCi8ufhhtTLVgzh6Wb3m84oSUY9LY0PGryxTujsCyNwFjwitBFFlOGG7Hmz5wGPXEt4Oujna5UcFq4QuQ=="],
 
-    "@barefootjs/xyflow": ["@barefootjs/xyflow@0.4.0", "", { "dependencies": { "@xyflow/system": "^0.0.76" }, "peerDependencies": { "@barefootjs/client": ">=0.2.0", "@barefootjs/jsx": ">=0.2.0" } }, "sha512-zPpihWYH7WoXaDCNzmA6Yjg4ScsKsyUFgH2IyFgin9sniiVpZWtJYe/s2KeAdQzWOXQdFsF+HORqKl2nI5SU2A=="],
+    "@barefootjs/xyflow": ["@barefootjs/xyflow@0.5.0", "", { "dependencies": { "@xyflow/system": "^0.0.76" }, "peerDependencies": { "@barefootjs/client": ">=0.2.0", "@barefootjs/jsx": ">=0.2.0" } }, "sha512-s1W9/+0tCtpGZ7rySlednaG/LwoocdaBWQU5XkMnvjZreDY6tBbfPKr5QQRlo7ae8OtHfmjEwiMZlQYI18GXfg=="],
 
     "@cloudflare/workers-types": ["@cloudflare/workers-types@4.20260524.1", "", {}, "sha512-9o939wce6hAlfNAIG4W58bySW7twgkqgPkxmSNrk/DV0eEexjTPyqChGdsQeKZEXJAjxSUFklaebMYJWg1GM0g=="],
 
