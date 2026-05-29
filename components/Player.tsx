@@ -259,15 +259,7 @@ export function Player(props: PlayerProps) {
       aria-label={`Code animation, ${props.spec.frames.length} frames`}
     >
       <div className="koma-stage">
-        <canvas
-          id="koma-preview-canvas"
-          style={{
-            width: '100%',
-            height: 'auto',
-            display: 'block',
-            borderRadius: '8px',
-          }}
-        />
+        <canvas id="koma-preview-canvas" className="koma-canvas" />
       </div>
     </div>
   )
