@@ -10,6 +10,7 @@ import {
 import { buildTimeline, collapseTransitions } from '../src/model/timeline'
 import { type Frame, type Spec, type Timeline } from '../src/model/types'
 import { renderToCanvas, heightForFrames } from '../src/render/canvas'
+import { resolveTheme } from '../src/render/themes'
 import { getStageState } from '../src/render/playback'
 import {
   highlight,
@@ -66,6 +67,7 @@ export function Player(props: PlayerProps) {
       tokensByFrame: tokensByFrame(),
       frames: props.spec.frames,
       options: {
+        ...resolveTheme(props.spec.theme).render,
         ...(props.spec.width ? { width: props.spec.width, codeWidth: props.spec.width - 180 } : {}),
         height: heightForFrames(props.spec.frames, props.spec.width ? { width: props.spec.width } : {}),
       },
@@ -130,6 +132,10 @@ export function Player(props: PlayerProps) {
   createEffect(() => {
     void stage()
     void tokensByFrame()
+    // Re-render when the visual preset or canvas width changes, even if
+    // the code/timeline is untouched.
+    void props.spec.theme
+    void props.spec.width
     renderCanvas()
   })
 

@@ -9,6 +9,7 @@ components/AppHeader.tsx
 components/FrameEditor.tsx
 components/Player.tsx
 components/TimelineBar.tsx
+components/brand-logos.tsx
 components/manifest.json
 components/ui/button/index.tsx
 components/ui/icon/index.tsx

@@ -3,7 +3,7 @@
 // keeps subscribers (URL hash sync, timeline build, preview) trivial
 // to wire and unit tests easy to author.
 
-import type { Frame, Language, Spec } from './types'
+import type { Frame, Language, Spec, ThemeId } from './types'
 
 const newId = (): string => {
   // crypto.randomUUID is available in modern browsers and Node 19+.
@@ -73,4 +73,9 @@ export const duplicateFrame = (spec: Spec, id: string): Spec => {
 export const setLanguage = (spec: Spec, language: Language): Spec => ({
   ...spec,
   language,
+})
+
+export const setTheme = (spec: Spec, theme: ThemeId): Spec => ({
+  ...spec,
+  theme,
 })

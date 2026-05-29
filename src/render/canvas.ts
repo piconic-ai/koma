@@ -8,7 +8,12 @@ import type { TokenLine } from '../render/highlighter'
 export type RenderOptions = {
   width: number
   height: number
+  /** Outer background fill. The literal `'transparent'` clears the canvas
+   *  instead of painting, so PNG frames keep their alpha. */
   outerBackground: string
+  /** Optional vertical gradient for the outer background. Takes precedence
+   *  over `outerBackground` (unless that is `'transparent'`). */
+  outerGradient?: { from: string; to: string }
   codeBackground: string
   codeWidth: number
   fontFamily: string
@@ -18,6 +23,14 @@ export type RenderOptions = {
   paddingY: number
   windowChromeHeight: number
   cornerRadius: number
+  /** macOS-style title bar at the top of the code window. */
+  showWindowChrome: boolean
+  chromeBackground: string
+  /** Traffic-light dots, left → right. */
+  chromeDotColors: [string, string, string]
+  /** Fallback color for tokens without one, and for plain transition text. */
+  textColor: string
+  cursorColor: string
 }
 
 export const DEFAULT_RENDER_OPTIONS: RenderOptions = {
@@ -34,6 +47,11 @@ export const DEFAULT_RENDER_OPTIONS: RenderOptions = {
   paddingY: 40,
   windowChromeHeight: 48,
   cornerRadius: 10,
+  showWindowChrome: true,
+  chromeBackground: '#161b22',
+  chromeDotColors: ['#ff5f57', '#febc2e', '#28c840'],
+  textColor: '#c9d1d9',
+  cursorColor: '#58a6ff',
 }
 
 function roundRect(
@@ -64,14 +82,14 @@ function drawWindowChrome(
   windowW: number,
   opts: RenderOptions,
 ) {
-  ctx.fillStyle = '#161b22'
+  ctx.fillStyle = opts.chromeBackground
   roundRect(ctx, windowX, windowY, windowW, opts.windowChromeHeight, 0)
   ctx.fill()
   const cy = windowY + opts.windowChromeHeight / 2
   const dots: Array<{ x: number; color: string }> = [
-    { x: windowX + 24, color: '#ff5f57' },
-    { x: windowX + 48, color: '#febc2e' },
-    { x: windowX + 72, color: '#28c840' },
+    { x: windowX + 24, color: opts.chromeDotColors[0] },
+    { x: windowX + 48, color: opts.chromeDotColors[1] },
+    { x: windowX + 72, color: opts.chromeDotColors[2] },
   ]
   for (const dot of dots) {
     ctx.beginPath()
@@ -86,15 +104,14 @@ function drawTokenLine(
   tokens: TokenLine,
   x: number,
   y: number,
-  fontSize: number,
+  fallbackColor: string,
 ) {
   let cursor = x
   for (const token of tokens) {
-    ctx.fillStyle = token.color ?? '#c9d1d9'
+    ctx.fillStyle = token.color ?? fallbackColor
     ctx.fillText(token.content, cursor, y)
     cursor += ctx.measureText(token.content).width
   }
-  void fontSize
 }
 
 export function truncateTokenLine(tokens: TokenLine, chars: number): TokenLine {
@@ -155,9 +172,21 @@ export function renderToCanvas(
 
   const c = ctx as CanvasRenderingContext2D
 
-  // Outer background
-  c.fillStyle = opts.outerBackground
-  c.fillRect(0, 0, opts.width, opts.height)
+  // Outer background. `'transparent'` clears to alpha so the exported
+  // PNG frames stay transparent (mp4/H.264 can't carry alpha, so its
+  // transparent areas fall back to black — that's accepted).
+  if (opts.outerBackground === 'transparent') {
+    c.clearRect(0, 0, opts.width, opts.height)
+  } else if (opts.outerGradient) {
+    const grad = c.createLinearGradient(0, 0, 0, opts.height)
+    grad.addColorStop(0, opts.outerGradient.from)
+    grad.addColorStop(1, opts.outerGradient.to)
+    c.fillStyle = grad
+    c.fillRect(0, 0, opts.width, opts.height)
+  } else {
+    c.fillStyle = opts.outerBackground
+    c.fillRect(0, 0, opts.width, opts.height)
+  }
 
   // Code window — centered, fixed width
   const windowW = Math.min(opts.codeWidth, opts.width - 40)
@@ -176,14 +205,17 @@ export function renderToCanvas(
   c.clip()
 
   // Chrome
-  drawWindowChrome(c, windowX, windowY, windowW, opts)
+  if (opts.showWindowChrome) {
+    drawWindowChrome(c, windowX, windowY, windowW, opts)
+  }
 
   // Code
   c.font = `${opts.fontSize}px ${opts.fontFamily}`
   c.textBaseline = 'top'
 
+  const chromeOffset = opts.showWindowChrome ? opts.windowChromeHeight : 0
   const startX = windowX + opts.paddingX
-  const startY = windowY + opts.windowChromeHeight + opts.paddingY
+  const startY = windowY + chromeOffset + opts.paddingY
   const lineGap = opts.fontSize * opts.lineHeight
 
   const pos = locateInTimeline(inputs.timeline, inputs.elapsedMs)
@@ -194,7 +226,7 @@ export function renderToCanvas(
       inputs.tokensByFrame.get(seg.frame.id) ??
       seg.frame.code.split('\n').map(line => [{ content: line }])
     for (let i = 0; i < tokens.length; i++) {
-      drawTokenLine(c, tokens[i], startX, startY + i * lineGap, opts.fontSize)
+      drawTokenLine(c, tokens[i], startX, startY + i * lineGap, opts.textColor)
     }
     c.restore()
     return
@@ -229,7 +261,7 @@ export function renderToCanvas(
     const y = startY + drawY * lineGap
 
     if (truncated && truncated.length > 0) {
-      drawTokenLine(c, truncated, startX, y, opts.fontSize)
+      drawTokenLine(c, truncated, startX, y, opts.textColor)
     } else {
       const lineText = typing.displayLine ?? role.line
       const text =
@@ -237,7 +269,7 @@ export function renderToCanvas(
           ? lineText
           : lineText.substring(0, typing.visibleChars)
       if (text.length > 0) {
-        c.fillStyle = '#c9d1d9'
+        c.fillStyle = opts.textColor
         c.fillText(text, startX, y)
       }
     }
@@ -249,7 +281,7 @@ export function renderToCanvas(
           ? lineText
           : lineText.substring(0, typing.visibleChars)
       const cursorX = startX + c.measureText(text).width
-      c.fillStyle = '#58a6ff'
+      c.fillStyle = opts.cursorColor
       c.fillText('|', cursorX, y)
     }
     drawY++

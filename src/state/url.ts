@@ -9,10 +9,16 @@
 // URL-length limits. If the size becomes a problem we can swap in
 // CompressionStream behind this interface.
 
-import type { Frame, Spec } from '../model/types'
+import type { Frame, Spec, ThemeId } from '../model/types'
+import { DEFAULT_THEME_ID } from '../render/themes'
 
 type SerializedFrame = Omit<Frame, 'id'>
-type SerializedSpec = { language: Spec['language']; frames: SerializedFrame[]; width?: number }
+type SerializedSpec = {
+  language: Spec['language']
+  frames: SerializedFrame[]
+  width?: number
+  theme?: ThemeId
+}
 
 const utf8ToBase64Url = (s: string): string => {
   const bytes = new TextEncoder().encode(s)
@@ -51,6 +57,7 @@ export function encodeToHash(spec: Spec): string {
     language: spec.language,
     frames,
     ...(spec.width && spec.width !== 1080 ? { width: spec.width } : {}),
+    ...(spec.theme && spec.theme !== DEFAULT_THEME_ID ? { theme: spec.theme } : {}),
   }
   return utf8ToBase64Url(JSON.stringify(payload))
 }
@@ -70,6 +77,7 @@ export function decodeFromHash(hash: string): Spec | null {
         id: newId(),
       })),
       ...(parsed.width ? { width: parsed.width as Spec['width'] } : {}),
+      ...(parsed.theme ? { theme: parsed.theme as ThemeId } : {}),
     }
   } catch {
     return null

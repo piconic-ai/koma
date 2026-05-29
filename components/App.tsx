@@ -9,9 +9,10 @@ import {
   addFrame,
   removeFrame,
   setLanguage,
+  setTheme,
   updateFrame,
 } from '../src/model/spec'
-import type { CanvasWidth, Language, Spec } from '../src/model/types'
+import type { CanvasWidth, Language, Spec, ThemeId } from '../src/model/types'
 
 import { decodeFromHash, encodeToHash } from '../src/state/url'
 
@@ -94,6 +95,7 @@ export function App({ initialSpec }: AppProps) {
       void spec().frames.length
       void spec().language
       void spec().width
+      void spec().theme
       void spec().frames.map(f => f.code).join(' ')
       if (timer) clearTimeout(timer)
       timer = setTimeout(persist, 250)
@@ -105,8 +107,10 @@ export function App({ initialSpec }: AppProps) {
     <div className="koma-app" ref={(el: HTMLElement) => { appEl = el }}>
       <AppHeader
         language={spec().language}
+        theme={spec().theme}
         spec={spec()}
         onLanguageChange={(v: Language) => setSpec(s => setLanguage(s, v))}
+        onThemeChange={(v: ThemeId) => setSpec(s => setTheme(s, v))}
       />
 
       <div className="koma-editors-wrapper">

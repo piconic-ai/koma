@@ -20,6 +20,7 @@ import {
   renderToCanvas,
   type RenderOptions,
 } from '../render/canvas'
+import { resolveTheme } from '../render/themes'
 import { ZipWriter } from './zip'
 
 export type ExportProgress = {
@@ -58,6 +59,7 @@ function setupRender(spec: Spec, options: CommonExportOptions) {
   const fps = options.fps ?? DEFAULTS.fps
   const renderOpts: RenderOptions = {
     ...DEFAULT_RENDER_OPTIONS,
+    ...resolveTheme(spec.theme).render,
     ...options.render,
     height: options.render?.height ?? heightForFrames(spec.frames),
   }
@@ -256,6 +258,7 @@ export async function exportAll(
 ): Promise<Blob> {
   const renderOpts: RenderOptions = {
     ...DEFAULT_RENDER_OPTIONS,
+    ...resolveTheme(spec.theme).render,
     ...options.render,
     height: options.render?.height ?? heightForFrames(spec.frames),
   }
