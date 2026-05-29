@@ -1,3 +1,10 @@
+## Development
+
+- Value accuracy and thoughtfulness.
+- Use the `barefootjs` and `hono` skills for searching, developing, and verifying.
+- Prefer pure functions and abstract data types.
+- Drive development iterations with automated tests. In particular, for UI components, use `@barefootjs/test` to test their structure and wiring.
+
 ## Git Commit
 
 Every commit MUST end with `Co-authored-by:` trailers for **all** participants other than the git author. Place them as the final lines of the message — no blank line or trailing content after them, otherwise GitHub will not recognize them.
