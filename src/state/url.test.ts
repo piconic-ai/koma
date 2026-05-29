@@ -102,4 +102,32 @@ describe('encodeToHash / decodeFromHash', () => {
     const hash = btoa(JSON.stringify({ frames: [{ code: 'x' }] }))
     expect(decodeFromHash(hash)).toBeNull()
   })
+
+  test('round-trips a non-default theme', () => {
+    const spec: Spec = {
+      language: 'ts',
+      frames: [{ id: 'a', code: 'x' }],
+      theme: 'hono',
+    }
+    const decoded = decodeFromHash(encodeToHash(spec))
+    expect(decoded!.theme).toBe('hono')
+  })
+
+  test('omits the default theme from the hash', () => {
+    const spec: Spec = {
+      language: 'ts',
+      frames: [{ id: 'a', code: 'x' }],
+      theme: 'piconic',
+    }
+    const hash = encodeToHash(spec)
+    const json = atob(hash.replace(/-/g, '+').replace(/_/g, '/'))
+    expect(JSON.parse(json)).not.toHaveProperty('theme')
+    // and decode leaves it undefined (consumers fall back to the default)
+    expect(decodeFromHash(hash)!.theme).toBeUndefined()
+  })
+
+  test('leaves theme undefined when absent', () => {
+    const decoded = decodeFromHash(encodeToHash(sample))
+    expect(decoded!.theme).toBeUndefined()
+  })
 })

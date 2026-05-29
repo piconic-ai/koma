@@ -7,7 +7,9 @@ import {
 } from '@/components/ui/select'
 import { Popover, PopoverTrigger, PopoverContent } from '@/components/ui/popover'
 import { InfoIcon, GitHubIcon } from '@/components/ui/icon'
-import type { Language, Spec } from '../src/model/types'
+import { HonoLogo, BarefootLogo, PiconicLogo } from '@/components/brand-logos'
+import type { Language, Spec, ThemeId } from '../src/model/types'
+import { THEME_GROUPS, DEFAULT_THEME_ID, resolveTheme } from '../src/render/themes'
 
 type ExportProgress = { current: number; total: number }
 type ExportOptions = { reduceMotion?: boolean }
@@ -50,7 +52,9 @@ const LANGUAGE_OPTIONS: Array<{ value: Language; label: string }> = [
 interface AppHeaderProps {
   language: Language
   spec: Spec
+  theme?: ThemeId
   onLanguageChange: (v: Language) => void
+  onThemeChange: (v: ThemeId) => void
 }
 
 export function AppHeader(props: AppHeaderProps) {
@@ -124,6 +128,49 @@ export function AppHeader(props: AppHeaderProps) {
             </div>
           </PopoverContent>
         </Popover>
+        <Select value={props.theme ?? DEFAULT_THEME_ID} onValueChange={(v: string) => props.onThemeChange(v as ThemeId)}>
+          <SelectTrigger className="w-[170px]">
+            <span className="flex items-center gap-2 truncate">
+              {/* Inline reactive `&&` per theme. Can't go through themeLogo()
+                  here: the bf compiler doesn't make a module-level helper
+                  reachable from the trigger's reactive effect scope (it throws
+                  "themeLogo is not defined" at hydration), and a bare function
+                  call in a JSX child wouldn't re-evaluate anyway. */}
+              {props.theme !== 'hono' && props.theme !== 'barefoot' && <PiconicLogo className="size-4" />}
+              {props.theme === 'hono' && <HonoLogo className="size-4" />}
+              {props.theme === 'barefoot' && <BarefootLogo className="size-4" />}
+              {resolveTheme(props.theme).label}
+            </span>
+          </SelectTrigger>
+          <SelectContent align="end">
+            {/* Hand-unrolled per category. A dynamic THEME_GROUPS.map with a
+                wrapping element + nested item .map makes the bf compiler emit
+                a duplicate `__compEl` declaration, so the groups stay flat and
+                explicit. Keep this in sync with THEME_GROUPS' categories. */}
+            <div role="presentation" className="px-2 py-1.5 text-sm font-semibold text-foreground">
+              {THEME_GROUPS[0].label}
+            </div>
+            {THEME_GROUPS[0].themes.map(t => (
+              <SelectItem key={t.id} value={t.id}>
+                <span className="flex items-center gap-2">
+                  {themeLogo(t.id)}
+                  {t.label}
+                </span>
+              </SelectItem>
+            ))}
+            <div role="presentation" className="px-2 py-1.5 text-sm font-semibold text-foreground">
+              {THEME_GROUPS[1].label}
+            </div>
+            {THEME_GROUPS[1].themes.map(t => (
+              <SelectItem key={t.id} value={t.id}>
+                <span className="flex items-center gap-2">
+                  {themeLogo(t.id)}
+                  {t.label}
+                </span>
+              </SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
         <Select value={props.language} onValueChange={(v: string) => props.onLanguageChange(v as Language)}>
           <SelectTrigger className="w-[160px]">
             <SelectValue placeholder={LANGUAGE_OPTIONS.find(o => o.value === props.language)?.label ?? 'Language...'} />
@@ -152,4 +199,14 @@ export function AppHeader(props: AppHeaderProps) {
       </div>
     </header>
   )
+}
+
+// Single source of truth for each theme's brand mark, used by BOTH the
+// dropdown items and the reactive trigger (so the two can't drift). Plain
+// if/return JSX — the bf compiler can't compile JSX inside an object-of-
+// arrows, so a Record<ThemeId> map isn't usable here.
+function themeLogo(id: ThemeId) {
+  if (id === 'hono') return <HonoLogo className="size-4" />
+  if (id === 'barefoot') return <BarefootLogo className="size-4" />
+  return <PiconicLogo className="size-4" />
 }

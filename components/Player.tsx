@@ -10,6 +10,7 @@ import {
 import { buildTimeline, collapseTransitions } from '../src/model/timeline'
 import { type Frame, type Spec, type Timeline } from '../src/model/types'
 import { renderToCanvas, heightForFrames } from '../src/render/canvas'
+import { resolveTheme } from '../src/render/themes'
 import { getStageState } from '../src/render/playback'
 import {
   highlight,
@@ -38,15 +39,16 @@ export function Player(props: PlayerProps) {
 
   const highlightedCode = new Map<string, string>()
 
-  const ensureTokens = (frame: Frame, language: Spec['language']) => {
+  const ensureTokens = (frame: Frame, language: Spec['language'], shikiTheme: string) => {
+    const key = `${shikiTheme}:${language}:${frame.code}`
     const prev = highlightedCode.get(frame.id)
-    if (prev === `${language}:${frame.code}`) return
-    highlightedCode.set(frame.id, `${language}:${frame.code}`)
+    if (prev === key) return
+    highlightedCode.set(frame.id, key)
     const seeded = new Map(tokensByFrame())
     seeded.set(frame.id, plainTokens(frame.code))
     setTokensByFrame(seeded)
-    void highlight(frame.code, language).then(tokens => {
-      if (highlightedCode.get(frame.id) !== `${language}:${frame.code}`) return
+    void highlight(frame.code, language, shikiTheme).then(tokens => {
+      if (highlightedCode.get(frame.id) !== key) return
       const next = new Map(tokensByFrame())
       next.set(frame.id, tokens)
       setTokensByFrame(next)
@@ -60,21 +62,35 @@ export function Player(props: PlayerProps) {
     window.dispatchEvent(new CustomEvent('koma:timeupdate', {
       detail: { elapsed: elapsedMs(), total: timeline().totalDurationMs, playing: playing() },
     }))
+    const themeRender = resolveTheme(props.spec.theme).render
+    const sizeOpts = props.spec.width
+      ? { width: props.spec.width, codeWidth: props.spec.width - 180 }
+      : {}
     renderToCanvas(canvas, {
       timeline: timeline(),
       elapsedMs: elapsedMs(),
       tokensByFrame: tokensByFrame(),
       frames: props.spec.frames,
       options: {
-        ...(props.spec.width ? { width: props.spec.width, codeWidth: props.spec.width - 180 } : {}),
-        height: heightForFrames(props.spec.frames, props.spec.width ? { width: props.spec.width } : {}),
+        ...themeRender,
+        ...sizeOpts,
+        // Pass the merged options so the height accounts for preset extras
+        // like the window chrome (otherwise the last line can clip).
+        height: heightForFrames(props.spec.frames, { ...themeRender, ...sizeOpts }),
       },
     })
   }
 
   onMount(() => {
-    for (const f of props.spec.frames) ensureTokens(f, props.spec.language)
+    const shikiTheme = resolveTheme(props.spec.theme).shikiTheme
+    for (const f of props.spec.frames) ensureTokens(f, props.spec.language, shikiTheme)
     renderCanvas()
+
+    // The first paint may use the fallback font; repaint once the web font
+    // (JetBrains Mono) has actually loaded so glyph metrics are correct.
+    if (typeof document !== 'undefined' && document.fonts) {
+      void document.fonts.ready.then(() => renderCanvas())
+    }
 
     if (typeof window !== 'undefined' && 'matchMedia' in window) {
       const mql = window.matchMedia('(prefers-reduced-motion: reduce)')
@@ -119,9 +135,10 @@ export function Player(props: PlayerProps) {
   createEffect(() => {
     const language = props.spec.language
     const frames = props.spec.frames
+    const shikiTheme = resolveTheme(props.spec.theme).shikiTheme
     for (const f of frames) {
       void f.code
-      ensureTokens(f, language)
+      ensureTokens(f, language, shikiTheme)
     }
   })
 
@@ -130,6 +147,10 @@ export function Player(props: PlayerProps) {
   createEffect(() => {
     void stage()
     void tokensByFrame()
+    // Re-render when the visual preset or canvas width changes, even if
+    // the code/timeline is untouched.
+    void props.spec.theme
+    void props.spec.width
     renderCanvas()
   })
 

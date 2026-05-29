@@ -8,7 +8,21 @@ import type { TokenLine } from '../render/highlighter'
 export type RenderOptions = {
   width: number
   height: number
+  /** Outer background fill. The literal `'transparent'` clears the canvas
+   *  instead of painting, so PNG frames keep their alpha. */
   outerBackground: string
+  /** Optional linear gradient for the outer background. Takes precedence
+   *  over `outerBackground` (unless that is `'transparent'`). `angle` is in
+   *  CSS degrees (0 = upward, 90 = rightward, 180 = downward); defaults to
+   *  180 (top → bottom). Provide `stops` to bias the blend (e.g. hold a
+   *  color through the middle so the end color only fills a corner);
+   *  otherwise `from`/`to` are placed at 0 and 1. */
+  outerGradient?: {
+    from: string
+    to: string
+    angle?: number
+    stops?: Array<{ at: number; color: string }>
+  }
   codeBackground: string
   codeWidth: number
   fontFamily: string
@@ -18,6 +32,26 @@ export type RenderOptions = {
   paddingY: number
   windowChromeHeight: number
   cornerRadius: number
+  /** macOS-style title bar at the top of the code window. */
+  showWindowChrome: boolean
+  chromeBackground: string
+  /** Traffic-light dots, left → right. */
+  chromeDotColors: [string, string, string]
+  /** Fallback color for tokens without one, and for plain transition text. */
+  textColor: string
+  cursorColor: string
+  /** Film-grain intensity over the outer background (0 = none). Adds a
+   *  subtle texture so a flat single-color background doesn't read as dead. */
+  grainAlpha: number
+  /** Peripheral darkening (0 = none, ~0.2 = subtle). Darkens the outer
+   *  background toward the corners for depth, leaving the center untouched. */
+  vignette: number
+  /** Soft drop shadow behind the code window for depth. */
+  cardShadow: boolean
+  /** Render a left gutter with line numbers. */
+  showLineNumbers: boolean
+  /** Color of the line-number gutter. */
+  lineNumberColor: string
 }
 
 export const DEFAULT_RENDER_OPTIONS: RenderOptions = {
@@ -34,6 +68,76 @@ export const DEFAULT_RENDER_OPTIONS: RenderOptions = {
   paddingY: 40,
   windowChromeHeight: 48,
   cornerRadius: 10,
+  showWindowChrome: false,
+  chromeBackground: '#161b22',
+  chromeDotColors: ['#ff5f57', '#febc2e', '#28c840'],
+  textColor: '#c9d1d9',
+  cursorColor: '#58a6ff',
+  grainAlpha: 0.11,
+  vignette: 0,
+  cardShadow: true,
+  showLineNumbers: false,
+  lineNumberColor: '#6b7280',
+}
+
+// A fixed grayscale-noise tile, generated once and reused across frames so
+// the grain is static (no flicker between video frames). Returns null in
+// environments without a canvas (e.g. unit tests with a stub context).
+let noiseTileCache: HTMLCanvasElement | OffscreenCanvas | null | undefined
+function getNoiseTile(): HTMLCanvasElement | OffscreenCanvas | null {
+  if (noiseTileCache !== undefined) return noiseTileCache
+  const size = 160
+  let tile: HTMLCanvasElement | OffscreenCanvas | null = null
+  if (typeof document !== 'undefined' && typeof document.createElement === 'function') {
+    const el = document.createElement('canvas')
+    el.width = size
+    el.height = size
+    tile = el
+  } else if (typeof OffscreenCanvas !== 'undefined') {
+    tile = new OffscreenCanvas(size, size)
+  }
+  if (!tile) {
+    noiseTileCache = null
+    return null
+  }
+  const nctx = tile.getContext('2d') as
+    | CanvasRenderingContext2D
+    | OffscreenCanvasRenderingContext2D
+    | null
+  if (!nctx) {
+    noiseTileCache = null
+    return null
+  }
+  const img = nctx.createImageData(size, size)
+  for (let i = 0; i < img.data.length; i += 4) {
+    // Centered around mid-gray so an `overlay` blend nudges the base color
+    // lighter/darker without shifting its hue.
+    const v = 128 + Math.round((Math.random() - 0.5) * 90)
+    img.data[i] = v
+    img.data[i + 1] = v
+    img.data[i + 2] = v
+    img.data[i + 3] = 255
+  }
+  nctx.putImageData(img, 0, 0)
+  noiseTileCache = tile
+  return tile
+}
+
+// Endpoints of a gradient line across a w×h box for a CSS-style angle
+// (0 = up, 90 = right, 180 = down), sized so it spans the whole box.
+function gradientLine(w: number, h: number, angleDeg: number) {
+  const rad = (angleDeg * Math.PI) / 180
+  const dx = Math.sin(rad)
+  const dy = -Math.cos(rad)
+  const len = Math.abs(w * Math.sin(rad)) + Math.abs(h * Math.cos(rad))
+  const cx = w / 2
+  const cy = h / 2
+  return {
+    x0: cx - (dx * len) / 2,
+    y0: cy - (dy * len) / 2,
+    x1: cx + (dx * len) / 2,
+    y1: cy + (dy * len) / 2,
+  }
 }
 
 function roundRect(
@@ -64,18 +168,21 @@ function drawWindowChrome(
   windowW: number,
   opts: RenderOptions,
 ) {
-  ctx.fillStyle = '#161b22'
+  ctx.fillStyle = opts.chromeBackground
   roundRect(ctx, windowX, windowY, windowW, opts.windowChromeHeight, 0)
   ctx.fill()
   const cy = windowY + opts.windowChromeHeight / 2
+  const r = 10
+  const gap = 8
+  const firstX = windowX + 16 + r
   const dots: Array<{ x: number; color: string }> = [
-    { x: windowX + 24, color: '#ff5f57' },
-    { x: windowX + 48, color: '#febc2e' },
-    { x: windowX + 72, color: '#28c840' },
+    { x: firstX, color: opts.chromeDotColors[0] },
+    { x: firstX + (r * 2 + gap), color: opts.chromeDotColors[1] },
+    { x: firstX + (r * 2 + gap) * 2, color: opts.chromeDotColors[2] },
   ]
   for (const dot of dots) {
     ctx.beginPath()
-    ctx.arc(dot.x, cy, 8, 0, Math.PI * 2)
+    ctx.arc(dot.x, cy, r, 0, Math.PI * 2)
     ctx.fillStyle = dot.color
     ctx.fill()
   }
@@ -86,15 +193,29 @@ function drawTokenLine(
   tokens: TokenLine,
   x: number,
   y: number,
-  fontSize: number,
+  fallbackColor: string,
 ) {
   let cursor = x
   for (const token of tokens) {
-    ctx.fillStyle = token.color ?? '#c9d1d9'
+    ctx.fillStyle = token.color ?? fallbackColor
     ctx.fillText(token.content, cursor, y)
     cursor += ctx.measureText(token.content).width
   }
-  void fontSize
+}
+
+// Draw a right-aligned line number in the gutter, then restore left align
+// so the code text (which is left-aligned) is unaffected.
+function drawLineNumber(
+  ctx: CanvasRenderingContext2D,
+  n: number,
+  rightX: number,
+  y: number,
+  color: string,
+) {
+  ctx.fillStyle = color
+  ctx.textAlign = 'right'
+  ctx.fillText(String(n), rightX, y)
+  ctx.textAlign = 'left'
 }
 
 export function truncateTokenLine(tokens: TokenLine, chars: number): TokenLine {
@@ -121,8 +242,9 @@ export function heightForFrames(
   const o = { ...DEFAULT_RENDER_OPTIONS, ...opts }
   const maxLines = Math.max(1, ...frames.map(f => f.code.split('\n').length))
   const lineGap = o.fontSize * o.lineHeight
+  const chromeH = o.showWindowChrome ? o.windowChromeHeight : 0
   const raw = Math.ceil(
-    80 + o.windowChromeHeight + o.paddingY * 2 + maxLines * lineGap,
+    80 + chromeH + o.paddingY * 2 + maxLines * lineGap,
   )
   // H.264 (mp4 export) only accepts even dimensions; an odd height makes
   // every codec candidate fail isConfigSupported, so the export silently
@@ -155,9 +277,68 @@ export function renderToCanvas(
 
   const c = ctx as CanvasRenderingContext2D
 
-  // Outer background
-  c.fillStyle = opts.outerBackground
-  c.fillRect(0, 0, opts.width, opts.height)
+  // Outer background. `'transparent'` clears to alpha so the exported
+  // PNG frames stay transparent (mp4/H.264 can't carry alpha, so its
+  // transparent areas fall back to black — that's accepted).
+  if (opts.outerBackground === 'transparent') {
+    c.clearRect(0, 0, opts.width, opts.height)
+  } else if (opts.outerGradient) {
+    const { x0, y0, x1, y1 } = gradientLine(
+      opts.width,
+      opts.height,
+      opts.outerGradient.angle ?? 180,
+    )
+    const grad = c.createLinearGradient(x0, y0, x1, y1)
+    const stops = opts.outerGradient.stops ?? [
+      { at: 0, color: opts.outerGradient.from },
+      { at: 1, color: opts.outerGradient.to },
+    ]
+    for (const s of stops) grad.addColorStop(s.at, s.color)
+    c.fillStyle = grad
+    c.fillRect(0, 0, opts.width, opts.height)
+  } else {
+    c.fillStyle = opts.outerBackground
+    c.fillRect(0, 0, opts.width, opts.height)
+  }
+
+  // Film grain over the background — drawn before the code window so it only
+  // textures the outer area. Skipped for transparent backgrounds and in
+  // environments without a real canvas (unit tests).
+  if (
+    opts.grainAlpha > 0 &&
+    opts.outerBackground !== 'transparent' &&
+    typeof c.createPattern === 'function'
+  ) {
+    const tile = getNoiseTile()
+    if (tile) {
+      const pattern = c.createPattern(tile as CanvasImageSource, 'repeat')
+      if (pattern) {
+        c.save()
+        c.globalAlpha = opts.grainAlpha
+        c.globalCompositeOperation = 'overlay'
+        c.fillStyle = pattern
+        c.fillRect(0, 0, opts.width, opts.height)
+        c.restore()
+      }
+    }
+  }
+
+  // Vignette — gently darken the corners, center untouched. Adds depth
+  // without changing the background's color or gradient.
+  if (
+    opts.vignette > 0 &&
+    opts.outerBackground !== 'transparent' &&
+    typeof c.createRadialGradient === 'function'
+  ) {
+    const cx = opts.width / 2
+    const cy = opts.height / 2
+    const outer = Math.hypot(cx, cy)
+    const vg = c.createRadialGradient(cx, cy, outer * 0.55, cx, cy, outer)
+    vg.addColorStop(0, 'rgba(0,0,0,0)')
+    vg.addColorStop(1, `rgba(0,0,0,${opts.vignette})`)
+    c.fillStyle = vg
+    c.fillRect(0, 0, opts.width, opts.height)
+  }
 
   // Code window — centered, fixed width
   const windowW = Math.min(opts.codeWidth, opts.width - 40)
@@ -165,10 +346,18 @@ export function renderToCanvas(
   const windowX = (opts.width - windowW) / 2
   const windowY = (opts.height - windowH) / 2
 
-  // Draw rounded-rect code background
+  // Draw rounded-rect code background, with a soft drop shadow for depth.
+  c.save()
+  if (opts.cardShadow) {
+    // Softer, more diffuse float: larger blur, gentle downward offset.
+    c.shadowColor = 'rgba(0, 0, 0, 0.24)'
+    c.shadowBlur = Math.round(opts.width * 0.05)
+    c.shadowOffsetY = Math.round(opts.width * 0.02)
+  }
   c.fillStyle = opts.codeBackground
   roundRect(c, windowX, windowY, windowW, windowH, opts.cornerRadius)
   c.fill()
+  c.restore()
 
   // Clip to the rounded rect so chrome + text don't bleed
   c.save()
@@ -176,15 +365,31 @@ export function renderToCanvas(
   c.clip()
 
   // Chrome
-  drawWindowChrome(c, windowX, windowY, windowW, opts)
+  if (opts.showWindowChrome) {
+    drawWindowChrome(c, windowX, windowY, windowW, opts)
+  }
 
   // Code
   c.font = `${opts.fontSize}px ${opts.fontFamily}`
   c.textBaseline = 'top'
 
+  const chromeOffset = opts.showWindowChrome ? opts.windowChromeHeight : 0
   const startX = windowX + opts.paddingX
-  const startY = windowY + opts.windowChromeHeight + opts.paddingY
+  const startY = windowY + chromeOffset + opts.paddingY
   const lineGap = opts.fontSize * opts.lineHeight
+
+  // Optional line-number gutter. Width is derived from the largest line
+  // count across all frames so the code's left edge stays put frame to
+  // frame (no jiggle as the line count changes).
+  let codeStartX = startX
+  let gutterRightX = startX
+  if (opts.showLineNumbers) {
+    const maxLines = Math.max(1, ...inputs.frames.map(f => f.code.split('\n').length))
+    const digitsW = c.measureText('9'.repeat(String(maxLines).length)).width
+    const gap = opts.fontSize * 1.2
+    gutterRightX = startX + digitsW
+    codeStartX = startX + digitsW + gap
+  }
 
   const pos = locateInTimeline(inputs.timeline, inputs.elapsedMs)
   const seg = inputs.timeline.segments[pos.segmentIndex]
@@ -194,7 +399,9 @@ export function renderToCanvas(
       inputs.tokensByFrame.get(seg.frame.id) ??
       seg.frame.code.split('\n').map(line => [{ content: line }])
     for (let i = 0; i < tokens.length; i++) {
-      drawTokenLine(c, tokens[i], startX, startY + i * lineGap, opts.fontSize)
+      const y = startY + i * lineGap
+      if (opts.showLineNumbers) drawLineNumber(c, i + 1, gutterRightX, y, opts.lineNumberColor)
+      drawTokenLine(c, tokens[i], codeStartX, y, opts.textColor)
     }
     c.restore()
     return
@@ -228,8 +435,12 @@ export function renderToCanvas(
 
     const y = startY + drawY * lineGap
 
+    if (opts.showLineNumbers) {
+      drawLineNumber(c, drawY + 1, gutterRightX, y, opts.lineNumberColor)
+    }
+
     if (truncated && truncated.length > 0) {
-      drawTokenLine(c, truncated, startX, y, opts.fontSize)
+      drawTokenLine(c, truncated, codeStartX, y, opts.textColor)
     } else {
       const lineText = typing.displayLine ?? role.line
       const text =
@@ -237,8 +448,8 @@ export function renderToCanvas(
           ? lineText
           : lineText.substring(0, typing.visibleChars)
       if (text.length > 0) {
-        c.fillStyle = '#c9d1d9'
-        c.fillText(text, startX, y)
+        c.fillStyle = opts.textColor
+        c.fillText(text, codeStartX, y)
       }
     }
 
@@ -248,8 +459,8 @@ export function renderToCanvas(
         typing.visibleChars === -1
           ? lineText
           : lineText.substring(0, typing.visibleChars)
-      const cursorX = startX + c.measureText(text).width
-      c.fillStyle = '#58a6ff'
+      const cursorX = codeStartX + c.measureText(text).width
+      c.fillStyle = opts.cursorColor
       c.fillText('|', cursorX, y)
     }
     drawY++

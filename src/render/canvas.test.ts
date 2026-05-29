@@ -1,6 +1,69 @@
 import { describe, expect, test } from 'bun:test'
-import { heightForFrames, truncateTokenLine } from './canvas'
+import { heightForFrames, renderToCanvas, truncateTokenLine } from './canvas'
 import type { TokenLine } from './highlighter'
+import { buildTimeline } from '../model/timeline'
+import type { Spec } from '../model/types'
+
+// A minimal 2D-context recorder. The real CanvasRenderingContext2D isn't
+// available under bun, so we capture the calls renderToCanvas makes and
+// assert on them.
+function makeRecordingCanvas() {
+  const calls = {
+    clearRect: 0,
+    fillRect: 0,
+    arc: 0,
+    gradients: [] as Array<Array<[number, string]>>,
+    fillStyles: [] as unknown[],
+  }
+  const ctx = {
+    fillStyle: '' as unknown,
+    font: '',
+    textBaseline: '',
+    clearRect: () => {
+      calls.clearRect++
+    },
+    createLinearGradient: () => {
+      const stops: Array<[number, string]> = []
+      calls.gradients.push(stops)
+      return { addColorStop: (offset: number, color: string) => { stops.push([offset, color]) } }
+    },
+    fillRect: () => {
+      calls.fillRect++
+      calls.fillStyles.push(ctx.fillStyle)
+    },
+    beginPath: () => {},
+    moveTo: () => {},
+    lineTo: () => {},
+    quadraticCurveTo: () => {},
+    closePath: () => {},
+    arc: () => {
+      calls.arc++
+    },
+    fill: () => {
+      calls.fillStyles.push(ctx.fillStyle)
+    },
+    save: () => {},
+    clip: () => {},
+    restore: () => {},
+    measureText: () => ({ width: 10 }),
+    fillText: () => {},
+  }
+  const canvas = {
+    width: 0,
+    height: 0,
+    getContext: () => ctx,
+  }
+  return { canvas: canvas as unknown as HTMLCanvasElement, calls }
+}
+
+function holdInputs(spec: Spec) {
+  return {
+    timeline: buildTimeline(spec),
+    elapsedMs: 0,
+    tokensByFrame: new Map<string, TokenLine[]>(),
+    frames: spec.frames,
+  }
+}
 
 describe('truncateTokenLine', () => {
   const line: TokenLine = [
@@ -88,5 +151,66 @@ describe('heightForFrames', () => {
       const code = Array.from({ length: lines }, (_, i) => `line${i}`).join('\n')
       expect(heightForFrames([{ id: 'a', code }]) % 2).toBe(0)
     }
+  })
+})
+
+describe('renderToCanvas outer background', () => {
+  const spec: Spec = { language: 'ts', frames: [{ id: 'a', code: 'const x = 1' }] }
+
+  test('paints a solid outer background by default', () => {
+    const { canvas, calls } = makeRecordingCanvas()
+    renderToCanvas(canvas, holdInputs(spec))
+    expect(calls.clearRect).toBe(0)
+    expect(calls.fillRect).toBe(1)
+    expect(calls.fillStyles).toContain('#00b769')
+  })
+
+  test('clears (keeps alpha) when outerBackground is transparent', () => {
+    const { canvas, calls } = makeRecordingCanvas()
+    renderToCanvas(canvas, {
+      ...holdInputs(spec),
+      options: { outerBackground: 'transparent' },
+    })
+    expect(calls.clearRect).toBe(1)
+    expect(calls.fillRect).toBe(0)
+  })
+
+  test('paints a vertical gradient when outerGradient is set', () => {
+    const { canvas, calls } = makeRecordingCanvas()
+    renderToCanvas(canvas, {
+      ...holdInputs(spec),
+      options: { outerGradient: { from: '#ff8844', to: '#ff3300' } },
+    })
+    expect(calls.clearRect).toBe(0)
+    expect(calls.gradients.length).toBe(1)
+    expect(calls.gradients[0]).toEqual([[0, '#ff8844'], [1, '#ff3300']])
+  })
+})
+
+describe('renderToCanvas window chrome', () => {
+  const spec: Spec = { language: 'ts', frames: [{ id: 'a', code: 'const x = 1' }] }
+
+  test('draws no window chrome by default', () => {
+    const { canvas, calls } = makeRecordingCanvas()
+    renderToCanvas(canvas, holdInputs(spec))
+    expect(calls.arc).toBe(0)
+  })
+
+  test('draws the three traffic-light dots when chrome is explicitly enabled', () => {
+    const { canvas, calls } = makeRecordingCanvas()
+    renderToCanvas(canvas, {
+      ...holdInputs(spec),
+      options: { showWindowChrome: true },
+    })
+    expect(calls.arc).toBe(3)
+  })
+
+  test('uses overridden chrome colors', () => {
+    const { canvas, calls } = makeRecordingCanvas()
+    renderToCanvas(canvas, {
+      ...holdInputs(spec),
+      options: { showWindowChrome: true, chromeBackground: '#123456' },
+    })
+    expect(calls.fillStyles).toContain('#123456')
   })
 })
