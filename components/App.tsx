@@ -33,6 +33,13 @@ export function App({ initialSpec }: AppProps) {
   const contentMaxWidth = () => Math.round(editorWidth() * 0.64)
   const editorStyle = () => `max-width:${contentMaxWidth()}px`
 
+  // Display-only sizing of the preview. By default the canvas fits the editor
+  // column width (see .koma-canvas). Once the user drags the resize handle we
+  // switch to an explicit height, letting them shrink or enlarge it while the
+  // intrinsic aspect ratio is preserved. Export resolution is unaffected.
+  const [previewHeight, setPreviewHeight] = createSignal(360)
+  const [previewResized, setPreviewResized] = createSignal(false)
+
   const handleEdgeDrag = (e: PointerEvent, side: 'left' | 'right') => {
     e.preventDefault()
     const startX = e.clientX
@@ -45,6 +52,45 @@ export function App({ initialSpec }: AppProps) {
       const raw = startWidth + dx * 2
       const clamped = Math.max(640, Math.min(1920, Math.round(raw / 10) * 10))
       setSpec(s => ({ ...s, width: clamped as CanvasWidth }))
+    }
+    const onUp = () => {
+      el.removeEventListener('pointermove', onMove)
+      el.removeEventListener('pointerup', onUp)
+      el.removeEventListener('pointercancel', onUp)
+    }
+    el.addEventListener('pointermove', onMove)
+    el.addEventListener('pointerup', onUp)
+    el.addEventListener('pointercancel', onUp)
+  }
+
+  const handlePreviewResize = (e: PointerEvent) => {
+    e.preventDefault()
+    const startY = e.clientY
+    const el = (e.currentTarget as HTMLElement)
+    el.setPointerCapture(e.pointerId)
+
+    // Base the drag on what's actually on screen. The upper bound is the
+    // height at which the canvas would span the full dock width — so the
+    // preview can be enlarged well past the editor column, but never wider
+    // than the dock (which would overflow the viewport).
+    const canvas = document.getElementById('koma-preview-canvas') as HTMLCanvasElement | null
+    const startHeight = canvas ? canvas.getBoundingClientRect().height : previewHeight()
+    const dockWidth = dockEl ? dockEl.clientWidth - 48 : 0
+    const fullWidthHeight = canvas && canvas.width && dockWidth
+      ? dockWidth * (canvas.height / canvas.width)
+      : 720
+    const maxHeight = Math.max(120, Math.round(fullWidthHeight))
+
+    // Seed the explicit height from the current on-screen size so switching out
+    // of the default fit-to-column mode doesn't jump.
+    setPreviewHeight(Math.round(startHeight))
+    setPreviewResized(true)
+
+    const onMove = (ev: PointerEvent) => {
+      // Drag up → taller, drag down → shorter.
+      const dy = startY - ev.clientY
+      const clamped = Math.max(120, Math.min(maxHeight, Math.round(startHeight + dy)))
+      setPreviewHeight(clamped)
     }
     const onUp = () => {
       el.removeEventListener('pointermove', onMove)
@@ -147,7 +193,19 @@ export function App({ initialSpec }: AppProps) {
         />
       </div>
 
-      <div className="koma-preview-dock" ref={handleDockRef}>
+      <div
+        className="koma-preview-dock"
+        ref={handleDockRef}
+        data-resized={previewResized() ? '' : undefined}
+        style={`--preview-height:${previewHeight()}px`}
+      >
+        <div
+          className="koma-preview-resize"
+          role="separator"
+          aria-label="Resize preview height"
+          aria-orientation="horizontal"
+          onPointerDown={(e: PointerEvent) => handlePreviewResize(e)}
+        />
         <aside className="koma-preview" aria-label="Preview" style={`max-width:${contentMaxWidth()}px`}>
           <Player spec={spec()} />
         </aside>

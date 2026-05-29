@@ -114,7 +114,28 @@ main {
   justify-content: center;
   align-items: center;
   border-radius: 8px;
-  overflow: hidden;
+  /* The canvas may be enlarged past the column width; let it spill (centered)
+     instead of being clipped. The drag clamp keeps it within the dock. */
+  overflow: visible;
+}
+
+.koma-canvas {
+  display: block;
+  border-radius: 8px;
+  /* Default: fit the editor column width (width-driven), so the preview lines
+     up with the editors above it. */
+  width: 100%;
+  height: auto;
+  max-width: 100%;
+}
+
+/* Once the user drags the resize handle, switch to height-driven sizing so the
+   preview can be freely shrunk or enlarged past the column while keeping its
+   intrinsic aspect ratio. */
+.koma-preview-dock[data-resized] .koma-canvas {
+  width: auto;
+  height: var(--preview-height, 360px);
+  max-width: none;
 }
 
 .koma-controls {
@@ -399,7 +420,9 @@ main {
   z-index: 15;
   background: var(--background);
   border-top: 1px solid var(--border);
-  padding: 8px 24px;
+  /* Extra top padding clears the absolutely-positioned resize handle so it
+     doesn't overlap the canvas. */
+  padding: 14px 24px 4px;
   display: flex;
   justify-content: center;
 }
@@ -409,7 +432,36 @@ main {
   max-width: 688px;
   padding: 0;
   min-width: 0;
-  overflow: hidden;
+  overflow: visible;
+}
+
+/* Drag the top edge of the dock to shrink/grow the preview height. */
+.koma-preview-resize {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 8px;
+  cursor: row-resize;
+  touch-action: none;
+}
+
+.koma-preview-resize::after {
+  content: '';
+  position: absolute;
+  top: 3px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 32px;
+  height: 2px;
+  border-radius: 1px;
+  background: var(--border);
+  transition: background 0.15s, width 0.15s;
+}
+
+.koma-preview-resize:hover::after {
+  background: var(--foreground);
+  width: 48px;
 }
 
 /* per-frame editor */
