@@ -3,6 +3,8 @@ import { DEFAULTS } from '../../model/types'
 export const HOLD_PER_LINE_MS = DEFAULTS.holdPerLineMs
 export const MIN_HOLD_MS = DEFAULTS.minHoldMs
 export const TRANSITION_MS = DEFAULTS.transitionMs
+export const MIN_TRANSITION_MS = DEFAULTS.minTransitionMs
+export const MAX_TRANSITION_MS = DEFAULTS.maxTransitionMs
 export const FINAL_FRAME_MIN_HOLD_MS = DEFAULTS.finalFrameMinHoldMs
 export const MIN_HOLD = 50
 
@@ -24,7 +26,27 @@ export function formatDuration(ms: number): string {
   return s < 10 ? `${s.toFixed(1)}s` : `${Math.round(s)}s`
 }
 
-export type FrameInput = { id: string; code: string; hold?: number }
+export type FrameInput = {
+  id: string
+  code: string
+  hold?: number
+  /** Override for the transition *into* this frame (from the previous one). */
+  transition?: { duration?: number }
+}
+
+// The transition *into* frame `toIdx` (i.e. between frame `toIdx-1` and
+// `toIdx`). Stored on the destination frame, mirroring `buildTimeline`.
+// Frame 0 has no incoming transition, so it returns 0.
+export function transitionOf(frames: FrameInput[], toIdx: number): number {
+  if (toIdx <= 0 || toIdx >= frames.length) return 0
+  return frames[toIdx].transition?.duration ?? TRANSITION_MS
+}
+
+export function totalTransitionMs(frames: FrameInput[]): number {
+  let sum = 0
+  for (let i = 1; i < frames.length; i++) sum += transitionOf(frames, i)
+  return sum
+}
 
 export function effectiveHolds(frames: FrameInput[]): number[] {
   if (frames.length === 0) return []
@@ -46,8 +68,43 @@ export function computeSegmentPcts(frames: FrameInput[]): number[] {
 export function computeTotalMs(frames: FrameInput[]): number {
   const holds = effectiveHolds(frames)
   const totalHold = holds.reduce((sum, h) => sum + h, 0)
-  const transitions = Math.max(0, frames.length - 1) * TRANSITION_MS
-  return totalHold + transitions
+  return totalHold + totalTransitionMs(frames)
+}
+
+// The bar is an alternating sequence of hold / transition segments:
+// [hold0, trans1, hold1, trans2, hold2, ...]. Each segment's `pct` is
+// its share of the *grand total* (holds + transitions), so they sum to
+// 100% — transitions now occupy real width instead of being collapsed.
+export type BarSegment =
+  | { kind: 'hold'; frameIndex: number; pct: number; ms: number }
+  | { kind: 'transition'; toFrameIndex: number; pct: number; ms: number }
+
+export function computeBarSegments(frames: FrameInput[]): BarSegment[] {
+  if (frames.length === 0) return []
+  const holds = effectiveHolds(frames)
+  const total = computeTotalMs(frames)
+  const pct = (ms: number) => (total > 0 ? (ms / total) * 100 : 0)
+  const segments: BarSegment[] = []
+  for (let i = 0; i < frames.length; i++) {
+    if (i > 0) {
+      const tms = transitionOf(frames, i)
+      segments.push({ kind: 'transition', toFrameIndex: i, pct: pct(tms), ms: tms })
+    }
+    segments.push({ kind: 'hold', frameIndex: i, pct: pct(holds[i]), ms: holds[i] })
+  }
+  return segments
+}
+
+// Elapsed time (ms) at which frame `frameIndex` starts playing — the
+// running sum of every prior hold plus the transitions between them.
+export function frameStartMs(frames: FrameInput[], frameIndex: number): number {
+  const holds = effectiveHolds(frames)
+  let ms = 0
+  for (let k = 0; k < frameIndex && k < holds.length; k++) {
+    ms += holds[k]
+    ms += transitionOf(frames, k + 1)
+  }
+  return ms
 }
 
 export function redistributeHolds(
@@ -110,63 +167,30 @@ export function computeEdgeDrag(
   return { holds, allAtMin, startAllAtMin }
 }
 
+// Transitions are now visible, fixed-width bar segments, so the playhead
+// advances linearly through the *whole* timeline (holds + transitions)
+// rather than freezing during a transition. Bar position is simply the
+// elapsed share of the grand total.
 export function elapsedToPlayheadPct(
   elapsed: number,
   frames: FrameInput[],
 ): number {
-  return elapsedToHoldRatio(elapsed, frames)
-}
-
-export function elapsedToHoldRatio(
-  elapsed: number,
-  frames: FrameInput[],
-): number {
-  const holds = effectiveHolds(frames)
-  const total = holds.reduce((s, h) => s + h, 0)
+  const total = computeTotalMs(frames)
   if (total <= 0) return 0
-  if (elapsed <= 0) return 0
-  let rem = elapsed
-  let accHold = 0
-  for (let k = 0; k < holds.length; k++) {
-    const fHold = holds[k]
-    if (rem <= fHold) { accHold += rem; break }
-    rem -= fHold
-    accHold += fHold
-    if (k < holds.length - 1) {
-      if (rem <= TRANSITION_MS) break
-      rem -= TRANSITION_MS
-    }
-  }
-  return (accHold / total) * 100
+  return Math.max(0, Math.min(1, elapsed / total)) * 100
 }
 
-export function holdRatioToElapsed(
+export function barRatioToElapsed(
   barRatio: number,
   frames: FrameInput[],
 ): number {
-  const holds = effectiveHolds(frames)
-  const totalHold = holds.reduce((s, h) => s + h, 0)
-  if (totalHold <= 0) return 0
-  if (barRatio <= 0) return 0
-  const clampedRatio = Math.min(barRatio, 1)
-  const holdMs = clampedRatio * totalHold
-  let elapsed = 0
-  let accHold = 0
-  for (let k = 0; k < holds.length; k++) {
-    const fHold = holds[k]
-    if (accHold + fHold >= holdMs) {
-      elapsed += holdMs - accHold
-      break
-    }
-    accHold += fHold
-    elapsed += fHold
-    if (k < holds.length - 1) elapsed += TRANSITION_MS
-  }
-  return elapsed
+  const total = computeTotalMs(frames)
+  if (total <= 0) return 0
+  return Math.max(0, Math.min(1, barRatio)) * total
 }
 
 export function hoverTimeLabel(ratio: number, frames: FrameInput[]): string {
-  const elapsed = holdRatioToElapsed(ratio, frames)
+  const elapsed = barRatioToElapsed(ratio, frames)
   return formatDuration(Math.round(elapsed))
 }
 
@@ -224,10 +248,16 @@ export function computeSegmentDrag(
   idx: number,
   frames: FrameInput[],
 ): Array<{ id: string; hold: number }> {
-  const totalHold = frames.reduce((s, f) => s + holdOf(f), 0)
-  const cursorMs = ratio * totalHold
+  // The handle sits at frame `idx`'s right edge (left edge of the
+  // transition into `idx+1`). `ratio` spans the whole bar, so the cursor
+  // position must be measured against the grand total — including the
+  // transitions that now occupy visible width before this handle.
+  const cursorMs = ratio * computeTotalMs(frames)
   let acc = 0
-  for (let k = 0; k < idx; k++) acc += holdOf(frames[k])
+  for (let k = 0; k < idx; k++) {
+    acc += holdOf(frames[k])
+    acc += transitionOf(frames, k + 1)
+  }
   const combined = holdOf(frames[idx]) + holdOf(frames[idx + 1])
   let newThis = Math.round(cursorMs - acc)
   newThis = Math.max(MIN_HOLD, Math.min(combined - MIN_HOLD, newThis))
@@ -235,4 +265,17 @@ export function computeSegmentDrag(
     { id: frames[idx].id, hold: newThis },
     { id: frames[idx + 1].id, hold: combined - newThis },
   ]
+}
+
+// Resize a single transition by dragging its edge. `msPerPx` is captured
+// at pointer-down (grand-total / bar pixel-width) so the mapping stays
+// stable even though lengthening the transition grows the total. Holds
+// are untouched — only the total duration changes.
+export function computeTransitionDragPx(
+  deltaPx: number,
+  startDuration: number,
+  msPerPx: number,
+): number {
+  const raw = startDuration + deltaPx * msPerPx
+  return Math.max(MIN_TRANSITION_MS, Math.min(MAX_TRANSITION_MS, Math.round(raw)))
 }

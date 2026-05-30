@@ -1,27 +1,31 @@
 'use client'
 
-import { createSignal } from '@barefootjs/client'
+import { createSignal, createEffect } from '@barefootjs/client'
 import {
   holdOf,
   effectiveHolds,
+  transitionOf,
+  totalTransitionMs,
   formatDuration,
   computeTotalMs,
+  frameStartMs,
   elapsedToPlayheadPct,
-  holdRatioToElapsed,
+  barRatioToElapsed,
   computeBarWidthPct,
   clientXToRatio,
   computeSegmentDrag,
+  computeTransitionDragPx,
   isAtMinHold,
   hoverTimeLabel,
   BASE_DURATION_MS,
   MIN_HOLD,
-  TRANSITION_MS,
 } from '../src/lib/timelinebar/logic'
 
 interface TimelineBarProps {
-  frames: Array<{ id: string; code: string; hold?: number }>
+  frames: Array<{ id: string; code: string; hold?: number; transition?: { duration?: number } }>
   selectedFrameId?: string | null
   onLayout: (holds: Array<{ id: string; hold: number }>) => void
+  onTransitionLayout: (toFrameId: string, duration: number) => void
   onSelect: (frameId: string) => void
 }
 
@@ -82,28 +86,57 @@ export function TimelineBar(props: TimelineBarProps) {
   const [edgeDragging, setEdgeDragging] = createSignal(false)
   const [hoverLabel, setHoverLabel] = createSignal<string | null>(null)
   const [hoverLeftPx, setHoverLeftPx] = createSignal(0)
+  const [barEl, setBarEl] = createSignal<HTMLElement | null>(null)
 
   const frameHolds = () => effectiveHolds(props.frames)
-  const totalHold = () => frameHolds().reduce((sum, h) => sum + h, 0)
   const totalDuration = () => computeTotalMs(props.frames)
   const barWidthPct = () => computeBarWidthPct(props.frames)
 
   const barStyle = () => `width:${barWidthPct()}%`
 
+  // flex-basis as a share of the grand total (holds + transitions).
+  const holdBasisPct = (i: number) =>
+    totalDuration() > 0 ? ((frameHolds()[i] ?? holdOf(props.frames[i])) / totalDuration()) * 100 : 0
+  const transBasisPct = (i: number) =>
+    totalDuration() > 0 ? (transitionOf(props.frames, i) / totalDuration()) * 100 : 0
+
   const seekToFrameStart = (frameIndex: number) => {
-    const fr = props.frames
-    const th = totalHold()
-    if (th <= 0) return
-    let accHold = 0
-    for (let k = 0; k < frameIndex; k++) accHold += holdOf(fr[k])
-    seek(Math.round(holdRatioToElapsed(accHold / th, fr)))
+    seek(Math.round(frameStartMs(props.frames, frameIndex)))
   }
+
+  // The bar is a keyed `.map()` loop, and bf can't prove the per-item
+  // flex-basis expressions are reactive, so they freeze at their SSR value.
+  // Sync every segment / transition width imperatively instead: this effect
+  // re-runs whenever the frames (or their hold / transition durations)
+  // change — on hydration from the URL, on drag, and on add/remove — without
+  // recreating DOM, so an in-flight pointer capture survives.
+  createEffect(() => {
+    const bar = barEl()
+    const frames = props.frames
+    if (!bar) return
+    // Touch each timing field so the effect subscribes to it.
+    for (const fr of frames) { void fr.hold; void fr.transition?.duration }
+    const total = computeTotalMs(frames)
+    const holds = effectiveHolds(frames)
+    const apply = (el: Element, pct: number) => {
+      ;(el as HTMLElement).style.flexBasis = `${pct}%`
+    }
+    bar.querySelectorAll('.koma-timeline-segment').forEach((el, i) =>
+      apply(el, total > 0 ? ((holds[i] ?? 0) / total) * 100 : 0),
+    )
+    bar.querySelectorAll('.koma-timeline-transition').forEach((el, j) =>
+      apply(el, total > 0 ? (transitionOf(frames, j + 1) / total) * 100 : 0),
+    )
+  })
 
   // ── Event listeners (registered once in handleMount) ───
   const handleMount = (el: HTMLElement) => {
     const scrollContainer = el.querySelector('[data-timeline-scroll]') as HTMLElement
     const bar = el.querySelector('[data-timeline-bar]') as HTMLElement
     const playhead = bar?.querySelector('[data-playhead]') as HTMLElement
+
+    // Hand the bar to the flex-basis sync effect.
+    if (bar) setBarEl(bar)
 
     window.addEventListener('koma:timeupdate', (e: Event) => {
       const d = (e as CustomEvent).detail
@@ -137,7 +170,7 @@ export function TimelineBar(props: TimelineBarProps) {
         onMove: (ev) => {
           const ratio = clientXToRatio(ev.clientX, bar.getBoundingClientRect())
           setPlayheadPct(ratio * 100)
-          seek(Math.round(holdRatioToElapsed(ratio, props.frames)))
+          seek(Math.round(barRatioToElapsed(ratio, props.frames)))
         },
         onEnd: () => setIsDragging(false),
       })
@@ -166,6 +199,49 @@ export function TimelineBar(props: TimelineBarProps) {
         const cleanup = () => {
           if (!segActive) return
           segActive = false
+          handle.removeEventListener('pointermove', onMove)
+          handle.removeEventListener('pointerup', cleanup)
+          handle.removeEventListener('pointercancel', cleanup)
+          handle.removeEventListener('lostpointercapture', cleanup)
+          try { handle.releasePointerCapture(pointerId) } catch (_) { /* already released */ }
+        }
+        handle.addEventListener('pointermove', onMove)
+        handle.addEventListener('pointerup', cleanup)
+        handle.addEventListener('pointercancel', cleanup)
+        handle.addEventListener('lostpointercapture', cleanup)
+      })
+    }
+
+    // Transition resize drag (delegated). Dragging a transition segment's
+    // edge changes only that transition's duration; holds stay put and the
+    // total grows/shrinks. `msPerPx` is captured at start so the mapping
+    // doesn't drift as the bar reflows mid-drag.
+    if (bar) {
+      let transActive = false
+      bar.addEventListener('pointerdown', (e: PointerEvent) => {
+        const handle = (e.target as HTMLElement).closest('[data-trans-handle]') as HTMLElement
+        if (!handle || transActive) return
+        e.preventDefault()
+        e.stopPropagation()
+        handle.setPointerCapture(e.pointerId)
+        transActive = true
+
+        const pointerId = e.pointerId
+        const toIdx = Number(handle.getAttribute('data-trans-handle'))
+        const toFrameId = props.frames[toIdx]?.id
+        const startX = e.clientX
+        const startDuration = transitionOf(props.frames, toIdx)
+        const barWidth = bar.getBoundingClientRect().width
+        const msPerPx = barWidth > 0 ? computeTotalMs(props.frames) / barWidth : 0
+
+        const onMove = (ev: PointerEvent) => {
+          if (!transActive || !toFrameId) return
+          const duration = computeTransitionDragPx(ev.clientX - startX, startDuration, msPerPx)
+          props.onTransitionLayout(toFrameId, duration)
+        }
+        const cleanup = () => {
+          if (!transActive) return
+          transActive = false
           handle.removeEventListener('pointermove', onMove)
           handle.removeEventListener('pointerup', cleanup)
           handle.removeEventListener('pointercancel', cleanup)
@@ -216,7 +292,7 @@ export function TimelineBar(props: TimelineBarProps) {
           const startHolds = props.frames.map(f => holdOf(f))
           const frameIds = props.frames.map(f => f.id)
           const startTotalHold = startHolds.reduce((s, h) => s + h, 0)
-          const transitions = Math.max(0, frameIds.length - 1) * TRANSITION_MS
+          const transitions = totalTransitionMs(props.frames)
           const start = {
             startHolds,
             frameIds,
@@ -286,9 +362,18 @@ export function TimelineBar(props: TimelineBarProps) {
                   className="koma-timeline-handle-bar"
                 />
               )}
+              {i > 0 && (
+                <div
+                  data-trans-handle={i}
+                  className="koma-timeline-transition"
+                  style={`flex-basis:${transBasisPct(i)}%;flex-grow:0;flex-shrink:0`}
+                >
+                  <span className="koma-timeline-transition-grip" />
+                </div>
+              )}
               <div
                 className={`koma-timeline-segment${isAtMinHold(frame) ? ' koma-timeline-segment--at-min' : ''}${props.selectedFrameId === frame.id ? ' koma-timeline-segment--selected' : ''}`}
-                style={`flex-basis:${totalHold() > 0 ? ((frameHolds()[i] ?? holdOf(frame)) / totalHold()) * 100 : 0}%;flex-grow:0;flex-shrink:0`}
+                style={`flex-basis:${holdBasisPct(i)}%;flex-grow:0;flex-shrink:0`}
                 onClick={() => {
                   props.onSelect(frame.id)
                   const idx = props.frames.findIndex(f => f.id === frame.id)

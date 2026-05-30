@@ -562,6 +562,37 @@ textarea.koma-code-input::selection {
   opacity: 0.6;
 }
 
+.koma-timeline-transition {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 10px;
+  cursor: ew-resize;
+  user-select: none;
+  position: relative;
+  /* Diagonal hatch so transitions read as distinct from solid holds. */
+  background: repeating-linear-gradient(
+    -45deg,
+    var(--muted-foreground) 0,
+    var(--muted-foreground) 1px,
+    transparent 1px,
+    transparent 5px
+  );
+  opacity: 0.55;
+}
+
+.koma-timeline-transition:hover {
+  opacity: 0.85;
+}
+
+.koma-timeline-transition-grip {
+  width: 2px;
+  height: 45%;
+  border-radius: 1px;
+  background: var(--background);
+  pointer-events: none;
+}
+
 .koma-timeline-handle-bar {
   width: 3px;
   min-width: 3px;
@@ -569,6 +600,7 @@ textarea.koma-code-input::selection {
   background: var(--background);
   cursor: col-resize;
   position: relative;
+  z-index: 1;
 }
 
 .koma-timeline-handle-bar::after {
