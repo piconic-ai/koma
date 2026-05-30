@@ -1,6 +1,6 @@
 'use client'
 
-import { createSignal, createEffect } from '@barefootjs/client'
+import { createSignal } from '@barefootjs/client'
 import {
   holdOf,
   effectiveHolds,
@@ -86,7 +86,6 @@ export function TimelineBar(props: TimelineBarProps) {
   const [edgeDragging, setEdgeDragging] = createSignal(false)
   const [hoverLabel, setHoverLabel] = createSignal<string | null>(null)
   const [hoverLeftPx, setHoverLeftPx] = createSignal(0)
-  const [barEl, setBarEl] = createSignal<HTMLElement | null>(null)
 
   const frameHolds = () => effectiveHolds(props.frames)
   const totalDuration = () => computeTotalMs(props.frames)
@@ -104,39 +103,11 @@ export function TimelineBar(props: TimelineBarProps) {
     seek(Math.round(frameStartMs(props.frames, frameIndex)))
   }
 
-  // The bar is a keyed `.map()` loop, and bf can't prove the per-item
-  // flex-basis expressions are reactive, so they freeze at their SSR value.
-  // Sync every segment / transition width imperatively instead: this effect
-  // re-runs whenever the frames (or their hold / transition durations)
-  // change — on hydration from the URL, on drag, and on add/remove — without
-  // recreating DOM, so an in-flight pointer capture survives.
-  createEffect(() => {
-    const bar = barEl()
-    const frames = props.frames
-    if (!bar) return
-    // Touch each timing field so the effect subscribes to it.
-    for (const fr of frames) { void fr.hold; void fr.transition?.duration }
-    const total = computeTotalMs(frames)
-    const holds = effectiveHolds(frames)
-    const apply = (el: Element, pct: number) => {
-      ;(el as HTMLElement).style.flexBasis = `${pct}%`
-    }
-    bar.querySelectorAll('.koma-timeline-segment').forEach((el, i) =>
-      apply(el, total > 0 ? ((holds[i] ?? 0) / total) * 100 : 0),
-    )
-    bar.querySelectorAll('.koma-timeline-transition').forEach((el, j) =>
-      apply(el, total > 0 ? (transitionOf(frames, j + 1) / total) * 100 : 0),
-    )
-  })
-
   // ── Event listeners (registered once in handleMount) ───
   const handleMount = (el: HTMLElement) => {
     const scrollContainer = el.querySelector('[data-timeline-scroll]') as HTMLElement
     const bar = el.querySelector('[data-timeline-bar]') as HTMLElement
     const playhead = bar?.querySelector('[data-playhead]') as HTMLElement
-
-    // Hand the bar to the flex-basis sync effect.
-    if (bar) setBarEl(bar)
 
     window.addEventListener('koma:timeupdate', (e: Event) => {
       const d = (e as CustomEvent).detail
