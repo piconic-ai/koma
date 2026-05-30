@@ -75,6 +75,8 @@ export type Defaults = {
   holdPerLineMs: number
   minHoldMs: number
   transitionMs: number
+  minTransitionMs: number
+  maxTransitionMs: number
   finalFrameMinHoldMs: number
   fps: number
   width: number
@@ -97,6 +99,8 @@ export const DEFAULTS: Defaults = {
   holdPerLineMs: 140,
   minHoldMs: 700,
   transitionMs: 400,
+  minTransitionMs: 100,
+  maxTransitionMs: 2000,
   finalFrameMinHoldMs: 0,
   fps: 30,
   width: 1080,

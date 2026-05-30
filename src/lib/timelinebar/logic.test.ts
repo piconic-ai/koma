@@ -7,22 +7,28 @@ import {
   effectiveHolds,
   computeSegmentPcts,
   computeTotalMs,
+  transitionOf,
+  totalTransitionMs,
+  computeBarSegments,
+  frameStartMs,
   redistributeHolds,
   scaleAllHolds,
   computeEdgeDrag,
   elapsedToPlayheadPct,
-  elapsedToHoldRatio,
-  holdRatioToElapsed,
+  barRatioToElapsed,
   hoverTimeLabel,
   computeBarWidth,
   computeBarWidthPct,
   computeExtensionHolds,
   computeSegmentDrag,
+  computeTransitionDragPx,
   MIN_HOLD,
   MIN_HOLD_MS,
   MIN_EXTEND_MS_PER_PX,
   HOLD_PER_LINE_MS,
   TRANSITION_MS,
+  MIN_TRANSITION_MS,
+  MAX_TRANSITION_MS,
   FINAL_FRAME_MIN_HOLD_MS,
   BASE_DURATION_MS,
   type FrameInput,
@@ -297,50 +303,50 @@ describe('computeBarWidth', () => {
   })
 })
 
-// ── elapsedToHoldRatio / holdRatioToElapsed ───────────────
+// ── elapsedToPlayheadPct / barRatioToElapsed (linear) ─────
 
-describe('elapsed ↔ holdRatio', () => {
-  // effectiveHolds for f3(3000, 3000, 3000) = [3000, 3000, 3000], totalHold = 9000
+describe('elapsed ↔ bar position (linear)', () => {
+  // Transitions are visible segments now, so position advances linearly
+  // across the whole timeline. total = 9000 + 2*TRANSITION_MS.
   const frames = f3(3000, 3000, 3000)
+  const total = 9000 + 2 * TRANSITION_MS
 
   test('elapsed=0 → 0%', () => {
-    expect(elapsedToHoldRatio(0, frames)).toBe(0)
+    expect(elapsedToPlayheadPct(0, frames)).toBe(0)
   })
 
-  test('end of frame 1 → 1/3', () => {
-    expect(elapsedToHoldRatio(3000, frames)).toBeCloseTo(100 / 3, 1)
+  test('end of frame 1 → linear share including transitions', () => {
+    expect(elapsedToPlayheadPct(3000, frames)).toBeCloseTo((3000 / total) * 100, 5)
   })
 
-  test('during transition → same as frame boundary', () => {
-    expect(elapsedToHoldRatio(3200, frames)).toBeCloseTo(100 / 3, 1)
+  test('advances through a transition (no freeze)', () => {
+    const atEnd = elapsedToPlayheadPct(3000, frames)
+    const midTransition = elapsedToPlayheadPct(3000 + TRANSITION_MS / 2, frames)
+    expect(midTransition).toBeGreaterThan(atEnd)
   })
 
-  test('mid frame 2 → ~50%', () => {
-    expect(elapsedToHoldRatio(3000 + TRANSITION_MS + 1500, frames)).toBeCloseTo(50, 1)
+  test('barRatioToElapsed=0 → 0', () => {
+    expect(barRatioToElapsed(0, frames)).toBe(0)
   })
 
-  test('holdRatio=0 → 0', () => {
-    expect(holdRatioToElapsed(0, frames)).toBe(0)
+  test('barRatioToElapsed=0.5 → half of total', () => {
+    expect(barRatioToElapsed(0.5, frames)).toBe(total / 2)
   })
 
-  test('holdRatio=0.5 → mid frame 2', () => {
-    expect(holdRatioToElapsed(0.5, frames)).toBe(3000 + TRANSITION_MS + 1500)
-  })
-
-  test('holdRatio=1.0 → end', () => {
-    expect(holdRatioToElapsed(1.0, frames)).toBe(3000 + TRANSITION_MS + 3000 + TRANSITION_MS + 3000)
+  test('barRatioToElapsed=1.0 → total', () => {
+    expect(barRatioToElapsed(1.0, frames)).toBe(total)
   })
 
   test('round-trip', () => {
     const original = 3000 + TRANSITION_MS + 500
-    const ratio = elapsedToHoldRatio(original, frames) / 100
-    const back = holdRatioToElapsed(ratio, frames)
-    expect(back).toBeCloseTo(original, 0)
+    const ratio = elapsedToPlayheadPct(original, frames) / 100
+    const back = barRatioToElapsed(ratio, frames)
+    expect(back).toBeCloseTo(original, 5)
   })
 
   test('empty frames → 0', () => {
-    expect(elapsedToHoldRatio(1000, [])).toBe(0)
-    expect(holdRatioToElapsed(0.5, [])).toBe(0)
+    expect(elapsedToPlayheadPct(1000, [])).toBe(0)
+    expect(barRatioToElapsed(0.5, [])).toBe(0)
   })
 })
 
@@ -723,119 +729,76 @@ describe('boundary: computeBarWidth', () => {
   })
 })
 
-// ── Boundary: elapsedToHoldRatio ─────────────────────────
+// ── Boundary: elapsedToPlayheadPct ───────────────────────
 
-describe('boundary: elapsedToHoldRatio', () => {
-  // Use holds >= FH so padding doesn't affect: effectiveHolds = [3000, 3000, 3000], totalHold = 9000
+describe('boundary: elapsedToPlayheadPct', () => {
   const frames = f3(3000, 3000, 3000)
+  const total = 9000 + 2 * TRANSITION_MS
 
   test('negative elapsed → 0%', () => {
-    expect(elapsedToHoldRatio(-100, frames)).toBe(0)
+    expect(elapsedToPlayheadPct(-100, frames)).toBe(0)
   })
 
   test('elapsed = exactly total timeline → 100%', () => {
-    const totalTimeline = 3000 + TRANSITION_MS + 3000 + TRANSITION_MS + 3000
-    expect(elapsedToHoldRatio(totalTimeline, frames)).toBe(100)
+    expect(elapsedToPlayheadPct(total, frames)).toBe(100)
   })
 
   test('elapsed > total timeline → capped at 100%', () => {
-    const totalTimeline = 3000 + TRANSITION_MS + 3000 + TRANSITION_MS + 3000
-    expect(elapsedToHoldRatio(totalTimeline + 9999, frames)).toBe(100)
-  })
-
-  test('elapsed at exact transition start → frame boundary', () => {
-    // Frame 1 ends at 3000, transition is 3000..3400
-    expect(elapsedToHoldRatio(3000, frames)).toBeCloseTo(100 / 3)
-    expect(elapsedToHoldRatio(3001, frames)).toBeCloseTo(100 / 3)
-  })
-
-  test('elapsed at exact transition end → frame boundary', () => {
-    expect(elapsedToHoldRatio(3000 + TRANSITION_MS, frames)).toBeCloseTo(100 / 3)
-  })
-
-  test('elapsed 1ms into frame 2 → slightly past 1/3', () => {
-    const ratio = elapsedToHoldRatio(3000 + TRANSITION_MS + 1, frames)
-    expect(ratio).toBeGreaterThan(100 / 3)
+    expect(elapsedToPlayheadPct(total + 9999, frames)).toBe(100)
   })
 
   test('single frame: elapsed=0 → 0%', () => {
-    expect(elapsedToHoldRatio(0, [{ id: 'a', code: 'x', hold: 5000 }])).toBe(0)
+    expect(elapsedToPlayheadPct(0, [{ id: 'a', code: 'x', hold: 5000 }])).toBe(0)
   })
 
   test('single frame: elapsed=2500 → 50%', () => {
-    // hold=5000 → effectiveHolds = [5000] (>= FH), so 2500/5000 = 50%
-    expect(elapsedToHoldRatio(2500, [{ id: 'a', code: 'x', hold: 5000 }])).toBe(50)
+    // hold=5000 → no transitions, 2500/5000 = 50%
+    expect(elapsedToPlayheadPct(2500, [{ id: 'a', code: 'x', hold: 5000 }])).toBe(50)
   })
 
   test('single frame: elapsed=5000 → 100%', () => {
-    expect(elapsedToHoldRatio(5000, [{ id: 'a', code: 'x', hold: 5000 }])).toBe(100)
+    expect(elapsedToPlayheadPct(5000, [{ id: 'a', code: 'x', hold: 5000 }])).toBe(100)
   })
 
-  test('frames with hold=0 → all at 0%', () => {
-    expect(elapsedToHoldRatio(0, f3(0, 0, 0))).toBe(0)
+  test('frames with hold=0 → 0% at start', () => {
+    expect(elapsedToPlayheadPct(0, f3(0, 0, 0))).toBe(0)
   })
 })
 
-// ── Boundary: holdRatioToElapsed ─────────────────────────
+// ── Boundary: barRatioToElapsed ──────────────────────────
 
-describe('boundary: holdRatioToElapsed', () => {
-  // Use holds >= FH so padding doesn't affect: effectiveHolds = [3000, 3000, 3000], totalHold = 9000
+describe('boundary: barRatioToElapsed', () => {
   const frames = f3(3000, 3000, 3000)
+  const total = 9000 + 2 * TRANSITION_MS
 
   test('ratio=0 → 0', () => {
-    expect(holdRatioToElapsed(0, frames)).toBe(0)
+    expect(barRatioToElapsed(0, frames)).toBe(0)
   })
 
   test('ratio=1 → full timeline', () => {
-    expect(holdRatioToElapsed(1, frames)).toBe(3000 + TRANSITION_MS + 3000 + TRANSITION_MS + 3000)
-  })
-
-  test('ratio slightly > 0 → small elapsed in frame 1', () => {
-    const elapsed = holdRatioToElapsed(0.001, frames)
-    expect(elapsed).toBeGreaterThan(0)
-    expect(elapsed).toBeLessThan(100)
-  })
-
-  test('ratio at exact frame boundary 1/3', () => {
-    const elapsed = holdRatioToElapsed(1 / 3, frames)
-    expect(elapsed).toBe(3000)
-  })
-
-  test('ratio at exact frame boundary 2/3', () => {
-    const elapsed = holdRatioToElapsed(2 / 3, frames)
-    expect(elapsed).toBe(3000 + TRANSITION_MS + 3000)
+    expect(barRatioToElapsed(1, frames)).toBe(total)
   })
 
   test('ratio > 1 → clamped to end', () => {
-    const elapsed = holdRatioToElapsed(1.5, frames)
-    expect(elapsed).toBe(3000 + TRANSITION_MS + 3000 + TRANSITION_MS + 3000)
+    expect(barRatioToElapsed(1.5, frames)).toBe(total)
   })
 
   test('ratio < 0 → 0', () => {
-    expect(holdRatioToElapsed(-0.5, frames)).toBe(0)
+    expect(barRatioToElapsed(-0.5, frames)).toBe(0)
   })
 
-  test('single frame ratio=0.5 → no transitions', () => {
-    // hold=6000 → effectiveHolds = [6000] (>= FH), 0.5 * 6000 = 3000
-    expect(holdRatioToElapsed(0.5, [{ id: 'a', code: 'x', hold: 6000 }])).toBe(3000)
+  test('single frame ratio=0.5 → half hold', () => {
+    expect(barRatioToElapsed(0.5, [{ id: 'a', code: 'x', hold: 6000 }])).toBe(3000)
   })
 
-  test('unequal holds: ratio maps proportionally', () => {
-    const frames = [
-      { id: 'a', code: 'x', hold: 3000 },
-      { id: 'b', code: 'x', hold: 5000 },
-    ]
-    // effectiveHolds = [3000, 5000] (last >= FH), totalHold = 8000
-    // ratio=3/8 → 3000ms → end of frame 1
-    expect(holdRatioToElapsed(3 / 8, frames)).toBe(3000)
-    // ratio=0.5 → 4000ms → 1000ms into frame 2 + transition
-    expect(holdRatioToElapsed(0.5, frames)).toBe(3000 + TRANSITION_MS + 1000)
+  test('linear proportionality', () => {
+    expect(barRatioToElapsed(0.25, frames)).toBe(total * 0.25)
   })
 })
 
-// ── Round-trip: ratio conversion with various frame configs ──
+// ── Round-trip: linear elapsed ↔ ratio with various configs ──
 
-describe('round-trip: elapsedToHoldRatio ↔ holdRatioToElapsed', () => {
+describe('round-trip: elapsedToPlayheadPct ↔ barRatioToElapsed', () => {
   const configs: Array<{ name: string; frames: FrameInput[] }> = [
     { name: 'equal 3 frames', frames: f3(3000, 3000, 3000) },
     { name: 'unequal', frames: f3(3000, 4000, 5000) },
@@ -849,8 +812,8 @@ describe('round-trip: elapsedToHoldRatio ↔ holdRatioToElapsed', () => {
   configs.forEach(({ name, frames }) => {
     ratios.forEach(ratio => {
       test(`${name}, ratio=${ratio.toFixed(3)}`, () => {
-        const elapsed = holdRatioToElapsed(ratio, frames)
-        const backRatio = elapsedToHoldRatio(elapsed, frames) / 100
+        const elapsed = barRatioToElapsed(ratio, frames)
+        const backRatio = elapsedToPlayheadPct(elapsed, frames) / 100
         expect(backRatio).toBeCloseTo(ratio, 3)
       })
     })
@@ -1061,20 +1024,19 @@ describe('elapsedToPlayheadPct', () => {
     expect(elapsedToPlayheadPct(totalDuration, frames)).toBe(100)
   })
 
-  test('mid-timeline → ~50%', () => {
-    // mid-timeline: half of totalDuration
-    // At 3000 + 200 + 1500 = 4700, holdRatio = (3000+1500)/9000*100 = 50%
-    const midElapsed = 3000 + TRANSITION_MS + 1500
-    expect(elapsedToPlayheadPct(midElapsed, frames)).toBeCloseTo(50, 1)
+  test('mid-timeline → 50% (linear, total/2)', () => {
+    // total = 9800; the exact midpoint is 4900ms.
+    const midElapsed = totalDuration / 2
+    expect(elapsedToPlayheadPct(midElapsed, frames)).toBeCloseTo(50, 5)
   })
 
-  test('freezes during transition (delegates to holdRatio)', () => {
+  test('advances during a transition (no freeze)', () => {
     const endOfFrame1 = 3000
     const midTransition = endOfFrame1 + TRANSITION_MS / 2
     const pctEnd = elapsedToPlayheadPct(endOfFrame1, frames)
     const pctMid = elapsedToPlayheadPct(midTransition, frames)
-    // During transition, playhead freezes at the segment boundary
-    expect(pctMid).toBe(pctEnd)
+    // Transitions are visible width now → the playhead keeps moving.
+    expect(pctMid).toBeGreaterThan(pctEnd)
   })
 
   test('empty frames → 0%', () => {
@@ -1175,5 +1137,164 @@ describe('edge drag cursor tracking', () => {
       const { holds } = simulateDrag(px)
       holds.forEach(h => expect(h.hold).toBeGreaterThanOrEqual(MIN_HOLD))
     }
+  })
+})
+
+// ── transitionOf / totalTransitionMs ─────────────────────
+
+describe('transitionOf', () => {
+  test('frame 0 has no incoming transition', () => {
+    expect(transitionOf(f3(1000, 1000, 1000), 0)).toBe(0)
+  })
+
+  test('default transition when no override', () => {
+    expect(transitionOf(f3(1000, 1000, 1000), 1)).toBe(TRANSITION_MS)
+  })
+
+  test('uses per-frame override', () => {
+    const frames: FrameInput[] = [
+      { id: 'a', code: 'x', hold: 1000 },
+      { id: 'b', code: 'y', hold: 1000, transition: { duration: 900 } },
+    ]
+    expect(transitionOf(frames, 1)).toBe(900)
+  })
+
+  test('out-of-range index → 0', () => {
+    expect(transitionOf(f3(1000, 1000, 1000), 3)).toBe(0)
+    expect(transitionOf(f3(1000, 1000, 1000), -1)).toBe(0)
+  })
+})
+
+describe('totalTransitionMs', () => {
+  test('sums every incoming transition', () => {
+    expect(totalTransitionMs(f3(1000, 1000, 1000))).toBe(2 * TRANSITION_MS)
+  })
+
+  test('respects overrides', () => {
+    const frames: FrameInput[] = [
+      { id: 'a', code: 'x', hold: 1000 },
+      { id: 'b', code: 'y', hold: 1000, transition: { duration: 900 } },
+      { id: 'c', code: 'z', hold: 1000 },
+    ]
+    expect(totalTransitionMs(frames)).toBe(900 + TRANSITION_MS)
+  })
+
+  test('single frame → 0', () => {
+    expect(totalTransitionMs([{ id: 'a', code: 'x', hold: 1000 }])).toBe(0)
+  })
+})
+
+// ── computeTotalMs with transition overrides ─────────────
+
+describe('computeTotalMs with transition overrides', () => {
+  test('longer transition grows the total; holds unchanged', () => {
+    const base = f3(1000, 1000, 1000)
+    const longer: FrameInput[] = [
+      { id: 'a', code: 'x', hold: 1000 },
+      { id: 'b', code: 'y', hold: 1000, transition: { duration: 900 } },
+      { id: 'c', code: 'z', hold: 1000 },
+    ]
+    expect(computeTotalMs(longer) - computeTotalMs(base)).toBe(900 - TRANSITION_MS)
+  })
+})
+
+// ── computeBarSegments ───────────────────────────────────
+
+describe('computeBarSegments', () => {
+  test('empty frames → empty array', () => {
+    expect(computeBarSegments([])).toEqual([])
+  })
+
+  test('single frame → one hold, 100%', () => {
+    const segs = computeBarSegments([{ id: 'a', code: 'x', hold: 1000 }])
+    expect(segs).toHaveLength(1)
+    expect(segs[0]).toMatchObject({ kind: 'hold', frameIndex: 0, pct: 100, ms: 1000 })
+  })
+
+  test('alternates hold / transition for N frames', () => {
+    const segs = computeBarSegments(f3(1000, 1000, 1000))
+    expect(segs.map(s => s.kind)).toEqual(['hold', 'transition', 'hold', 'transition', 'hold'])
+    expect(segs[1]).toMatchObject({ kind: 'transition', toFrameIndex: 1 })
+    expect(segs[3]).toMatchObject({ kind: 'transition', toFrameIndex: 2 })
+  })
+
+  test('percentages sum to 100', () => {
+    const segs = computeBarSegments(f3(500, 1500, 3000))
+    const sum = segs.reduce((s, seg) => s + seg.pct, 0)
+    expect(sum).toBeCloseTo(100, 5)
+  })
+
+  test('transition width reflects its share of the total', () => {
+    const frames = f3(1000, 1000, 1000) // total = 3000 + 800 = 3800
+    const segs = computeBarSegments(frames)
+    const trans = segs.find(s => s.kind === 'transition')!
+    expect(trans.pct).toBeCloseTo((TRANSITION_MS / 3800) * 100, 5)
+  })
+
+  test('zero-duration frames stay finite (no divide-by-zero)', () => {
+    const segs = computeBarSegments(f3(0, 0, 0))
+    segs.forEach(s => expect(Number.isFinite(s.pct)).toBe(true))
+  })
+})
+
+// ── frameStartMs ─────────────────────────────────────────
+
+describe('frameStartMs', () => {
+  const frames = f3(1000, 2000, 3000) // total = 6000 + 800
+
+  test('frame 0 starts at 0', () => {
+    expect(frameStartMs(frames, 0)).toBe(0)
+  })
+
+  test('frame 1 starts after hold 0 + transition into 1', () => {
+    expect(frameStartMs(frames, 1)).toBe(1000 + TRANSITION_MS)
+  })
+
+  test('frame 2 starts after holds 0,1 + both transitions', () => {
+    expect(frameStartMs(frames, 2)).toBe(1000 + TRANSITION_MS + 2000 + TRANSITION_MS)
+  })
+})
+
+// ── computeTransitionDragPx ──────────────────────────────
+
+describe('computeTransitionDragPx', () => {
+  test('positive drag lengthens the transition', () => {
+    expect(computeTransitionDragPx(100, 400, 2)).toBe(600)
+  })
+
+  test('negative drag shortens the transition', () => {
+    expect(computeTransitionDragPx(-100, 400, 2)).toBe(200)
+  })
+
+  test('clamps to MAX_TRANSITION_MS', () => {
+    expect(computeTransitionDragPx(100000, 400, 2)).toBe(MAX_TRANSITION_MS)
+  })
+
+  test('clamps to MIN_TRANSITION_MS', () => {
+    expect(computeTransitionDragPx(-100000, 400, 2)).toBe(MIN_TRANSITION_MS)
+  })
+
+  test('rounds to whole milliseconds', () => {
+    expect(computeTransitionDragPx(33, 400, 1.5)).toBe(Math.round(400 + 33 * 1.5))
+  })
+})
+
+// ── computeSegmentDrag with visible transitions ──────────
+
+describe('computeSegmentDrag (transitions occupy width)', () => {
+  // f3(3000,3000,3000): total = 9000 + 800 = 9800.
+  // Frame 1 ends at 3000; the handle at idx=0 sits there → ratio 3000/9800.
+  const frames = f3(3000, 3000, 3000)
+  const total = 9800
+
+  test('keeps the two holds summing to their combined total', () => {
+    const result = computeSegmentDrag(0.5, 0, frames)
+    expect(result[0].hold + result[1].hold).toBe(6000)
+  })
+
+  test('cursor at the existing boundary leaves holds unchanged', () => {
+    const result = computeSegmentDrag(3000 / total, 0, frames)
+    expect(result[0].hold).toBeCloseTo(3000, 0)
+    expect(result[1].hold).toBeCloseTo(3000, 0)
   })
 })

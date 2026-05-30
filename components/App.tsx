@@ -224,6 +224,9 @@ export function App({ initialSpec }: AppProps) {
               return updated
             })
           }}
+          onTransitionLayout={(toFrameId, duration) => {
+            setSpec(s => updateFrame(s, toFrameId, { transition: { duration } }))
+          }}
           onSelect={setSelectedFrameId}
         />
       </footer>

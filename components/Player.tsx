@@ -172,10 +172,12 @@ export function Player(props: PlayerProps) {
       const total = timeline().totalDurationMs
       const next = elapsedMs() + (ts - lastTs)
       if (next >= total) {
+        // Play once: stop at the end and rewind the playhead to the start
+        // (no looping). setPlaying(false) lets the play/pause effect cancel
+        // the RAF and emit a final timeupdate; setElapsedMs(0) returns the
+        // seek to the start position.
+        setPlaying(false)
         setElapsedMs(0)
-        lastTs = null
-        renderCanvas()
-        rafId = requestAnimationFrame(step)
         return
       }
       setElapsedMs(next)
