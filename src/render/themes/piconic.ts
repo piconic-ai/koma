@@ -18,6 +18,7 @@ const monoLight: ShikiThemeReg = {
 export const piconic: Theme = {
   id: 'piconic',
   label: 'piconic',
+  tagline: 'Baby steps to Giant strides.',
   category: 'partner',
   homepage: 'https://piconic.ai',
   shikiTheme: monoLight.name,

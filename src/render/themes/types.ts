@@ -46,8 +46,10 @@ export type Theme = {
   id: ThemeId
   /** Display label for the picker. */
   label: string
+  /** One-line description shown in the picker's hover card. */
+  tagline: string
   category: ThemeCategory
-  /** Official site (metadata; not currently surfaced in the UI). */
+  /** Official site, linked from the picker's hover card. */
   homepage: string
   /** Shiki theme name used to tokenize the code. */
   shikiTheme: string

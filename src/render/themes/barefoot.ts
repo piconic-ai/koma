@@ -7,6 +7,7 @@ import type { Theme } from './types'
 export const barefoot: Theme = {
   id: 'barefoot',
   label: 'Barefoot.js',
+  tagline: 'Fine-grained reactive TSX compiler – TSX in. Your stack out.',
   category: 'oss',
   homepage: 'https://barefootjs.dev',
   shikiTheme: 'dracula',

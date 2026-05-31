@@ -7,6 +7,7 @@ import type { Theme } from './types'
 export const hono: Theme = {
   id: 'hono',
   label: 'Hono',
+  tagline: 'Hono — means flame🔥 in Japanese — is a small, simple, and ultrafast web framework built on Web Standards.',
   category: 'oss',
   homepage: 'https://hono.dev',
   shikiTheme: 'github-dark',

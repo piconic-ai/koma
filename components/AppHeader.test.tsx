@@ -38,11 +38,21 @@ describe('AppHeader', () => {
     expect(result.find({ componentName: 'SelectItem' })).not.toBeNull()
   })
 
-  test('shows a brand logo for each option and the selected trigger', () => {
-    // Dropdown items go through the single themeLogo() source; the trigger
-    // must inline its logos (bf can't reach themeLogo from the reactive
-    // trigger scope), reactive via independent && branches per theme.
-    expect(AppHeaderSource).toContain('{themeLogo(t.id)}')
+  test('reveals a hover tip with the theme tagline and a homepage link', () => {
+    // The tip is a single portaled overlay in AppHeader's own scope, driven by
+    // a document-level mouseover delegate. (A HoverCard nested inside the
+    // portaled SelectContent fails to hydrate on bf 0.5.1 — see
+    // piconic-ai/barefootjs#1688 — so the tip lives outside the dropdown.)
+    expect(AppHeaderSource).toContain('data-koma-theme-tip')
+    expect(AppHeaderSource).toContain('THEME_ID_SET')
+    expect(AppHeaderSource).toContain('{tipTheme()?.tagline}')
+    expect(AppHeaderSource).toMatch(/href=\{tipTheme\(\)\?\.homepage\}/)
+    expect(AppHeaderSource).toMatch(/target="_blank"/)
+  })
+
+  test('inlines a brand logo per theme in the selected trigger', () => {
+    // The trigger can't reach a shared helper from its reactive effect scope,
+    // so it inlines a logo per theme via independent && branches.
     expect(AppHeaderSource).toMatch(/props\.theme === 'hono' && <HonoLogo/)
     expect(AppHeaderSource).toMatch(/props\.theme === 'barefoot' && <BarefootLogo/)
     expect(AppHeaderSource).toMatch(/HonoLogo.*BarefootLogo.*PiconicLogo/s)
