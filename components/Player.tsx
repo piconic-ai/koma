@@ -172,12 +172,12 @@ export function Player(props: PlayerProps) {
       const total = timeline().totalDurationMs
       const next = elapsedMs() + (ts - lastTs)
       if (next >= total) {
-        // Play once: stop at the end and rewind the playhead to the start
+        // Play once: stop at the end and leave the playhead at the end
         // (no looping). setPlaying(false) lets the play/pause effect cancel
-        // the RAF and emit a final timeupdate; setElapsedMs(0) returns the
-        // seek to the start position.
+        // the RAF and emit a final timeupdate; setElapsedMs(total) pins the
+        // seek to the end. Pressing play from the end rewinds via togglePlay.
         setPlaying(false)
-        setElapsedMs(0)
+        setElapsedMs(total)
         return
       }
       setElapsedMs(next)
