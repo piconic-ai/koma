@@ -1,5 +1,5 @@
 import { describe, expect, test } from 'bun:test'
-import { frameCount, gifFrameDelayMs, gifOutputSize } from './index'
+import { frameCount, gifFrameDelayMs, gifOutputSize } from './geometry'
 
 describe('frameCount', () => {
   test('samples ceil(duration / frame interval)', () => {
