@@ -265,10 +265,22 @@ function SelectContent(props: SelectContentProps) {
       if (!triggerEl) return
       const rect = triggerEl.getBoundingClientRect()
       const gap = 4
-      const top = rect.bottom + gap
-      const availableHeight = window.innerHeight - top - gap
-      el.style.top = `${top}px`
+      const margin = 8
+      const spaceBelow = window.innerHeight - rect.bottom - gap - margin
+      const spaceAbove = rect.top - gap - margin
+      // Flip up when there isn't room below and there's more room above, so a
+      // trigger near the bottom of the screen (e.g. the theme bar in the
+      // preview dock) doesn't open into the viewport edge and get clipped.
+      const naturalHeight = el.scrollHeight
+      const openUp = spaceBelow < naturalHeight && spaceAbove > spaceBelow
+      const availableHeight = Math.max(0, openUp ? spaceAbove : spaceBelow)
       el.style.setProperty('--radix-select-content-available-height', `${availableHeight}px`)
+      if (openUp) {
+        const contentHeight = Math.min(naturalHeight, availableHeight, 384)
+        el.style.top = `${rect.top - gap - contentHeight}px`
+      } else {
+        el.style.top = `${rect.bottom + gap}px`
+      }
       // At least as wide as trigger, but can expand for longer items
       el.style.minWidth = `${rect.width}px`
       if (props.align === 'end') {
