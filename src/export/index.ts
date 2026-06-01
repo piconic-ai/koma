@@ -56,6 +56,38 @@ export type GifExportOptions = CommonExportOptions & {
 const GIF_DEFAULT_FPS = 15
 const GIF_DEFAULT_SCALE = 0.5
 
+// ── Pure geometry / timing helpers (exported for testing) ─────────
+
+// Number of frames sampled from a timeline of `durationMs` at `fps`.
+// Always at least one frame, even for a zero-length timeline.
+export function frameCount(durationMs: number, fps: number): number {
+  return Math.max(1, Math.ceil(durationMs / (1000 / fps)))
+}
+
+// Output dimensions for the GIF. By default the GIF is half the source
+// size; passing `maxDimension` instead pins the longest side to that many
+// pixels (never upscaling). Dimensions are rounded and floored at 1px.
+export function gifOutputSize(
+  width: number,
+  height: number,
+  maxDimension?: number,
+): { width: number; height: number } {
+  const scale = maxDimension
+    ? Math.min(1, maxDimension / Math.max(width, height))
+    : GIF_DEFAULT_SCALE
+  return {
+    width: Math.max(1, Math.round(width * scale)),
+    height: Math.max(1, Math.round(height * scale)),
+  }
+}
+
+// GIF frame delay in milliseconds. The GIF format stores delays in
+// centiseconds, so snap to a 10ms grid and clamp to a 2ms floor (roughly
+// the smallest delay players actually honour).
+export function gifFrameDelayMs(fps: number): number {
+  return Math.max(2, Math.round(1000 / fps / 10) * 10)
+}
+
 async function preloadTokens(spec: Spec): Promise<Map<string, TokenLine[]>> {
   const map = new Map<string, TokenLine[]>()
   const shikiTheme = resolveTheme(spec.theme).shikiTheme
@@ -255,7 +287,7 @@ async function exportMp4(
   canvas.height = renderOpts.height
 
   const dt = 1000 / fps
-  const total = Math.max(1, Math.ceil(timeline.totalDurationMs / dt))
+  const total = frameCount(timeline.totalDurationMs, fps)
   const microsecPerFrame = Math.round(1_000_000 / fps)
 
   for (let i = 0; i < total; i++) {
@@ -348,12 +380,11 @@ async function exportGif(
 
   const { GIFEncoder, quantize, applyPalette } = await loadGifenc()
 
-  // Half the video size by default; pin the longest side when a cap is set.
-  const scale = maxDimension
-    ? Math.min(1, maxDimension / Math.max(renderOpts.width, renderOpts.height))
-    : GIF_DEFAULT_SCALE
-  const outW = Math.max(1, Math.round(renderOpts.width * scale))
-  const outH = Math.max(1, Math.round(renderOpts.height * scale))
+  const { width: outW, height: outH } = gifOutputSize(
+    renderOpts.width,
+    renderOpts.height,
+    maxDimension,
+  )
 
   const full = document.createElement('canvas')
   full.width = renderOpts.width
@@ -369,10 +400,8 @@ async function exportGif(
 
   const gif = GIFEncoder()
   const dt = 1000 / fps
-  const total = Math.max(1, Math.ceil(timeline.totalDurationMs / dt))
-  // GIF delays are stored in centiseconds, so round to a 10ms grid to
-  // match what players actually honour.
-  const delay = Math.max(2, Math.round(dt / 10) * 10)
+  const total = frameCount(timeline.totalDurationMs, fps)
+  const delay = gifFrameDelayMs(fps)
 
   for (let i = 0; i < total; i++) {
     renderToCanvas(full, {
