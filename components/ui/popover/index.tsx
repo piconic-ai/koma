@@ -200,14 +200,22 @@ function PopoverContent(props: PopoverContentProps) {
         el.style.top = `${rect.top - el.offsetHeight - 4}px`
       }
 
+      let left: number
       if (align === 'start') {
-        el.style.left = `${rect.left}px`
+        left = rect.left
       } else if (align === 'end') {
-        el.style.left = `${rect.right - el.offsetWidth}px`
+        left = rect.right - el.offsetWidth
       } else {
         // center
-        el.style.left = `${rect.left + rect.width / 2 - el.offsetWidth / 2}px`
+        left = rect.left + rect.width / 2 - el.offsetWidth / 2
       }
+
+      // Keep the panel inside the viewport. Without this, an `end`-aligned
+      // panel wider than the trigger's distance from the left edge spills off
+      // the left side (notably on mobile, where the info popover overflowed).
+      const margin = 8
+      const maxLeft = window.innerWidth - el.offsetWidth - margin
+      el.style.left = `${Math.max(margin, Math.min(left, maxLeft))}px`
     }
 
     // Track cleanup functions for global listeners

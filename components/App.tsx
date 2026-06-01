@@ -4,11 +4,12 @@ import { createEffect, createMemo, createSignal, onCleanup, onMount } from '@bar
 import { Player } from '@/components/Player'
 import { FrameEditor } from '@/components/FrameEditor'
 import { AppHeader } from '@/components/AppHeader'
+import { ThemeBar } from '@/components/ThemeBar'
 import { TimelineBar } from '@/components/TimelineBar'
 import {
   addFrame,
+  frameLanguage,
   removeFrame,
-  setLanguage,
   setTheme,
   updateFrame,
 } from '../src/model/spec'
@@ -151,13 +152,7 @@ export function App({ initialSpec }: AppProps) {
 
   return (
     <div className="koma-app" ref={(el: HTMLElement) => { appEl = el }}>
-      <AppHeader
-        language={spec().language}
-        theme={spec().theme}
-        spec={spec()}
-        onLanguageChange={(v: Language) => setSpec(s => setLanguage(s, v))}
-        onThemeChange={(v: ThemeId) => setSpec(s => setTheme(s, v))}
-      />
+      <AppHeader spec={spec()} />
 
       <div className="koma-editors-wrapper">
         <div
@@ -169,11 +164,12 @@ export function App({ initialSpec }: AppProps) {
             <FrameEditor
               key={frame.id}
               frame={frame}
-              language={spec().language}
+              language={frameLanguage(frame, spec())}
               index={i}
               total={spec().frames.length}
               selected={selectedFrameId() === frame.id}
               onCode={code => setSpec(s => updateFrame(s, frame.id, { code }))}
+              onLanguage={(language: Language | undefined) => setSpec(s => updateFrame(s, frame.id, { language }))}
               onRemove={() => setSpec(s => removeFrame(s, frame.id))}
             />
           ))}
@@ -205,6 +201,11 @@ export function App({ initialSpec }: AppProps) {
           aria-label="Resize preview height"
           aria-orientation="horizontal"
           onPointerDown={(e: PointerEvent) => handlePreviewResize(e)}
+        />
+        <ThemeBar
+          theme={spec().theme}
+          style={`max-width:${contentMaxWidth()}px`}
+          onThemeChange={(v: ThemeId) => setSpec(s => setTheme(s, v))}
         />
         <aside className="koma-preview" aria-label="Preview" style={`max-width:${contentMaxWidth()}px`}>
           <Player spec={spec()} />
