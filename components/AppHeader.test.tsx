@@ -16,33 +16,17 @@ describe('AppHeader', () => {
     expect(result.componentName).toBe('AppHeader')
   })
 
-  test('renders a theme Select alongside the language Select', () => {
-    const selects = result.findAll({ componentName: 'Select' })
-    // One for theme, one for language.
-    expect(selects.length).toBeGreaterThanOrEqual(2)
+  test('carries only the info popover and Export action, no pickers', () => {
+    // Theme/language pickers moved to the SettingsBar so the header stays
+    // narrow on mobile and the Export button never overflows off-screen.
+    expect(result.find({ componentName: 'Select' })).toBeNull()
+    expect(AppHeaderSource).toContain('koma-export-btn')
+    expect(result.find({ componentName: 'Popover' })).not.toBeNull()
   })
 
-  test('wires the theme Select to onThemeChange', () => {
-    const source = AppHeaderSource
-    // The theme Select forwards onValueChange to the onThemeChange prop.
-    expect(source).toContain('onThemeChange')
-    expect(source).toMatch(/onValueChange=\{[^}]*onThemeChange/)
-  })
-
-  test('groups the theme options by category', () => {
-    // Hand-unrolled per category: a dynamic THEME_GROUPS.map with a wrapping
-    // element + nested item map miscompiles in bf (duplicate __compEl), so
-    // the groups stay flat and explicit.
-    expect(AppHeaderSource).toContain('THEME_GROUPS[0].label')
-    expect(AppHeaderSource).toContain('THEME_GROUPS[1].label')
-    expect(result.find({ componentName: 'SelectItem' })).not.toBeNull()
-  })
-
-  test('inlines a brand logo per theme in the selected trigger', () => {
-    // The trigger can't reach a shared helper from its reactive effect scope,
-    // so it inlines a logo per theme via independent && branches.
-    expect(AppHeaderSource).toMatch(/props\.theme === 'hono' && <HonoLogo/)
-    expect(AppHeaderSource).toMatch(/props\.theme === 'barefoot' && <BarefootLogo/)
-    expect(AppHeaderSource).toMatch(/HonoLogo.*BarefootLogo.*PiconicLogo/s)
+  test('keeps the info popover trigger labelled', () => {
+    const trigger = result.find({ componentName: 'PopoverTrigger' })
+    expect(trigger).not.toBeNull()
+    expect(AppHeaderSource).toContain('About piconic koma')
   })
 })

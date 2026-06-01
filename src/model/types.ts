@@ -1,7 +1,8 @@
 // Core data model for koma.
 //
-// A `Spec` describes the whole video: a single language and an ordered
-// list of `Frame`s. Each `Frame` is a complete code state — transitions
+// A `Spec` describes the whole video: an ordered list of `Frame`s plus a
+// document-level fallback language. Each `Frame` is a complete code state
+// and may carry its own language (Auto-detected when unset) — transitions
 // between frames are derived later (see `src/model/diff.ts`) and
 // assembled into a `Timeline` for playback / export.
 
@@ -39,6 +40,10 @@ export type Frame = {
   id: string
   /** Code block content (newlines included). */
   code: string
+  /** Per-frame syntax language. Undefined means "Auto" — the language is
+   *  detected from the code (see `frameLanguage`). Set explicitly by typing a
+   *  markdown fence (e.g. ```ts) at the top of the frame. */
+  language?: Language
   /** Optional override for the display duration in ms. */
   hold?: number
   /** Optional override for the transition *into* this frame. */
@@ -56,6 +61,8 @@ export type CanvasWidth = number
 export type ThemeId = 'piconic' | 'barefoot' | 'hono'
 
 export type Spec = {
+  /** Document-level fallback language, used when a frame is Auto and the code
+   *  can't be detected. Per-frame `Frame.language` takes precedence. */
   language: Language
   frames: Frame[]
   width?: CanvasWidth

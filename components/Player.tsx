@@ -8,6 +8,7 @@ import {
   onMount,
 } from '@barefootjs/client'
 import { buildTimeline, collapseTransitions } from '../src/model/timeline'
+import { frameLanguage } from '../src/model/spec'
 import { type Frame, type Spec, type Timeline } from '../src/model/types'
 import { renderToCanvas, heightForFrames } from '../src/render/canvas'
 import { resolveTheme } from '../src/render/themes'
@@ -20,6 +21,8 @@ import {
 
 interface PlayerProps {
   spec: Spec
+  /** Whether the preview is expanded (visible). Hidden while collapsed. */
+  expanded?: boolean
 }
 
 export function Player(props: PlayerProps) {
@@ -83,7 +86,7 @@ export function Player(props: PlayerProps) {
 
   onMount(() => {
     const shikiTheme = resolveTheme(props.spec.theme).shikiTheme
-    for (const f of props.spec.frames) ensureTokens(f, props.spec.language, shikiTheme)
+    for (const f of props.spec.frames) ensureTokens(f, frameLanguage(f, props.spec), shikiTheme)
     renderCanvas()
 
     // The first paint may use the fallback font; repaint once the web font
@@ -133,12 +136,12 @@ export function Player(props: PlayerProps) {
   })
 
   createEffect(() => {
-    const language = props.spec.language
     const frames = props.spec.frames
     const shikiTheme = resolveTheme(props.spec.theme).shikiTheme
     for (const f of frames) {
       void f.code
-      ensureTokens(f, language, shikiTheme)
+      void f.language
+      ensureTokens(f, frameLanguage(f, props.spec), shikiTheme)
     }
   })
 
@@ -151,6 +154,9 @@ export function Player(props: PlayerProps) {
     // the code/timeline is untouched.
     void props.spec.theme
     void props.spec.width
+    // Repaint on expand: while collapsed the canvas is display:none (zero box),
+    // so it needs a fresh draw once it becomes visible again.
+    void props.expanded
     renderCanvas()
   })
 
@@ -202,7 +208,7 @@ export function Player(props: PlayerProps) {
 
   let prevSpecKey = ''
   createEffect(() => {
-    const key = props.spec.language + ':' + props.spec.frames.length + ':' + props.spec.frames.map(f => f.code).join('\n')
+    const key = props.spec.frames.length + ':' + props.spec.frames.map(f => frameLanguage(f, props.spec) + ':' + f.code).join('\n')
     if (prevSpecKey && key !== prevSpecKey) {
       setPlaying(false)
       setElapsedMs(0)

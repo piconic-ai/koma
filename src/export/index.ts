@@ -12,6 +12,7 @@
 // into AppHeader and load it on every page visit, not on demand.
 
 import { buildTimeline, collapseTransitions } from '../model/timeline'
+import { frameLanguage } from '../model/spec'
 import { DEFAULTS, type Spec } from '../model/types'
 import { highlight, type TokenLine } from '../render/highlighter'
 import {
@@ -44,7 +45,7 @@ async function preloadTokens(spec: Spec): Promise<Map<string, TokenLine[]>> {
   await Promise.all(
     spec.frames.map(async f => {
       try {
-        map.set(f.id, await highlight(f.code, spec.language, shikiTheme))
+        map.set(f.id, await highlight(f.code, frameLanguage(f, spec), shikiTheme))
       } catch {
         map.set(
           f.id,

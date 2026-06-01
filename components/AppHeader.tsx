@@ -1,15 +1,9 @@
 'use client'
 
 import { createSignal } from '@barefootjs/client'
-import {
-  Select, SelectTrigger, SelectValue,
-  SelectContent, SelectItem,
-} from '@/components/ui/select'
 import { Popover, PopoverTrigger, PopoverContent } from '@/components/ui/popover'
 import { InfoIcon, GitHubIcon } from '@/components/ui/icon'
-import { HonoLogo, BarefootLogo, PiconicLogo } from '@/components/brand-logos'
-import type { Language, Spec, ThemeId } from '../src/model/types'
-import { THEMES, THEME_GROUPS, DEFAULT_THEME_ID, resolveTheme } from '../src/render/themes'
+import type { Spec } from '../src/model/types'
 
 type ExportProgress = { current: number; total: number }
 type ExportOptions = { reduceMotion?: boolean }
@@ -32,42 +26,8 @@ const loadExport = (): Promise<ExportModule> => {
   return exportModulePromise
 }
 
-const LANGUAGE_OPTIONS: Array<{ value: Language; label: string }> = [
-  { value: 'c', label: 'C' },
-  { value: 'cs', label: 'C#' },
-  { value: 'cpp', label: 'C++' },
-  { value: 'css', label: 'CSS' },
-  { value: 'dart', label: 'Dart' },
-  { value: 'ex', label: 'Elixir' },
-  { value: 'fs', label: 'F#' },
-  { value: 'go', label: 'Go' },
-  { value: 'hs', label: 'Haskell' },
-  { value: 'html', label: 'HTML' },
-  { value: 'java', label: 'Java' },
-  { value: 'js', label: 'JavaScript' },
-  { value: 'json', label: 'JSON' },
-  { value: 'jsx', label: 'JSX' },
-  { value: 'kt', label: 'Kotlin' },
-  { value: 'md', label: 'Markdown' },
-  { value: 'pl', label: 'Perl' },
-  { value: 'php', label: 'PHP' },
-  { value: 'text', label: 'Plain text' },
-  { value: 'py', label: 'Python' },
-  { value: 'rb', label: 'Ruby' },
-  { value: 'rs', label: 'Rust' },
-  { value: 'scala', label: 'Scala' },
-  { value: 'sh', label: 'Shell' },
-  { value: 'tsx', label: 'TSX' },
-  { value: 'ts', label: 'TypeScript' },
-  { value: 'vue', label: 'Vue' },
-]
-
 interface AppHeaderProps {
-  language: Language
   spec: Spec
-  theme?: ThemeId
-  onLanguageChange: (v: Language) => void
-  onThemeChange: (v: ThemeId) => void
 }
 
 export function AppHeader(props: AppHeaderProps) {
@@ -141,65 +101,6 @@ export function AppHeader(props: AppHeaderProps) {
             </div>
           </PopoverContent>
         </Popover>
-        <Select value={props.theme ?? DEFAULT_THEME_ID} onValueChange={(v: string) => props.onThemeChange(v as ThemeId)}>
-          <SelectTrigger className="w-[170px]">
-            <span className="flex items-center gap-2 truncate">
-              {/* Inline reactive `&&` per theme. A module-level helper isn't
-                  reachable from the trigger's reactive effect scope (it throws
-                  "… is not defined" at hydration), and a bare function call in
-                  a JSX child wouldn't re-evaluate as props.theme changes. */}
-              {props.theme !== 'hono' && props.theme !== 'barefoot' && <PiconicLogo className="size-4" />}
-              {props.theme === 'hono' && <HonoLogo className="size-4" />}
-              {props.theme === 'barefoot' && <BarefootLogo className="size-4" />}
-              {resolveTheme(props.theme).label}
-            </span>
-          </SelectTrigger>
-          <SelectContent align="end">
-            {/* Hand-unrolled per item, NOT a per-category THEME_GROUPS.map.
-                Two sibling .map()s under one parent miscompile in bf: the
-                reactive-text effect for the 2nd group reads
-                `parent.children[idx + <#headers>]`, ignoring the 1st group's
-                items, so every OSS label is shifted by one (Hono rendered as
-                "Barefoot.js"). Listing items statically binds each label to its
-                own element. Keep in sync with THEME_GROUPS' categories. */}
-            <div role="presentation" className="px-2 py-1.5 text-sm font-semibold text-foreground">
-              {THEME_GROUPS[0].label}
-            </div>
-            <SelectItem value={THEMES.piconic.id}>
-              <span className="flex items-center gap-2">
-                <PiconicLogo className="size-4" />
-                {THEMES.piconic.label}
-              </span>
-            </SelectItem>
-            <div role="presentation" className="px-2 py-1.5 text-sm font-semibold text-foreground">
-              {THEME_GROUPS[1].label}
-            </div>
-            <SelectItem value={THEMES.hono.id}>
-              <span className="flex items-center gap-2">
-                <HonoLogo className="size-4" />
-                {THEMES.hono.label}
-              </span>
-            </SelectItem>
-            <SelectItem value={THEMES.barefoot.id}>
-              <span className="flex items-center gap-2">
-                <BarefootLogo className="size-4" />
-                {THEMES.barefoot.label}
-              </span>
-            </SelectItem>
-          </SelectContent>
-        </Select>
-        <Select value={props.language} onValueChange={(v: string) => props.onLanguageChange(v as Language)}>
-          <SelectTrigger className="w-[160px]">
-            <SelectValue placeholder={LANGUAGE_OPTIONS.find(o => o.value === props.language)?.label ?? 'Language...'} />
-          </SelectTrigger>
-          <SelectContent align="end">
-            {LANGUAGE_OPTIONS.map(opt => (
-              <SelectItem key={opt.value} value={opt.value}>
-                {opt.label}
-              </SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
         {exportStatus() !== null ? (
           <span className="koma-export-status" aria-live="polite">
             {exportStatus()}

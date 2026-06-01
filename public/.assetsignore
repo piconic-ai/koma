@@ -8,6 +8,7 @@ components/App.tsx
 components/AppHeader.tsx
 components/FrameEditor.tsx
 components/Player.tsx
+components/ThemeBar.tsx
 components/TimelineBar.tsx
 components/brand-logos.tsx
 components/manifest.json

@@ -257,6 +257,9 @@ main {
 
 .koma-info-popover {
   width: 320px;
+  /* Never wider than the viewport, so it can't spill off the edge on a narrow
+     phone screen. The JS positioner clamps the left offset to match. */
+  max-width: calc(100vw - 16px);
   display: flex;
   flex-direction: column;
   gap: 12px;
@@ -424,7 +427,44 @@ main {
      doesn't overlap the canvas. */
   padding: 14px 24px 4px;
   display: flex;
-  justify-content: center;
+  flex-direction: column;
+  align-items: center;
+}
+
+/* Theme picker sitting directly above the preview canvas. */
+.koma-theme-bar {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  gap: 8px 14px;
+  flex-wrap: wrap;
+  margin-bottom: 8px;
+  min-width: 0;
+}
+
+.koma-theme-desc {
+  margin: 0;
+  min-width: 0;
+  flex: 1;
+  font-size: 12px;
+  line-height: 1.4;
+  color: var(--muted-foreground, rgba(31, 35, 40, 0.6));
+  /* Keep the dock compact even with a long tagline (Hono's runs long). */
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+.koma-theme-link {
+  /* Plain black text + underline so the link, trailing the description,
+     sits quietly next to the theme and doesn't fight the preset's colors. */
+  color: var(--foreground);
+  text-decoration: underline;
+}
+
+.koma-theme-link:hover {
+  opacity: 0.7;
 }
 
 .koma-preview {
@@ -433,6 +473,48 @@ main {
   padding: 0;
   min-width: 0;
   overflow: visible;
+}
+
+/* Theme bar + expand/collapse toggle, sitting above the preview canvas. */
+.koma-preview-head {
+  width: 100%;
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+}
+
+.koma-preview-toggle {
+  flex-shrink: 0;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 28px;
+  padding: 0;
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  background: var(--card);
+  color: var(--foreground);
+  cursor: pointer;
+}
+
+.koma-preview-toggle:hover {
+  background: var(--muted, var(--card));
+}
+
+/* Collapsed by default: the canvas (and its resize handle) is hidden while the
+   theme bar stays visible. Pressing play — or this toggle — expands it. */
+.koma-preview-toggle svg {
+  transition: transform 0.15s;
+}
+
+.koma-preview-dock[data-collapsed] .koma-preview,
+.koma-preview-dock[data-collapsed] .koma-preview-resize {
+  display: none;
+}
+
+.koma-preview-dock:not([data-collapsed]) .koma-preview-toggle svg {
+  transform: rotate(180deg);
 }
 
 /* Drag the top edge of the dock to shrink/grow the preview height. */
@@ -464,10 +546,13 @@ main {
   width: 48px;
 }
 
-/* per-frame editor */
+/* per-frame editor. Code-surface colors follow the active preset (set as
+   --koma-editor-* on the element); the subtle border keeps a light editor
+   (e.g. piconic) visible against the page. */
 .koma-frame-editor {
   position: relative;
-  background: #0d1117;
+  background: var(--koma-editor-bg, #0d1117);
+  border: 1px solid color-mix(in srgb, var(--koma-editor-fg, #c9d1d9) 12%, transparent);
   border-radius: 6px;
   overflow: hidden;
 }
@@ -488,28 +573,96 @@ main {
   opacity: 1;
 }
 
+/* Per-frame language picker. "auto" until set; sits bottom-right, dimmed so it
+   doesn't compete with the code, and brightens on hover/open. */
+.koma-frame-lang {
+  position: absolute;
+  bottom: 4px;
+  right: 6px;
+  z-index: 1;
+}
+
+/* Doubled class beats single-class unocss utilities on the SelectTrigger
+   (h-9, w-full, px-3, border-input, …) without !important. */
+.koma-frame-lang-trigger.koma-frame-lang-trigger {
+  height: auto;
+  min-height: 0;
+  width: auto;
+  padding: 1px 6px;
+  border: 1px solid transparent;
+  border-radius: 4px;
+  background: transparent;
+  box-shadow: none;
+  font-family: 'JetBrains Mono', 'Fira Code', ui-monospace, Menlo, monospace;
+  font-size: 11px;
+  line-height: 1.2;
+  /* Follows the editor's text color so it reads on light or dark surfaces. */
+  color: color-mix(in srgb, var(--koma-editor-fg, #c9d1d9) 45%, transparent);
+  gap: 3px;
+}
+
+.koma-frame-lang-trigger.koma-frame-lang-trigger:hover,
+.koma-frame-lang-trigger.koma-frame-lang-trigger[data-state='open'] {
+  color: color-mix(in srgb, var(--koma-editor-fg, #c9d1d9) 90%, transparent);
+  border-color: color-mix(in srgb, var(--koma-editor-fg, #c9d1d9) 25%, transparent);
+  background: color-mix(in srgb, var(--koma-editor-fg, #c9d1d9) 8%, transparent);
+}
+
+.koma-frame-lang-trigger.koma-frame-lang-trigger svg {
+  width: 12px;
+  height: 12px;
+  opacity: 0.7;
+}
+
 .koma-iconbtn-danger:hover:not([disabled]) {
   background: color-mix(in oklch, var(--destructive) 20%, var(--background));
   border-color: var(--destructive);
 }
 
+.koma-code-wrap {
+  position: relative;
+}
+
+/* The highlight layer and the textarea MUST share an identical box model so
+   the painted tokens land exactly under the caret. */
+.koma-code-highlight,
 textarea.koma-code-input {
-  width: 100%;
-  min-height: 2em;
-  field-sizing: content;
+  margin: 0;
   padding: 12px 14px;
-  border: none;
-  border-radius: 0;
-  box-shadow: none;
-  background: #0d1117;
-  color: #c9d1d9;
   font-family: 'JetBrains Mono', 'Fira Code', ui-monospace, Menlo, monospace;
   font-size: 14px;
   line-height: 1.6;
-  resize: none;
   tab-size: 2;
   white-space: pre;
   overflow-wrap: normal;
+}
+
+/* Painted behind the textarea, sized to fill it; the textarea owns the height
+   (field-sizing) and this layer just mirrors its scroll. */
+.koma-code-highlight {
+  position: absolute;
+  inset: 0;
+  overflow: hidden;
+  pointer-events: none;
+  background: transparent;
+  color: var(--koma-editor-fg, #c9d1d9);
+}
+
+textarea.koma-code-input {
+  position: relative;
+  display: block;
+  width: 100%;
+  min-height: 2em;
+  field-sizing: content;
+  border: none;
+  border-radius: 0;
+  box-shadow: none;
+  /* Transparent text reveals the highlight layer behind; the caret stays
+     visible via caret-color. */
+  background: transparent;
+  color: transparent;
+  caret-color: var(--koma-editor-caret, #c9d1d9);
+  resize: none;
   overflow-x: auto;
 }
 
@@ -519,10 +672,11 @@ textarea.koma-code-input:focus {
   box-shadow: none;
 }
 
-/* Inverted selection: swap text/background colors so the highlight is clearly visible on the dark editor */
+/* Inverted selection: the band uses the preset's text color so it reads on
+   any editor background (dark or light). */
 textarea.koma-code-input::selection {
-  background: #c9d1d9;
-  color: #0d1117;
+  background: color-mix(in srgb, var(--koma-editor-fg, #c9d1d9) 30%, transparent);
+  color: transparent;
 }
 
 /* timeline bar */

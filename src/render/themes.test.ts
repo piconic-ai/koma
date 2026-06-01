@@ -1,5 +1,5 @@
 import { describe, expect, test } from 'bun:test'
-import { THEMES, THEME_GROUPS, DEFAULT_THEME_ID, resolveTheme, SHIKI_THEMES_TO_LOAD } from './themes'
+import { THEMES, THEME_GROUPS, DEFAULT_THEME_ID, resolveTheme, randomThemeId, SHIKI_THEMES_TO_LOAD } from './themes'
 
 describe('resolveTheme', () => {
   test('returns the default theme for undefined', () => {
@@ -13,6 +13,21 @@ describe('resolveTheme', () => {
   test('returns the matching theme for a known id', () => {
     expect(resolveTheme('hono').id).toBe('hono')
     expect(resolveTheme('barefoot').id).toBe('barefoot')
+  })
+})
+
+describe('randomThemeId', () => {
+  test('always returns a registered theme id', () => {
+    const ids = new Set(Object.keys(THEMES))
+    for (let i = 0; i < 100; i++) {
+      expect(ids.has(randomThemeId())).toBe(true)
+    }
+  })
+
+  test('can return every theme over enough draws', () => {
+    const seen = new Set<string>()
+    for (let i = 0; i < 300; i++) seen.add(randomThemeId())
+    expect([...seen].sort()).toEqual(Object.keys(THEMES).sort())
   })
 })
 
