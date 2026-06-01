@@ -71,6 +71,12 @@ mock.module('./cdn', () => ({
     },
   }),
 }))
+// Only export-local modules (./cdn, ./shared) are mocked. The export
+// submodules reach the renderer/timeline through ./shared's facade, so
+// mocking ./shared keeps the real '../render/canvas' / '../model/timeline'
+// modules (and their own test suites) untouched. mock.module is global
+// for the whole run, so mocking those shared modules here would corrupt
+// other suites — hence the facade.
 mock.module('./shared', () => ({
   buildRenderOpts: () => ({ width: 100, height: 80 }),
   setupRender: () => ({
@@ -81,15 +87,13 @@ mock.module('./shared', () => ({
   preloadTokens: async () => new Map(),
   ensureFontsReady: async () => {},
   canvasToPngBytes: async () => new Uint8Array([3, 4, 5]),
-}))
-mock.module('../render/canvas', () => ({ renderToCanvas: () => {} }))
-mock.module('../model/timeline', () => ({
+  renderToCanvas: () => {},
+  collapseTransitions: (t: unknown) => t,
   // 2 frames -> 4 segments (hold + transition each); 400ms total.
   buildTimeline: () => ({
     segments: Array.from({ length: 4 }, () => ({ durationMs: 100 })),
     totalDurationMs: 400,
   }),
-  collapseTransitions: (t: unknown) => t,
 }))
 
 function installEnv(withWebCodecs = true) {

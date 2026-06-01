@@ -3,10 +3,14 @@
 // mp4-muxer. Requires WebCodecs (see isMp4ExportSupported).
 
 import { DEFAULTS, type Spec } from '../model/types'
-import { renderToCanvas } from '../render/canvas'
 import { loadMuxer } from './cdn'
 import { frameCount } from './geometry'
-import { ensureFontsReady, preloadTokens, setupRender } from './shared'
+import {
+  ensureFontsReady,
+  preloadTokens,
+  renderToCanvas,
+  setupRender,
+} from './shared'
 import type { ExportProgress, Mp4ExportOptions } from './types'
 
 export function isMp4ExportSupported(): boolean {

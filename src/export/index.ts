@@ -14,16 +14,16 @@
 // The pipeline is split across sibling modules (shared/mp4/gif/geometry)
 // that esbuild bundles back together via this entrypoint.
 
-import { buildTimeline } from '../model/timeline'
 import { type Spec } from '../model/types'
-import { renderToCanvas } from '../render/canvas'
 import { exportGif } from './gif'
 import { exportMp4, isMp4ExportSupported } from './mp4'
 import {
   buildRenderOpts,
+  buildTimeline,
   canvasToPngBytes,
   ensureFontsReady,
   preloadTokens,
+  renderToCanvas,
 } from './shared'
 import type { GifExportOptions, Mp4ExportOptions, ExportProgress } from './types'
 import { ZipWriter } from './zip'

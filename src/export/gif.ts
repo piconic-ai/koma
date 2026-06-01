@@ -3,12 +3,17 @@
 // is rendered, optionally downscaled, and given a local 256-colour
 // palette via the lazily-fetched gifenc.
 
-import { buildTimeline, collapseTransitions } from '../model/timeline'
 import { type Spec } from '../model/types'
-import { renderToCanvas } from '../render/canvas'
 import { loadGifenc } from './cdn'
 import { frameCount, gifFrameDelayMs, gifOutputSize } from './geometry'
-import { buildRenderOpts, ensureFontsReady, preloadTokens } from './shared'
+import {
+  buildRenderOpts,
+  buildTimeline,
+  collapseTransitions,
+  ensureFontsReady,
+  preloadTokens,
+  renderToCanvas,
+} from './shared'
 import type { ExportProgress, GifExportOptions } from './types'
 
 // GIF runs at a gentler frame rate than the video so the palette-limited

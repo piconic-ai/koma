@@ -13,6 +13,13 @@ import {
 import { resolveTheme } from '../render/themes'
 import type { CommonExportOptions } from './types'
 
+// The export submodules reach the renderer and timeline through this
+// single facade (rather than importing '../render/canvas' /
+// '../model/timeline' directly), so tests can mock just './shared'
+// without touching — and breaking — those shared modules' own suites.
+export { renderToCanvas } from '../render/canvas'
+export { buildTimeline, collapseTransitions } from '../model/timeline'
+
 export async function preloadTokens(spec: Spec): Promise<Map<string, TokenLine[]>> {
   const map = new Map<string, TokenLine[]>()
   const shikiTheme = resolveTheme(spec.theme).shikiTheme
