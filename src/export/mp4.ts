@@ -3,9 +3,14 @@
 // mp4-muxer. Requires WebCodecs (see isMp4ExportSupported).
 
 import { DEFAULTS, type Spec } from '../model/types'
-import { renderToCanvas } from '../render/canvas'
+import { loadMuxer } from './cdn'
 import { frameCount } from './geometry'
-import { ensureFontsReady, preloadTokens, setupRender } from './shared'
+import {
+  ensureFontsReady,
+  preloadTokens,
+  renderToCanvas,
+  setupRender,
+} from './shared'
 import type { ExportProgress, Mp4ExportOptions } from './types'
 
 export function isMp4ExportSupported(): boolean {
@@ -16,23 +21,6 @@ export function isMp4ExportSupported(): boolean {
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     typeof (window as any).VideoFrame === 'function'
   )
-}
-
-type MuxerModule = {
-  Muxer: new (opts: unknown) => {
-    addVideoChunk: (chunk: unknown, meta?: unknown) => void
-    finalize: () => void
-    target: { buffer: ArrayBuffer }
-  }
-  ArrayBufferTarget: new () => { buffer: ArrayBuffer }
-}
-
-async function loadMuxer(): Promise<MuxerModule> {
-  const url = 'https://esm.sh/mp4-muxer@5.2.2'
-  // eslint-disable-next-line @typescript-eslint/ban-ts-comment
-  // @ts-ignore -- URL import resolved at runtime by the browser
-  const mod = await import(/* @vite-ignore */ url)
-  return mod as MuxerModule
 }
 
 export async function exportMp4(
