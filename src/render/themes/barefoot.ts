@@ -30,23 +30,29 @@ export const barefoot: Theme = {
     textColor: '#f8f8f2',
     cursorColor: '#50fa7b',
   },
-  // The signal-based TSX Counter. NOTE: a leading `"use client"` directive is
-  // intentionally omitted — when this sample is inlined into the client
-  // bundles, a literal `"use client"` string breaks hydration (a bf bundler
-  // quirk: "hydrate is not defined"). The code reads the same without it.
+  // The signal-based TSX Counter. The leading `"use client"` directive and the
+  // `@barefootjs/client` specifier are safe again: bf 0.5.3 fixed the inlined-
+  // string mangling (piconic-ai/barefootjs#1702) that previously broke
+  // hydration / rewrote the import to ./barefoot.js.
   sample: {
     language: 'tsx',
     frames: [
-      { code: `export function Counter() {` },
+      { code: `"use client"
+
+export function Counter() {` },
       {
-        code: `import { createSignal } from '@barefootjs/client'
+        code: `"use client"
+
+import { createSignal } from '@barefootjs/client'
 
 export function Counter() {
   const [count, setCount] = createSignal(0)
 }`,
       },
       {
-        code: `import { createSignal } from '@barefootjs/client'
+        code: `"use client"
+
+import { createSignal } from '@barefootjs/client'
 
 export function Counter() {
   const [count, setCount] = createSignal(0)
