@@ -326,58 +326,6 @@ main {
   text-decoration: underline;
 }
 
-.koma-theme-tip {
-  position: fixed;
-  top: 0;
-  left: 0;
-  z-index: 60;
-  width: 260px;
-  display: flex;
-  flex-direction: column;
-  gap: 8px;
-  padding: 12px 14px;
-  border-radius: 8px;
-  border: 1px solid var(--border);
-  background: var(--popover, #ffffff);
-  color: var(--popover-foreground, var(--foreground));
-  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.14);
-  font-size: 13px;
-  line-height: 1.5;
-  opacity: 0;
-  transform: translateY(2px);
-  pointer-events: none;
-  transition: opacity 120ms ease, transform 120ms ease;
-}
-
-.koma-theme-tip.is-visible {
-  opacity: 1;
-  transform: translateY(0);
-  pointer-events: auto;
-}
-
-.koma-theme-tip-title {
-  display: inline-flex;
-  align-items: center;
-  gap: 8px;
-  font-weight: 600;
-  color: var(--foreground);
-}
-
-.koma-theme-tip-tagline {
-  margin: 0;
-  color: var(--muted-foreground, rgba(31, 35, 40, 0.6));
-}
-
-.koma-theme-tip-link {
-  color: #00b769;
-  text-decoration: none;
-  word-break: break-all;
-}
-
-.koma-theme-tip-link:hover {
-  text-decoration: underline;
-}
-
 .koma-export-group {
   display: inline-flex;
   gap: 6px;

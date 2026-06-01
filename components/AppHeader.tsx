@@ -1,6 +1,6 @@
 'use client'
 
-import { createSignal, createPortal, isSSRPortal, onCleanup } from '@barefootjs/client'
+import { createSignal } from '@barefootjs/client'
 import {
   Select, SelectTrigger, SelectValue,
   SelectContent, SelectItem,
@@ -9,11 +9,7 @@ import { Popover, PopoverTrigger, PopoverContent } from '@/components/ui/popover
 import { InfoIcon, GitHubIcon } from '@/components/ui/icon'
 import { HonoLogo, BarefootLogo, PiconicLogo } from '@/components/brand-logos'
 import type { Language, Spec, ThemeId } from '../src/model/types'
-import type { Theme } from '../src/render/themes'
 import { THEME_GROUPS, DEFAULT_THEME_ID, resolveTheme } from '../src/render/themes'
-
-// Theme ids that should reveal a hover tip in the picker.
-const THEME_ID_SET = new Set<string>(THEME_GROUPS.flatMap(g => g.themes.map(t => t.id)))
 
 type ExportProgress = { current: number; total: number }
 type ExportOptions = { reduceMotion?: boolean }
@@ -65,63 +61,6 @@ export function AppHeader(props: AppHeaderProps) {
   const [exportStatus, setExportStatus] = createSignal<string | null>(null)
   const [infoOpen, setInfoOpen] = createSignal(false)
 
-  // ── Theme hover tip ───────────────────────────────────────────────
-  // The picker dropdown (SelectContent) is portaled to body, and nesting a
-  // second portaling overlay (HoverCard) inside it doesn't hydrate. So the
-  // tip lives here in AppHeader's own scope: one portaled overlay, driven by
-  // a document-level `mouseover` delegate that watches the theme rows.
-  const [tipTheme, setTipTheme] = createSignal<Theme | null>(null)
-  const [tipStyle, setTipStyle] = createSignal('')
-  let tipEl: HTMLElement | null = null
-  let closeTimer: ReturnType<typeof setTimeout> | null = null
-
-  const clearClose = () => {
-    if (closeTimer) { clearTimeout(closeTimer); closeTimer = null }
-  }
-  const scheduleClose = () => {
-    clearClose()
-    closeTimer = setTimeout(() => setTipTheme(null), 180)
-  }
-  const positionTip = (item: HTMLElement) => {
-    if (!tipEl) return
-    const rect = item.getBoundingClientRect()
-    // To the left of the row so it never covers sibling options.
-    const left = rect.left - tipEl.offsetWidth - 8
-    setTipStyle(`top:${Math.max(8, rect.top)}px;left:${Math.max(8, left)}px`)
-  }
-
-  // Reveal the tip while a theme row is hovered; keep it open while the cursor
-  // is over the tip itself (so its link is clickable); close shortly otherwise.
-  const onPointerOver = (e: MouseEvent) => {
-    const target = e.target as HTMLElement | null
-    if (!target) return
-    if (target.closest('[data-koma-theme-tip]')) { clearClose(); return }
-    const item = target.closest('[data-slot="select-item"]') as HTMLElement | null
-    const id = item?.dataset.value
-    if (item && id && THEME_ID_SET.has(id)) {
-      clearClose()
-      setTipTheme(resolveTheme(id))
-      positionTip(item)
-      return
-    }
-    if (tipTheme()) scheduleClose()
-  }
-
-  const headerRef = () => {
-    document.addEventListener('mouseover', onPointerOver)
-    onCleanup(() => document.removeEventListener('mouseover', onPointerOver))
-  }
-
-  const tipRef = (el: HTMLElement) => {
-    tipEl = el
-    if (el.parentNode !== document.body && !isSSRPortal(el)) {
-      const ownerScope = el.closest('[bf-s]') ?? undefined
-      createPortal(el, document.body, { ownerScope })
-    }
-    el.addEventListener('mouseenter', clearClose)
-    el.addEventListener('mouseleave', scheduleClose)
-  }
-
   const reducedMotion = () =>
     typeof window !== 'undefined' &&
     window.matchMedia('(prefers-reduced-motion: reduce)').matches
@@ -146,7 +85,7 @@ export function AppHeader(props: AppHeaderProps) {
   }
 
   return (
-    <header className="koma-app-header" ref={headerRef}>
+    <header className="koma-app-header">
       <h1 className="koma-app-title">
         <svg className="koma-app-logo" viewBox="55 48 390 104" xmlns="http://www.w3.org/2000/svg" aria-label="piconic"><g fill="#00b769"><path d="M136.32,53.25c-3.1,0-5.62,2.49-5.62,5.56,0,3.07,2.52,5.56,5.62,5.56,3.1,0,5.62-2.49,5.62-5.56s-2.52-5.56-5.62-5.56Z"/><rect x="132.05" y="75.12" width="8.53" height="49.65"/><path d="M371.34,52.88c-3.1,0-5.62,2.49-5.62,5.56s2.52,5.56,5.62,5.56c3.1,0,5.62-2.49,5.62-5.56s-2.52-5.56-5.62-5.56Z"/><rect x="367.08" y="75.12" width="8.53" height="49.65"/><path d="M248.89,74.52c-14.02,0-25.14,11.41-25.14,25.42s11.12,25.42,25.14,25.42,25.14-11.4,25.14-25.42-11.12-25.42-25.14-25.42ZM248.89,116.28c-9.01,0-16.62-7.33-16.62-16.33s7.61-16.33,16.62-16.33,16.62,7.33,16.62,16.33-7.61,16.33-16.62,16.33Z"/><path d="M199.11,111.56c-3.02,2.92-7.14,4.72-11.61,4.72-9.01,0-16.62-7.33-16.62-16.33s7.61-16.33,16.62-16.33c4.47,0,8.59,1.81,11.61,4.72l6.28-6.28c-4.54-4.65-10.85-7.53-17.89-7.53-14.02,0-25.14,11.41-25.14,25.42s11.12,25.42,25.14,25.42c7.05,0,13.36-2.88,17.89-7.53l-6.28-6.28Z"/><path d="M434.13,111.56c-3.02,2.92-7.14,4.72-11.61,4.72-9.01,0-16.62-7.33-16.62-16.33s7.61-16.33,16.62-16.33c4.47,0,8.59,1.81,11.61,4.72l6.28-6.28c-4.54-4.65-10.85-7.53-17.89-7.53-14.02,0-25.14,11.41-25.14,25.42s11.12,25.42,25.14,25.42c7.05,0,13.36-2.88,17.89-7.53l-6.28-6.28Z"/><path d="M319.49,74.52c-14.02,0-25.14,11.41-25.14,25.42h0v24.83h8.53v-24.83c0-9.01,7.61-16.33,16.62-16.33s16.62,7.33,16.62,16.33v24.83h8.53v-24.83h0c0-14.02-11.12-25.42-25.14-25.42Z"/><path d="M85,74.52c-14.02,0-25.14,11.41-25.14,25.42v46.78h8.53v-27.7c4.41,3.93,10.2,6.34,16.62,6.34,14.02,0,25.14-11.4,25.14-25.42s-11.12-25.42-25.14-25.42ZM85,116.28c-9.01,0-16.62-7.33-16.62-16.33s7.61-16.33,16.62-16.33,16.62,7.33,16.62,16.33-7.61,16.33-16.62,16.33Z"/></g></svg>
         <span className="koma-app-wordmark">koma</span>
@@ -260,26 +199,6 @@ export function AppHeader(props: AppHeaderProps) {
             Export
           </button>
         )}
-      </div>
-      {/* Theme hover tip. Always rendered (portaled to body) and toggled via
-          opacity, so its width is measurable for positioning while hidden.
-          Inline `&&` per theme keeps the brand mark reactive to tipTheme(). */}
-      <div
-        data-koma-theme-tip
-        className={`koma-theme-tip ${tipTheme() ? 'is-visible' : ''}`}
-        style={tipStyle()}
-        ref={tipRef}
-      >
-        <span className="koma-theme-tip-title">
-          {tipTheme() && tipTheme()?.id !== 'hono' && tipTheme()?.id !== 'barefoot' && <PiconicLogo className="size-4" />}
-          {tipTheme()?.id === 'hono' && <HonoLogo className="size-4" />}
-          {tipTheme()?.id === 'barefoot' && <BarefootLogo className="size-4" />}
-          {tipTheme()?.label}
-        </span>
-        <p className="koma-theme-tip-tagline">{tipTheme()?.tagline}</p>
-        <a className="koma-theme-tip-link" href={tipTheme()?.homepage} target="_blank" rel="noreferrer">
-          {tipTheme()?.homepage}
-        </a>
       </div>
     </header>
   )
