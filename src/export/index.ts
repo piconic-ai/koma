@@ -39,6 +39,23 @@ export type Mp4ExportOptions = CommonExportOptions & {
   bitrate?: number
 }
 
+export type GifExportOptions = CommonExportOptions & {
+  // GIF keeps its own frame rate, independent from the MP4 options, so
+  // that customizing the (lossless-ish) MP4 export never bloats the GIF.
+  // People who want fine control over size/quality use the MP4.
+  gifFps?: number
+  // Optional cap on the longest side, in pixels. When omitted the GIF
+  // is half the video's pixel dimensions; set it to pin the longest
+  // side to a specific value instead.
+  gifMaxDimension?: number
+}
+
+// The GIF is half the video resolution by default, and its frame rate is
+// dialled back, so the palette-limited file stays small while tracking
+// whatever size the video is exported at.
+const GIF_DEFAULT_FPS = 15
+const GIF_DEFAULT_SCALE = 0.5
+
 async function preloadTokens(spec: Spec): Promise<Map<string, TokenLine[]>> {
   const map = new Map<string, TokenLine[]>()
   const shikiTheme = resolveTheme(spec.theme).shikiTheme
@@ -277,30 +294,141 @@ async function exportMp4(
   return new Blob([target.buffer], { type: 'video/mp4' })
 }
 
-// ── Combined export (MP4 + PNGs in one zip) ──────────────────────
+// ── GIF (internal) ───────────────────────────────────────────────
+
+type GifencModule = {
+  GIFEncoder: () => {
+    writeFrame: (
+      index: Uint8Array,
+      width: number,
+      height: number,
+      opts: { palette: number[][]; delay?: number; repeat?: number },
+    ) => void
+    finish: () => void
+    bytes: () => Uint8Array<ArrayBuffer>
+  }
+  quantize: (rgba: Uint8Array | Uint8ClampedArray, maxColors: number) => number[][]
+  applyPalette: (
+    rgba: Uint8Array | Uint8ClampedArray,
+    palette: number[][],
+  ) => Uint8Array
+}
+
+async function loadGifenc(): Promise<GifencModule> {
+  // jsDelivr's `+esm` build exposes gifenc's named exports (GIFEncoder,
+  // quantize, applyPalette) cleanly. esm.sh mangles gifenc's interop:
+  // its `default` collapses to just the GIFEncoder function and the
+  // other exports drop, so we use jsDelivr here (mp4-muxer/shiki still
+  // come from esm.sh, which handles those fine).
+  const url = 'https://cdn.jsdelivr.net/npm/gifenc@1.0.3/+esm'
+  // eslint-disable-next-line @typescript-eslint/ban-ts-comment
+  // @ts-ignore -- URL import resolved at runtime by the browser
+  const mod = await import(/* @vite-ignore */ url)
+  return mod as GifencModule
+}
+
+// Encode the timeline as an animated GIF. Unlike the MP4 path this only
+// needs a 2D canvas, so it works wherever the PNG export does (no
+// WebCodecs required). Frames are downscaled to `gifMaxDimension` and
+// each gets a local 256-colour palette via gifenc.
+async function exportGif(
+  spec: Spec,
+  onProgress?: (p: ExportProgress) => void,
+  options: GifExportOptions = {},
+): Promise<Blob> {
+  const fps = options.gifFps ?? GIF_DEFAULT_FPS
+  const maxDimension = options.gifMaxDimension
+  const renderOpts = buildRenderOpts(spec, options)
+  const rawTimeline = buildTimeline(spec)
+  const timeline = options.reduceMotion
+    ? collapseTransitions(rawTimeline)
+    : rawTimeline
+  const tokensByFrame = await preloadTokens(spec)
+  await ensureFontsReady(renderOpts)
+
+  const { GIFEncoder, quantize, applyPalette } = await loadGifenc()
+
+  // Half the video size by default; pin the longest side when a cap is set.
+  const scale = maxDimension
+    ? Math.min(1, maxDimension / Math.max(renderOpts.width, renderOpts.height))
+    : GIF_DEFAULT_SCALE
+  const outW = Math.max(1, Math.round(renderOpts.width * scale))
+  const outH = Math.max(1, Math.round(renderOpts.height * scale))
+
+  const full = document.createElement('canvas')
+  full.width = renderOpts.width
+  full.height = renderOpts.height
+
+  const out = document.createElement('canvas')
+  out.width = outW
+  out.height = outH
+  const outCtx = out.getContext('2d', { willReadFrequently: true })
+  if (!outCtx) throw new Error('Failed to acquire 2D context for GIF export')
+  outCtx.imageSmoothingEnabled = true
+  outCtx.imageSmoothingQuality = 'high'
+
+  const gif = GIFEncoder()
+  const dt = 1000 / fps
+  const total = Math.max(1, Math.ceil(timeline.totalDurationMs / dt))
+  // GIF delays are stored in centiseconds, so round to a 10ms grid to
+  // match what players actually honour.
+  const delay = Math.max(2, Math.round(dt / 10) * 10)
+
+  for (let i = 0; i < total; i++) {
+    renderToCanvas(full, {
+      timeline,
+      elapsedMs: i * dt,
+      tokensByFrame,
+      frames: spec.frames,
+      options: renderOpts,
+    })
+    outCtx.drawImage(full, 0, 0, outW, outH)
+    const { data } = outCtx.getImageData(0, 0, outW, outH)
+    const palette = quantize(data, 256)
+    const index = applyPalette(data, palette)
+    gif.writeFrame(index, outW, outH, {
+      palette,
+      delay,
+      // Loop forever; only meaningful on the first frame.
+      ...(i === 0 ? { repeat: 0 } : {}),
+    })
+    onProgress?.({ current: i + 1, total })
+
+    if (i % 10 === 9) await new Promise(r => setTimeout(r, 0))
+  }
+
+  gif.finish()
+  return new Blob([gif.bytes()], { type: 'image/gif' })
+}
+
+// ── Combined export (MP4 + GIF + PNGs in one zip) ─────────────────
 
 export async function exportAll(
   spec: Spec,
   onProgress?: (p: ExportProgress) => void,
-  options: Mp4ExportOptions = {},
+  options: Mp4ExportOptions & GifExportOptions = {},
 ): Promise<Blob> {
   const renderOpts = buildRenderOpts(spec, options)
   const tokensByFrame = await preloadTokens(spec)
   await ensureFontsReady(renderOpts)
   // PNG frames use the full (non-reduced-motion) timeline; only the embedded
-  // MP4 (via setupRender) collapses transitions.
+  // MP4/GIF (via their own setup) collapse transitions.
   const timeline = buildTimeline(spec)
   const canvas = document.createElement('canvas')
   canvas.width = renderOpts.width
   canvas.height = renderOpts.height
 
   const zip = new ZipWriter()
-  const total = spec.frames.length
-  const pad = String(total).length
+  const frameCount = spec.frames.length
+  const pad = String(frameCount).length
+  // Coarse progress: one tick per PNG frame, plus one tick each for the
+  // (optional) MP4 and the GIF encode phases.
+  const total = frameCount + (isMp4ExportSupported() ? 1 : 0) + 1
+  let step = 0
 
   // 1) Render per-frame PNGs
   let elapsed = 0
-  for (let i = 0; i < total; i++) {
+  for (let i = 0; i < frameCount; i++) {
     renderToCanvas(canvas, {
       timeline,
       elapsedMs: elapsed,
@@ -310,7 +438,7 @@ export async function exportAll(
     })
     const bytes = await canvasToPngBytes(canvas)
     zip.add(`frame_${String(i + 1).padStart(pad, '0')}.png`, bytes)
-    onProgress?.({ current: i + 1, total: total + 1 })
+    onProgress?.({ current: ++step, total })
     const holdSeg = timeline.segments[i * 2]
     const transSeg = timeline.segments[i * 2 + 1]
     elapsed += holdSeg.durationMs + (transSeg?.durationMs ?? 0)
@@ -318,18 +446,29 @@ export async function exportAll(
 
   // 2) Encode MP4 if the browser supports WebCodecs
   if (isMp4ExportSupported()) {
-    onProgress?.({ current: total, total: total + 1 })
+    onProgress?.({ current: step, total })
     try {
       const mp4Blob = await exportMp4(spec, undefined, options)
       zip.add('koma.mp4', new Uint8Array(await mp4Blob.arrayBuffer()))
     } catch (err) {
-      // MP4 encoding failed — ship the zip with PNGs only, but surface
-      // the reason so the failure isn't invisible.
-      console.error('koma: MP4 export failed, shipping PNG-only zip', err)
+      // MP4 encoding failed — ship the zip without it, but surface the
+      // reason so the failure isn't invisible.
+      console.error('koma: MP4 export failed, skipping MP4', err)
     }
+    step++
   }
 
-  onProgress?.({ current: total + 1, total: total + 1 })
+  // 3) Encode an animated GIF (canvas-only, so always attempted)
+  onProgress?.({ current: step, total })
+  try {
+    const gifBlob = await exportGif(spec, undefined, options)
+    zip.add('koma.gif', new Uint8Array(await gifBlob.arrayBuffer()))
+  } catch (err) {
+    console.error('koma: GIF export failed, skipping GIF', err)
+  }
+  step++
+
+  onProgress?.({ current: total, total })
   return zip.finalize()
 }
 
