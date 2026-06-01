@@ -4,7 +4,7 @@ import {
   Select, SelectTrigger,
   SelectContent, SelectItem,
 } from '@/components/ui/select'
-import { HonoLogo, BarefootLogo, PiconicLogo } from '@/components/brand-logos'
+import { HonoLogo, BarefootLogo, PiconicLogo, P2BHausLogo } from '@/components/brand-logos'
 import type { ThemeId } from '../src/model/types'
 import { THEMES, THEME_GROUPS, DEFAULT_THEME_ID, resolveTheme } from '../src/render/themes'
 
@@ -30,9 +30,10 @@ export function ThemeBar(props: ThemeBarProps) {
                 reachable from the trigger's reactive effect scope (it throws
                 "… is not defined" at hydration), and a bare function call in
                 a JSX child wouldn't re-evaluate as props.theme changes. */}
-            {props.theme !== 'hono' && props.theme !== 'barefoot' && <PiconicLogo className="size-4" />}
+            {props.theme !== 'hono' && props.theme !== 'barefoot' && props.theme !== 'p2bhaus' && <PiconicLogo className="size-4" />}
             {props.theme === 'hono' && <HonoLogo className="size-4" />}
             {props.theme === 'barefoot' && <BarefootLogo className="size-4" />}
+            {props.theme === 'p2bhaus' && <P2BHausLogo className="size-4" />}
             {resolveTheme(props.theme).label}
           </span>
         </SelectTrigger>
@@ -51,6 +52,12 @@ export function ThemeBar(props: ThemeBarProps) {
             <span className="flex items-center gap-2">
               <PiconicLogo className="size-4" />
               {THEMES.piconic.label}
+            </span>
+          </SelectItem>
+          <SelectItem value={THEMES.p2bhaus.id}>
+            <span className="flex items-center gap-2">
+              <P2BHausLogo className="size-4" />
+              {THEMES.p2bhaus.label}
             </span>
           </SelectItem>
           <div role="presentation" className="px-2 py-1.5 text-sm font-semibold text-foreground">

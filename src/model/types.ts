@@ -58,7 +58,7 @@ export type CanvasWidth = number
 // accent colors). The syntax highlight theme is shared across all presets.
 // The registry of presets lives in `src/render/themes.ts`; this id is the
 // only piece persisted in the `Spec`. Undefined means the default preset.
-export type ThemeId = 'piconic' | 'barefoot' | 'hono'
+export type ThemeId = 'piconic' | 'barefoot' | 'hono' | 'p2bhaus'
 
 export type Spec = {
   /** Document-level fallback language, used when a frame is Auto and the code

@@ -14,7 +14,7 @@ import {
   updateFrame,
 } from '../src/model/spec'
 import type { CanvasWidth, Language, Spec, ThemeId } from '../src/model/types'
-import { randomThemeId, resolveTheme } from '../src/render/themes'
+import { randomThemeId, resolveTheme, sampleSpec } from '../src/render/themes'
 
 import { decodeFromHash, encodeToHash } from '../src/state/url'
 
@@ -26,6 +26,22 @@ interface AppProps {
 export function App({ initialSpec }: AppProps) {
   const [spec, setSpec] = createSignal<Spec>(initialSpec)
   const [selectedFrameId, setSelectedFrameId] = createSignal<string | null>(null)
+
+  // Whether the user has touched the koma content. While pristine, switching
+  // theme also swaps in that theme's brand-fitting default sample; once the
+  // user edits (or a shared spec is loaded from the URL), their code is kept.
+  const [edited, setEdited] = createSignal(false)
+  const markEdited = () => setEdited(true)
+
+  // Apply a theme. On a pristine spec, also load the theme's default koma;
+  // once edited, only the theme changes and the user's code stays.
+  const applyTheme = (id: ThemeId) => {
+    if (edited()) {
+      setSpec(s => setTheme(s, id))
+    } else {
+      setSpec(sampleSpec(id))
+    }
+  }
 
   let appEl: HTMLElement | null = null
   let dockEl: HTMLElement | null = null
@@ -127,12 +143,15 @@ export function App({ initialSpec }: AppProps) {
 
     const fromHash = decodeFromHash(window.location.hash)
     if (fromHash) {
+      // A shared spec is the user's content — keep it and don't auto-swap the
+      // sample when the theme is changed.
       setSpec(fromHash)
+      markEdited()
     } else {
-      // New session (no shared spec in the URL): land on a random preset so the
-      // starting theme varies instead of always being piconic. Done before
-      // data-ready so the first painted frame already shows the chosen theme.
-      setSpec(s => setTheme(s, randomThemeId()))
+      // New session (no shared spec in the URL): land on a random preset and
+      // show that theme's brand-fitting default koma. Done before data-ready
+      // so the first painted frame already shows the chosen theme + sample.
+      setSpec(sampleSpec(randomThemeId()))
     }
 
     requestAnimationFrame(() => appEl?.setAttribute('data-ready', ''))
@@ -196,16 +215,16 @@ export function App({ initialSpec }: AppProps) {
               index={i}
               total={spec().frames.length}
               selected={selectedFrameId() === frame.id}
-              onCode={code => setSpec(s => updateFrame(s, frame.id, { code }))}
-              onLanguage={(language: Language | undefined) => setSpec(s => updateFrame(s, frame.id, { language }))}
-              onRemove={() => setSpec(s => removeFrame(s, frame.id))}
+              onCode={code => { markEdited(); setSpec(s => updateFrame(s, frame.id, { code })) }}
+              onLanguage={(language: Language | undefined) => { markEdited(); setSpec(s => updateFrame(s, frame.id, { language })) }}
+              onRemove={() => { markEdited(); setSpec(s => removeFrame(s, frame.id)) }}
             />
           ))}
 
           <button
             type="button"
             className="koma-add-frame"
-            onClick={() => setSpec(s => addFrame(s))}
+            onClick={() => { markEdited(); setSpec(s => addFrame(s)) }}
             aria-label="Add frame"
           >
             +
@@ -234,7 +253,7 @@ export function App({ initialSpec }: AppProps) {
         <div className="koma-preview-head" style={`max-width:${contentMaxWidth()}px`}>
           <ThemeBar
             theme={spec().theme}
-            onThemeChange={(v: ThemeId) => setSpec(s => setTheme(s, v))}
+            onThemeChange={applyTheme}
           />
           <button
             type="button"
@@ -258,6 +277,7 @@ export function App({ initialSpec }: AppProps) {
           frames={spec().frames}
           selectedFrameId={selectedFrameId()}
           onLayout={(holds) => {
+            markEdited()
             setSpec(s => {
               let updated = s
               for (const h of holds) {
@@ -267,6 +287,7 @@ export function App({ initialSpec }: AppProps) {
             })
           }}
           onTransitionLayout={(toFrameId, duration) => {
+            markEdited()
             setSpec(s => updateFrame(s, toFrameId, { transition: { duration } }))
           }}
           onSelect={setSelectedFrameId}

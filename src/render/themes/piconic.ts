@@ -31,4 +31,20 @@ export const piconic: Theme = {
     showLineNumbers: true,
     lineNumberColor: '#c4c4c4',
   },
+  sample: {
+    language: 'ts',
+    frames: [
+      { code: `const steps = [1, 2, 3]` },
+      {
+        code: `const steps = [1, 2, 3]
+const strides = steps.map(n => n ** 3)`,
+      },
+      {
+        code: `const steps = [1, 2, 3]
+const strides = steps.map(n => n ** 3)
+
+console.log(strides) // [1, 8, 27]`,
+      },
+    ],
+  },
 }

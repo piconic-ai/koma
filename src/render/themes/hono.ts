@@ -23,4 +23,24 @@ export const hono: Theme = {
     // Same as the card so no title-bar strip shows — just the dots.
     chromeBackground: '#1e1e1e',
   },
+  sample: {
+    language: 'ts',
+    frames: [
+      { code: `import { Hono } from 'hono'` },
+      {
+        code: `import { Hono } from 'hono'
+
+const app = new Hono()`,
+      },
+      {
+        code: `import { Hono } from 'hono'
+
+const app = new Hono()
+
+app.get('/', (c) => c.text('Hello Hono!'))
+
+export default app`,
+      },
+    ],
+  },
 }
