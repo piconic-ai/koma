@@ -6,6 +6,7 @@
 import { buildTimeline, collapseTransitions } from '../model/timeline'
 import { type Spec } from '../model/types'
 import { renderToCanvas } from '../render/canvas'
+import { loadGifenc } from './cdn'
 import { frameCount, gifFrameDelayMs, gifOutputSize } from './geometry'
 import { buildRenderOpts, ensureFontsReady, preloadTokens } from './shared'
 import type { ExportProgress, GifExportOptions } from './types'
@@ -13,37 +14,6 @@ import type { ExportProgress, GifExportOptions } from './types'
 // GIF runs at a gentler frame rate than the video so the palette-limited
 // file stays small.
 const GIF_DEFAULT_FPS = 15
-
-type GifencModule = {
-  GIFEncoder: () => {
-    writeFrame: (
-      index: Uint8Array,
-      width: number,
-      height: number,
-      opts: { palette: number[][]; delay?: number; repeat?: number },
-    ) => void
-    finish: () => void
-    bytes: () => Uint8Array<ArrayBuffer>
-  }
-  quantize: (rgba: Uint8Array | Uint8ClampedArray, maxColors: number) => number[][]
-  applyPalette: (
-    rgba: Uint8Array | Uint8ClampedArray,
-    palette: number[][],
-  ) => Uint8Array
-}
-
-async function loadGifenc(): Promise<GifencModule> {
-  // jsDelivr's `+esm` build exposes gifenc's named exports (GIFEncoder,
-  // quantize, applyPalette) cleanly. esm.sh mangles gifenc's interop:
-  // its `default` collapses to just the GIFEncoder function and the
-  // other exports drop, so we use jsDelivr here (mp4-muxer/shiki still
-  // come from esm.sh, which handles those fine).
-  const url = 'https://cdn.jsdelivr.net/npm/gifenc@1.0.3/+esm'
-  // eslint-disable-next-line @typescript-eslint/ban-ts-comment
-  // @ts-ignore -- URL import resolved at runtime by the browser
-  const mod = await import(/* @vite-ignore */ url)
-  return mod as GifencModule
-}
 
 export async function exportGif(
   spec: Spec,
