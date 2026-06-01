@@ -14,6 +14,7 @@ import {
   updateFrame,
 } from '../src/model/spec'
 import type { CanvasWidth, Language, Spec, ThemeId } from '../src/model/types'
+import { randomThemeId } from '../src/render/themes'
 
 import { decodeFromHash, encodeToHash } from '../src/state/url'
 
@@ -116,7 +117,14 @@ export function App({ initialSpec }: AppProps) {
     if (typeof window === 'undefined') return
 
     const fromHash = decodeFromHash(window.location.hash)
-    if (fromHash) setSpec(fromHash)
+    if (fromHash) {
+      setSpec(fromHash)
+    } else {
+      // New session (no shared spec in the URL): land on a random preset so the
+      // starting theme varies instead of always being piconic. Done before
+      // data-ready so the first painted frame already shows the chosen theme.
+      setSpec(s => setTheme(s, randomThemeId()))
+    }
 
     requestAnimationFrame(() => appEl?.setAttribute('data-ready', ''))
 

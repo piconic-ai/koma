@@ -55,3 +55,12 @@ export function resolveTheme(id?: string): Theme {
   if (id && id in THEMES) return THEMES[id as ThemeId]
   return THEMES[DEFAULT_THEME_ID]
 }
+
+const ALL_THEME_IDS = ALL_THEMES.map(t => t.id)
+
+/** Pick a random theme id. Used to vary the landing theme for a new session
+ *  (a shared spec keeps its own theme; `DEFAULT_THEME_ID` stays the resolve
+ *  fallback). */
+export function randomThemeId(): ThemeId {
+  return ALL_THEME_IDS[Math.floor(Math.random() * ALL_THEME_IDS.length)]
+}
