@@ -37,7 +37,7 @@ const app = new Hono()`,
 
 const app = new Hono()
 
-app.get('/', (c) => c.text('Hono!'))
+app.get('/', (c) => c.text('Hello Hono!'))
 
 export default app`,
       },

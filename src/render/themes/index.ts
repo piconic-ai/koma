@@ -29,7 +29,7 @@ export type ThemeGroup = { category: ThemeCategory; label: string; themes: Theme
 // Picker layout, derived from the registry so every theme lands in a group.
 const CATEGORY_ORDER: ThemeCategory[] = ['partner', 'oss']
 const CATEGORY_LABEL: Record<ThemeCategory, string> = {
-  partner: 'Partner',
+  partner: 'Partners',
   oss: 'OSS',
 }
 export const THEME_GROUPS: ThemeGroup[] = CATEGORY_ORDER.map(category => ({

@@ -30,21 +30,31 @@ export const barefoot: Theme = {
     textColor: '#f8f8f2',
     cursorColor: '#50fa7b',
   },
+  // The signal-based TSX Counter. NOTE: a leading `"use client"` directive is
+  // intentionally omitted — when this sample is inlined into the client
+  // bundles, a literal `"use client"` string breaks hydration (a bf bundler
+  // quirk: "hydrate is not defined"). The code reads the same without it.
   sample: {
     language: 'tsx',
     frames: [
-      { code: `function Counter() {` },
+      { code: `export function Counter() {` },
       {
-        code: `function Counter() {
+        code: `import { createSignal } from '@barefootjs/client'
+
+export function Counter() {
   const [count, setCount] = createSignal(0)
 }`,
       },
       {
         code: `import { createSignal } from '@barefootjs/client'
 
-function Counter() {
+export function Counter() {
   const [count, setCount] = createSignal(0)
-  return <button onClick={() => setCount(count() + 1)}>{count()}</button>
+  return (
+    <button onClick={() => setCount(c => c + 1)}>
+      Count: {count()}
+    </button>
+  )
 }`,
       },
     ],

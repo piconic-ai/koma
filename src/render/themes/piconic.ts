@@ -34,18 +34,16 @@ export const piconic: Theme = {
   sample: {
     language: 'ts',
     frames: [
-      { code: `function greet() {` },
+      { code: `const steps = [1, 2, 3]` },
       {
-        code: `function greet(name: string) {
-  return \`Hello, \${name}!\`
-}`,
+        code: `const steps = [1, 2, 3]
+const strides = steps.map(n => n ** 3)`,
       },
       {
-        code: `function greet(name: string) {
-  return \`Hello, \${name}!\`
-}
+        code: `const steps = [1, 2, 3]
+const strides = steps.map(n => n ** 3)
 
-console.log(greet('koma'))`,
+console.log(strides) // [1, 8, 27]`,
       },
     ],
   },
