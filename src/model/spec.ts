@@ -4,6 +4,15 @@
 // to wire and unit tests easy to author.
 
 import type { Frame, Language, Spec, ThemeId } from './types'
+import { detectLanguage } from '../lib/detect-language'
+
+/**
+ * Resolve the effective language for a frame: an explicit per-frame language
+ * wins; otherwise (Auto) detect it from the code, falling back to the
+ * document language when detection is inconclusive.
+ */
+export const frameLanguage = (frame: Frame, spec: Spec): Language =>
+  frame.language ?? detectLanguage(frame.code) ?? spec.language
 
 const newId = (): string => {
   // crypto.randomUUID is available in modern browsers and Node 19+.
@@ -28,7 +37,13 @@ export const emptySpec = (language: Language = 'ts'): Spec => ({
 export const addFrame = (spec: Spec, afterIndex?: number): Spec => {
   const frames = [...spec.frames]
   const insertAt = afterIndex === undefined ? frames.length : afterIndex + 1
-  frames.splice(insertAt, 0, createEmptyFrame())
+  // Inherit the language of the frame the new one follows, so a set language
+  // carries forward without re-typing the fence each time. Auto frames stay
+  // Auto (undefined inherits as undefined).
+  const inheritFrom = frames[insertAt - 1] ?? frames[frames.length - 1]
+  const frame = createEmptyFrame()
+  if (inheritFrom?.language) frame.language = inheritFrom.language
+  frames.splice(insertAt, 0, frame)
   return { ...spec, frames }
 }
 

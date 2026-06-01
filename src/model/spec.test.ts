@@ -4,11 +4,13 @@ import {
   createEmptyFrame,
   duplicateFrame,
   emptySpec,
+  frameLanguage,
   moveFrame,
   removeFrame,
   setLanguage,
   updateFrame,
 } from './spec'
+import type { Spec } from './types'
 
 describe('emptySpec', () => {
   test('has one empty frame and a default language', () => {
@@ -47,6 +49,47 @@ describe('addFrame', () => {
     expect(c.frames).toHaveLength(3)
     // The new frame should be at position 1, original frame[1] now at position 2.
     expect(c.frames[2].id).toBe(b.frames[1].id)
+  })
+})
+
+describe('addFrame language inheritance', () => {
+  test('a new frame inherits the previous frame’s explicit language', () => {
+    const base = emptySpec()
+    const id = base.frames[0].id
+    const withLang = updateFrame(base, id, { language: 'rs' })
+    const next = addFrame(withLang)
+    expect(next.frames[1].language).toBe('rs')
+  })
+
+  test('an Auto (unset) previous frame leaves the new frame Auto', () => {
+    const next = addFrame(emptySpec())
+    expect(next.frames[1].language).toBeUndefined()
+  })
+
+  test('inherits from the frame the new one is inserted after', () => {
+    const spec = emptySpec()
+    spec.frames = [
+      { ...spec.frames[0], language: 'py' },
+      { id: 'x', code: '', language: 'go' },
+    ]
+    const next = addFrame(spec, 0)
+    expect(next.frames[1].language).toBe('py')
+  })
+})
+
+describe('frameLanguage', () => {
+  const spec = (): Spec => ({ language: 'ts', frames: [] })
+
+  test('an explicit per-frame language wins', () => {
+    expect(frameLanguage({ id: 'a', code: 'whatever', language: 'rs' }, spec())).toBe('rs')
+  })
+
+  test('Auto detects from the code', () => {
+    expect(frameLanguage({ id: 'a', code: 'def f():\n    return 1' }, spec())).toBe('py')
+  })
+
+  test('Auto falls back to the document language when detection is inconclusive', () => {
+    expect(frameLanguage({ id: 'a', code: 'just some prose here' }, spec())).toBe('ts')
   })
 })
 
