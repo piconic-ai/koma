@@ -10,7 +10,7 @@ import { XIcon } from '@/components/ui/icon'
 import { Textarea } from '@/components/ui/textarea'
 import { applyTabIndent } from '../src/lib/tab-indent'
 import { parseFence } from '../src/lib/fence'
-import { highlight, plainTokens, KOMA_THEME, type TokenLine } from '../src/render/highlighter'
+import { highlight, plainTokens, type TokenLine } from '../src/render/highlighter'
 import type { Frame, Language } from '../src/model/types'
 
 // Selectable languages (sorted by label). Mirrors the koma `Language` ids;
@@ -49,6 +49,12 @@ export interface FrameEditorProps {
   frame: Frame
   /** Resolved language (per-frame override or Auto-detected), for styling. */
   language: Language
+  /** Active preset's Shiki theme, so the editor highlights like the preview. */
+  shikiTheme: string
+  /** Preset code-window colors applied to the editing surface. */
+  editorBg: string
+  editorFg: string
+  editorCaret: string
   index: number
   total: number
   selected: boolean
@@ -71,7 +77,7 @@ export function FrameEditor(props: FrameEditorProps) {
     lines
       .map(line =>
         line
-          .map(t => `<span style="color:${t.color ?? '#c9d1d9'}">${escapeHtml(t.content)}</span>`)
+          .map(t => `<span style="color:${t.color ?? props.editorFg}">${escapeHtml(t.content)}</span>`)
           .join(''),
       )
       .join('\n')
@@ -139,10 +145,11 @@ export function FrameEditor(props: FrameEditorProps) {
   createEffect(() => {
     const code = props.frame.code
     const language = props.language
+    const shikiTheme = props.shikiTheme
     paint(plainTokens(code))
     syncScroll()
     const seq = ++renderSeq
-    void highlight(code, language, KOMA_THEME)
+    void highlight(code, language, shikiTheme)
       .then(lines => {
         if (seq === renderSeq) {
           paint(lines)
@@ -153,7 +160,11 @@ export function FrameEditor(props: FrameEditorProps) {
   })
 
   return (
-    <div className="koma-frame-editor" data-selected={props.selected ? '' : undefined}>
+    <div
+      className="koma-frame-editor"
+      data-selected={props.selected ? '' : undefined}
+      style={`--koma-editor-bg:${props.editorBg};--koma-editor-fg:${props.editorFg};--koma-editor-caret:${props.editorCaret}`}
+    >
       <div className="koma-frame-toolbar">
         <Button
           type="button"

@@ -21,6 +21,8 @@ import {
 
 interface PlayerProps {
   spec: Spec
+  /** Whether the preview is expanded (visible). Hidden while collapsed. */
+  expanded?: boolean
 }
 
 export function Player(props: PlayerProps) {
@@ -152,6 +154,9 @@ export function Player(props: PlayerProps) {
     // the code/timeline is untouched.
     void props.spec.theme
     void props.spec.width
+    // Repaint on expand: while collapsed the canvas is display:none (zero box),
+    // so it needs a fresh draw once it becomes visible again.
+    void props.expanded
     renderCanvas()
   })
 

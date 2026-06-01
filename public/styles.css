@@ -433,7 +433,7 @@ main {
 
 /* Theme picker sitting directly above the preview canvas. */
 .koma-theme-bar {
-  width: 100%;
+  flex: 1;
   display: flex;
   align-items: center;
   gap: 8px 14px;
@@ -475,6 +475,48 @@ main {
   overflow: visible;
 }
 
+/* Theme bar + expand/collapse toggle, sitting above the preview canvas. */
+.koma-preview-head {
+  width: 100%;
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+}
+
+.koma-preview-toggle {
+  flex-shrink: 0;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 28px;
+  padding: 0;
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  background: var(--card);
+  color: var(--foreground);
+  cursor: pointer;
+}
+
+.koma-preview-toggle:hover {
+  background: var(--muted, var(--card));
+}
+
+/* Collapsed by default: the canvas (and its resize handle) is hidden while the
+   theme bar stays visible. Pressing play — or this toggle — expands it. */
+.koma-preview-toggle svg {
+  transition: transform 0.15s;
+}
+
+.koma-preview-dock[data-collapsed] .koma-preview,
+.koma-preview-dock[data-collapsed] .koma-preview-resize {
+  display: none;
+}
+
+.koma-preview-dock:not([data-collapsed]) .koma-preview-toggle svg {
+  transform: rotate(180deg);
+}
+
 /* Drag the top edge of the dock to shrink/grow the preview height. */
 .koma-preview-resize {
   position: absolute;
@@ -504,10 +546,13 @@ main {
   width: 48px;
 }
 
-/* per-frame editor */
+/* per-frame editor. Code-surface colors follow the active preset (set as
+   --koma-editor-* on the element); the subtle border keeps a light editor
+   (e.g. piconic) visible against the page. */
 .koma-frame-editor {
   position: relative;
-  background: #0d1117;
+  background: var(--koma-editor-bg, #0d1117);
+  border: 1px solid color-mix(in srgb, var(--koma-editor-fg, #c9d1d9) 12%, transparent);
   border-radius: 6px;
   overflow: hidden;
 }
@@ -551,15 +596,16 @@ main {
   font-family: 'JetBrains Mono', 'Fira Code', ui-monospace, Menlo, monospace;
   font-size: 11px;
   line-height: 1.2;
-  color: rgba(201, 209, 217, 0.4);
+  /* Follows the editor's text color so it reads on light or dark surfaces. */
+  color: color-mix(in srgb, var(--koma-editor-fg, #c9d1d9) 45%, transparent);
   gap: 3px;
 }
 
 .koma-frame-lang-trigger.koma-frame-lang-trigger:hover,
 .koma-frame-lang-trigger.koma-frame-lang-trigger[data-state='open'] {
-  color: rgba(201, 209, 217, 0.85);
-  border-color: rgba(201, 209, 217, 0.25);
-  background: rgba(255, 255, 255, 0.06);
+  color: color-mix(in srgb, var(--koma-editor-fg, #c9d1d9) 90%, transparent);
+  border-color: color-mix(in srgb, var(--koma-editor-fg, #c9d1d9) 25%, transparent);
+  background: color-mix(in srgb, var(--koma-editor-fg, #c9d1d9) 8%, transparent);
 }
 
 .koma-frame-lang-trigger.koma-frame-lang-trigger svg {
@@ -599,7 +645,7 @@ textarea.koma-code-input {
   overflow: hidden;
   pointer-events: none;
   background: transparent;
-  color: #c9d1d9;
+  color: var(--koma-editor-fg, #c9d1d9);
 }
 
 textarea.koma-code-input {
@@ -615,7 +661,7 @@ textarea.koma-code-input {
      visible via caret-color. */
   background: transparent;
   color: transparent;
-  caret-color: #c9d1d9;
+  caret-color: var(--koma-editor-caret, #c9d1d9);
   resize: none;
   overflow-x: auto;
 }
@@ -626,10 +672,11 @@ textarea.koma-code-input:focus {
   box-shadow: none;
 }
 
-/* Inverted selection: swap text/background colors so the highlight is clearly visible on the dark editor */
+/* Inverted selection: the band uses the preset's text color so it reads on
+   any editor background (dark or light). */
 textarea.koma-code-input::selection {
-  background: #c9d1d9;
-  color: #0d1117;
+  background: color-mix(in srgb, var(--koma-editor-fg, #c9d1d9) 30%, transparent);
+  color: transparent;
 }
 
 /* timeline bar */

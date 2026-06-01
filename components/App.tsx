@@ -14,7 +14,7 @@ import {
   updateFrame,
 } from '../src/model/spec'
 import type { CanvasWidth, Language, Spec, ThemeId } from '../src/model/types'
-import { randomThemeId } from '../src/render/themes'
+import { randomThemeId, resolveTheme } from '../src/render/themes'
 
 import { decodeFromHash, encodeToHash } from '../src/state/url'
 
@@ -35,12 +35,21 @@ export function App({ initialSpec }: AppProps) {
   const contentMaxWidth = () => Math.round(editorWidth() * 0.64)
   const editorStyle = () => `max-width:${contentMaxWidth()}px`
 
+  // The editor highlights with the active preset's code style, so the editing
+  // surface matches the previewed code window.
+  const theme = createMemo(() => resolveTheme(spec().theme))
+
   // Display-only sizing of the preview. By default the canvas fits the editor
   // column width (see .koma-canvas). Once the user drags the resize handle we
   // switch to an explicit height, letting them shrink or enlarge it while the
   // intrinsic aspect ratio is preserved. Export resolution is unaffected.
   const [previewHeight, setPreviewHeight] = createSignal(360)
   const [previewResized, setPreviewResized] = createSignal(false)
+
+  // The preview canvas is collapsed by default so the editing surface stays
+  // calm; it expands when the user plays (or toggles it open by hand). The
+  // theme bar stays visible either way.
+  const [previewExpanded, setPreviewExpanded] = createSignal(false)
 
   const handleEdgeDrag = (e: PointerEvent, side: 'left' | 'right') => {
     e.preventDefault()
@@ -128,6 +137,13 @@ export function App({ initialSpec }: AppProps) {
 
     requestAnimationFrame(() => appEl?.setAttribute('data-ready', ''))
 
+    // Auto-expand the preview as soon as playback starts.
+    const onTimeUpdate = (e: Event) => {
+      if ((e as CustomEvent).detail?.playing) setPreviewExpanded(true)
+    }
+    window.addEventListener('koma:timeupdate', onTimeUpdate)
+    onCleanup(() => window.removeEventListener('koma:timeupdate', onTimeUpdate))
+
     // Dock height tracking
     updateDockHeight()
     window.addEventListener('resize', updateDockHeight)
@@ -173,6 +189,10 @@ export function App({ initialSpec }: AppProps) {
               key={frame.id}
               frame={frame}
               language={frameLanguage(frame, spec())}
+              shikiTheme={theme().shikiTheme}
+              editorBg={theme().render.codeBackground}
+              editorFg={theme().render.textColor}
+              editorCaret={theme().render.cursorColor}
               index={i}
               total={spec().frames.length}
               selected={selectedFrameId() === frame.id}
@@ -201,6 +221,7 @@ export function App({ initialSpec }: AppProps) {
         className="koma-preview-dock"
         ref={handleDockRef}
         data-resized={previewResized() ? '' : undefined}
+        data-collapsed={previewExpanded() ? undefined : ''}
         style={`--preview-height:${previewHeight()}px`}
       >
         <div
@@ -210,13 +231,25 @@ export function App({ initialSpec }: AppProps) {
           aria-orientation="horizontal"
           onPointerDown={(e: PointerEvent) => handlePreviewResize(e)}
         />
-        <ThemeBar
-          theme={spec().theme}
-          style={`max-width:${contentMaxWidth()}px`}
-          onThemeChange={(v: ThemeId) => setSpec(s => setTheme(s, v))}
-        />
+        <div className="koma-preview-head" style={`max-width:${contentMaxWidth()}px`}>
+          <ThemeBar
+            theme={spec().theme}
+            onThemeChange={(v: ThemeId) => setSpec(s => setTheme(s, v))}
+          />
+          <button
+            type="button"
+            className="koma-preview-toggle"
+            aria-label={previewExpanded() ? 'Hide preview' : 'Show preview'}
+            aria-expanded={previewExpanded() ? 'true' : 'false'}
+            onClick={() => setPreviewExpanded(v => !v)}
+          >
+            <svg viewBox="0 0 16 16" width="16" height="16" fill="none" aria-hidden="true">
+              <path d="M4 6l4 4 4-4" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" />
+            </svg>
+          </button>
+        </div>
         <aside className="koma-preview" aria-label="Preview" style={`max-width:${contentMaxWidth()}px`}>
-          <Player spec={spec()} />
+          <Player spec={spec()} expanded={previewExpanded()} />
         </aside>
       </div>
 
