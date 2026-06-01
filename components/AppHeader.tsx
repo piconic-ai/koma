@@ -9,7 +9,7 @@ import { Popover, PopoverTrigger, PopoverContent } from '@/components/ui/popover
 import { InfoIcon, GitHubIcon } from '@/components/ui/icon'
 import { HonoLogo, BarefootLogo, PiconicLogo } from '@/components/brand-logos'
 import type { Language, Spec, ThemeId } from '../src/model/types'
-import { THEME_GROUPS, DEFAULT_THEME_ID, resolveTheme } from '../src/render/themes'
+import { THEMES, THEME_GROUPS, DEFAULT_THEME_ID, resolveTheme } from '../src/render/themes'
 
 type ExportProgress = { current: number; total: number }
 type ExportOptions = { reduceMotion?: boolean }
@@ -155,36 +155,37 @@ export function AppHeader(props: AppHeaderProps) {
             </span>
           </SelectTrigger>
           <SelectContent align="end">
-            {/* Hand-unrolled per category. A dynamic THEME_GROUPS.map with a
-                wrapping element + nested item .map makes the bf compiler emit
-                a duplicate `__compEl` declaration, so the groups stay flat and
-                explicit. Keep this in sync with THEME_GROUPS' categories. */}
+            {/* Hand-unrolled per item, NOT a per-category THEME_GROUPS.map.
+                Two sibling .map()s under one parent miscompile in bf: the
+                reactive-text effect for the 2nd group reads
+                `parent.children[idx + <#headers>]`, ignoring the 1st group's
+                items, so every OSS label is shifted by one (Hono rendered as
+                "Barefoot.js"). Listing items statically binds each label to its
+                own element. Keep in sync with THEME_GROUPS' categories. */}
             <div role="presentation" className="px-2 py-1.5 text-sm font-semibold text-foreground">
               {THEME_GROUPS[0].label}
             </div>
-            {THEME_GROUPS[0].themes.map(t => (
-              <SelectItem key={t.id} value={t.id}>
-                <span className="flex items-center gap-2">
-                  {t.id !== 'hono' && t.id !== 'barefoot' && <PiconicLogo className="size-4" />}
-                  {t.id === 'hono' && <HonoLogo className="size-4" />}
-                  {t.id === 'barefoot' && <BarefootLogo className="size-4" />}
-                  {t.label}
-                </span>
-              </SelectItem>
-            ))}
+            <SelectItem value={THEMES.piconic.id}>
+              <span className="flex items-center gap-2">
+                <PiconicLogo className="size-4" />
+                {THEMES.piconic.label}
+              </span>
+            </SelectItem>
             <div role="presentation" className="px-2 py-1.5 text-sm font-semibold text-foreground">
               {THEME_GROUPS[1].label}
             </div>
-            {THEME_GROUPS[1].themes.map(t => (
-              <SelectItem key={t.id} value={t.id}>
-                <span className="flex items-center gap-2">
-                  {t.id !== 'hono' && t.id !== 'barefoot' && <PiconicLogo className="size-4" />}
-                  {t.id === 'hono' && <HonoLogo className="size-4" />}
-                  {t.id === 'barefoot' && <BarefootLogo className="size-4" />}
-                  {t.label}
-                </span>
-              </SelectItem>
-            ))}
+            <SelectItem value={THEMES.hono.id}>
+              <span className="flex items-center gap-2">
+                <HonoLogo className="size-4" />
+                {THEMES.hono.label}
+              </span>
+            </SelectItem>
+            <SelectItem value={THEMES.barefoot.id}>
+              <span className="flex items-center gap-2">
+                <BarefootLogo className="size-4" />
+                {THEMES.barefoot.label}
+              </span>
+            </SelectItem>
           </SelectContent>
         </Select>
         <Select value={props.language} onValueChange={(v: string) => props.onLanguageChange(v as Language)}>
