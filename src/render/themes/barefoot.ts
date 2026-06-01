@@ -30,4 +30,23 @@ export const barefoot: Theme = {
     textColor: '#f8f8f2',
     cursorColor: '#50fa7b',
   },
+  sample: {
+    language: 'tsx',
+    frames: [
+      { code: `function Counter() {` },
+      {
+        code: `function Counter() {
+  const [count, setCount] = createSignal(0)
+}`,
+      },
+      {
+        code: `import { createSignal } from '@barefootjs/client'
+
+function Counter() {
+  const [count, setCount] = createSignal(0)
+  return <button onClick={() => setCount(count() + 1)}>{count()}</button>
+}`,
+      },
+    ],
+  },
 }

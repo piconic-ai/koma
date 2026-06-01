@@ -1,43 +1,15 @@
 import { Hono } from 'hono'
 import { renderer } from './renderer'
 import { App } from '@/components/App'
-import type { Spec } from './src/model/types'
+import { DEFAULT_THEME_ID, sampleSpec } from './src/render/themes'
 
 const app = new Hono()
 
 app.use('*', renderer)
 
-const SAMPLE: Spec = {
-  language: 'php',
-  frames: [
-    {
-      id: 'f1',
-      code: `<?php
-
-function beer() {`,
-    },
-    {
-      id: 'f2',
-      code: `<?php
-
-function beer(string $name): string
-{
-    return "Cheers, {$name}!";
-}`,
-    },
-    {
-      id: 'f3',
-      code: `<?php
-
-function beer(string $name): string
-{
-    return "Cheers, {$name}!";
-}
-
-echo beer('P2B Haus');`,
-    },
-  ],
-}
+// SSR placeholder spec: the default theme's brand-fitting koma. On a fresh
+// session the client picks a random theme + its sample before reveal.
+const SAMPLE = sampleSpec(DEFAULT_THEME_ID)
 
 app.get('/', (c) =>
   c.render(

@@ -3,10 +3,18 @@
 // required, so adding a new theme (or editing one) fails to compile until
 // every core setting is filled in.
 
-import type { ThemeId } from '../../model/types'
+import type { Language, ThemeId } from '../../model/types'
 import type { RenderOptions } from '../canvas'
 
 export type ThemeCategory = 'partner' | 'oss'
+
+// The default koma (sample frames) shown for a theme when the user hasn't
+// edited anything yet — code that fits the brand. Frame ids are assigned when
+// the sample is applied to a Spec, so a preset only declares the code.
+export type ThemeSample = {
+  language: Language
+  frames: Array<{ code: string }>
+}
 
 // A Shiki theme registration object, for presets that ship a custom theme
 // instead of a bundled one. Kept loose; it's handed straight to Shiki.
@@ -58,4 +66,7 @@ export type Theme = {
   customShikiTheme?: ShikiThemeReg
   /** Render overrides merged over `DEFAULT_RENDER_OPTIONS`. */
   render: ThemeRender
+  /** Default koma shown when this theme is picked on a pristine (unedited)
+   *  spec — code that suits the brand. */
+  sample: ThemeSample
 }

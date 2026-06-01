@@ -31,4 +31,22 @@ export const piconic: Theme = {
     showLineNumbers: true,
     lineNumberColor: '#c4c4c4',
   },
+  sample: {
+    language: 'ts',
+    frames: [
+      { code: `function greet() {` },
+      {
+        code: `function greet(name: string) {
+  return \`Hello, \${name}!\`
+}`,
+      },
+      {
+        code: `function greet(name: string) {
+  return \`Hello, \${name}!\`
+}
+
+console.log(greet('koma'))`,
+      },
+    ],
+  },
 }

@@ -3,7 +3,7 @@
 // have a theme; the picker groups and the Shiki load list are derived from
 // the registry, so adding a preset can't leave them out of sync.
 
-import type { ThemeId } from '../../model/types'
+import type { Spec, ThemeId } from '../../model/types'
 import type { Theme, ThemeCategory, ShikiThemeReg } from './types'
 import { piconic } from './piconic'
 import { hono } from './hono'
@@ -56,6 +56,17 @@ export const SHIKI_THEMES_TO_LOAD: Array<string | ShikiThemeReg> = [
 export function resolveTheme(id?: string): Theme {
   if (id && id in THEMES) return THEMES[id as ThemeId]
   return THEMES[DEFAULT_THEME_ID]
+}
+
+/** Build a fresh Spec from a theme's default sample (its brand-fitting koma).
+ *  Used for the initial spec and when switching themes on a pristine spec. */
+export function sampleSpec(id?: string): Spec {
+  const t = resolveTheme(id)
+  return {
+    language: t.sample.language,
+    theme: t.id,
+    frames: t.sample.frames.map((f, i) => ({ id: `f${i + 1}`, code: f.code })),
+  }
 }
 
 const ALL_THEME_IDS = ALL_THEMES.map(t => t.id)

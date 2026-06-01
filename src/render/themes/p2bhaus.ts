@@ -18,4 +18,30 @@ export const p2bhaus: Theme = {
     textColor: '#1f2328',
     cursorColor: '#1f2328',
   },
+  sample: {
+    language: 'php',
+    frames: [
+      { code: `<?php
+
+function beer() {` },
+      {
+        code: `<?php
+
+function beer(string $name): string
+{
+    return "Cheers, {$name}!";
+}`,
+      },
+      {
+        code: `<?php
+
+function beer(string $name): string
+{
+    return "Cheers, {$name}!";
+}
+
+echo beer('P2B Haus');`,
+      },
+    ],
+  },
 }
