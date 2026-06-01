@@ -115,11 +115,11 @@ describe('THEME_GROUPS', () => {
     expect(ids).toEqual(Object.keys(THEMES).sort())
   })
 
-  test('Partner holds piconic, OSS holds hono and barefoot', () => {
+  test('Partner holds piconic and p2bhaus, OSS holds hono and barefoot', () => {
     const byCategory = Object.fromEntries(
       THEME_GROUPS.map(g => [g.category, g.themes.map(t => t.id)]),
     )
-    expect(byCategory.partner).toEqual(['piconic'])
+    expect(byCategory.partner).toEqual(['piconic', 'p2bhaus'])
     expect(byCategory.oss).toEqual(['hono', 'barefoot'])
   })
 })

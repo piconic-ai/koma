@@ -8,6 +8,7 @@ import type { Theme, ThemeCategory, ShikiThemeReg } from './types'
 import { piconic } from './piconic'
 import { hono } from './hono'
 import { barefoot } from './barefoot'
+import { p2bhaus } from './p2bhaus'
 
 export type { Theme, ThemeCategory, ShikiThemeReg } from './types'
 
@@ -16,6 +17,7 @@ export const DEFAULT_THEME_ID: ThemeId = 'piconic'
 // Record<ThemeId, Theme> — a missing or extra preset is a compile error.
 export const THEMES: Record<ThemeId, Theme> = {
   piconic,
+  p2bhaus,
   hono,
   barefoot,
 }

@@ -8,25 +8,33 @@ const app = new Hono()
 app.use('*', renderer)
 
 const SAMPLE: Spec = {
-  language: 'ts',
+  language: 'php',
   frames: [
     {
       id: 'f1',
-      code: `function greet() {`,
+      code: `<?php
+
+function beer() {`,
     },
     {
       id: 'f2',
-      code: `function greet(name: string) {
-  return \`Hello, \${name}!\`
+      code: `<?php
+
+function beer(string $name): string
+{
+    return "Cheers, {$name}!";
 }`,
     },
     {
       id: 'f3',
-      code: `function greet(name: string) {
-  return \`Hello, \${name}!\`
+      code: `<?php
+
+function beer(string $name): string
+{
+    return "Cheers, {$name}!";
 }
 
-console.log(greet('koma'))`,
+echo beer('P2B Haus');`,
     },
   ],
 }

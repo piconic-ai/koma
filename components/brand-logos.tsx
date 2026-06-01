@@ -67,3 +67,15 @@ export function PiconicLogo({ className = '' }: BrandLogoProps) {
     </svg>
   )
 }
+
+export function P2BHausLogo({ className = '' }: BrandLogoProps) {
+  // P2B Haus brand icon (the golden tilde mark), served from /public.
+  return (
+    <img
+      src="/p2bhaus.webp"
+      alt=""
+      aria-hidden="true"
+      className={`shrink-0 rounded-[4px] object-cover ${className}`}
+    />
+  )
+}
