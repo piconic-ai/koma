@@ -27,11 +27,14 @@ describe('ThemeBar', () => {
   })
 
   test('groups the theme options by category', () => {
-    // Hand-unrolled per category: a dynamic THEME_GROUPS.map with a wrapping
-    // element + nested item map miscompiles in bf (duplicate __compEl), so
-    // the groups stay flat and explicit.
-    expect(ThemeBarSource).toContain('THEME_GROUPS[0].label')
-    expect(ThemeBarSource).toContain('THEME_GROUPS[1].label')
+    // Each category renders a static label <div> followed by a themes.map() of
+    // SelectItems, kept as direct children of SelectContent. (The earlier
+    // hand-unrolled-per-item workaround for the multi-group .map() label-offset
+    // miscompile is no longer needed since @barefootjs 0.6.0; wrapping the items
+    // in a mapped SelectGroup instead leaves them un-hydrated, so they stay
+    // flat.)
+    expect(ThemeBarSource).toMatch(/THEME_GROUPS\[0\]\.themes\.map\(/)
+    expect(ThemeBarSource).toMatch(/THEME_GROUPS\[1\]\.themes\.map\(/)
     expect(result.find({ componentName: 'SelectItem' })).not.toBeNull()
   })
 
