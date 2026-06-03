@@ -187,6 +187,68 @@ describe('renderToCanvas outer background', () => {
   })
 })
 
+describe('renderToCanvas 和柄 pattern', () => {
+  const spec: Spec = { language: 'ts', frames: [{ id: 'a', code: 'const x = 1' }] }
+
+  // A 2D-context stub that also supports the motif path: createPattern on the
+  // main canvas, and stroke/fill counters used by the offscreen tile.
+  function makePatternCtx(counters: { strokes: number; fills: number; patterns: number }) {
+    return {
+      fillStyle: '' as unknown, strokeStyle: '', lineJoin: '', lineCap: '', lineWidth: 0,
+      globalAlpha: 1, globalCompositeOperation: '', font: '', textBaseline: '',
+      beginPath() {}, moveTo() {}, lineTo() {}, quadraticCurveTo() {}, closePath() {},
+      arc() {}, save() {}, restore() {}, clip() {}, fillText() {}, clearRect() {}, fillRect() {},
+      stroke() { counters.strokes++ }, fill() { counters.fills++ },
+      measureText: () => ({ width: 10 }),
+      createLinearGradient: () => ({ addColorStop() {} }),
+      createPattern: () => { counters.patterns++; return {} },
+    }
+  }
+
+  test('builds a motif tile and stamps it over the background', () => {
+    const counters = { strokes: 0, fills: 0, patterns: 0 }
+    const ctx = makePatternCtx(counters)
+    const canvas = { width: 0, height: 0, getContext: () => ctx } as unknown as HTMLCanvasElement
+
+    // Drive the tile builder through a shimmed OffscreenCanvas. We also
+    // neutralise any `document` another test file may have leaked, since the
+    // tile builder prefers it (and that stub canvas is incomplete here).
+    const g = globalThis as { OffscreenCanvas?: unknown; document?: unknown }
+    const prevOSC = g.OffscreenCanvas
+    const prevDoc = g.document
+    g.document = undefined
+    g.OffscreenCanvas = class {
+      width = 0; height = 0
+      constructor(w: number, h: number) { this.width = w; this.height = h }
+      getContext() { return makePatternCtx(counters) }
+    }
+    try {
+      renderToCanvas(canvas, {
+        ...holdInputs(spec),
+        // grain off so only the pattern path exercises the shimmed tile.
+        // A unique color+scale key avoids the module-level tile cache.
+        options: { grainAlpha: 0, outerPattern: { kind: 'seigaiha', color: '#123456', opacity: 0.1, scale: 97 } },
+      })
+    } finally {
+      g.OffscreenCanvas = prevOSC
+      g.document = prevDoc
+    }
+    // The seigaiha tile strokes its arcs; the main canvas stamps it as a pattern.
+    expect(counters.strokes).toBeGreaterThan(0)
+    expect(counters.patterns).toBeGreaterThan(0)
+  })
+
+  test('is safely skipped when the context has no createPattern (unit stub)', () => {
+    const { canvas } = makeRecordingCanvas()
+    expect(() =>
+      renderToCanvas(canvas, {
+        ...holdInputs(spec),
+        options: { outerPattern: { kind: 'sakura', color: '#ffffff' } },
+      }),
+    ).not.toThrow()
+  })
+})
+
 describe('renderToCanvas window chrome', () => {
   const spec: Spec = { language: 'ts', frames: [{ id: 'a', code: 'const x = 1' }] }
 

@@ -33,18 +33,28 @@ export const sumi: Theme = {
   shikiTheme: sumiInk.name,
   customShikiTheme: sumiInk,
   render: {
-    outerBackground: '#2a2825',
+    outerBackground: '#262420',
     // Ink-wash sweep: a lighter sumi grey draining into deep ink.
     outerGradient: {
-      from: '#3b3833',
-      to: '#161512',
+      from: '#3a352f',
+      to: '#131210',
       angle: 135,
+      stops: [
+        { at: 0, color: '#3a352f' },
+        { at: 0.6, color: '#23211d' },
+        { at: 1, color: '#131210' },
+      ],
     },
+    // 青海波 — pale ink waves, like a sumi-e wash over the dark ground.
+    outerPattern: { kind: 'seigaiha', color: '#c4bbab', opacity: 0.07, scale: 152 },
     codeBackground: '#1b1a17',
     textColor: WASHI,
     cursorColor: WASHI,
     showLineNumbers: true,
     lineNumberColor: '#55514a',
+    grainAlpha: 0.08,
+    vignette: 0.22,
+    cardShadow: true,
   },
   sample: {
     language: 'ts',

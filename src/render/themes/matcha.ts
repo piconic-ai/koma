@@ -33,18 +33,27 @@ export const matcha: Theme = {
   shikiTheme: matchaTea.name,
   customShikiTheme: matchaTea,
   render: {
-    outerBackground: '#7d9a4f',
+    outerBackground: '#7f9a4e',
     // Stone-green sweep, like whisked tea settling — lighter top, deeper base.
     outerGradient: {
-      from: '#94ad62',
-      to: '#5f7d36',
+      from: '#9cb566',
+      to: '#5c7a33',
       angle: 150,
+      stops: [
+        { at: 0, color: '#9cb566' },
+        { at: 0.6, color: '#7c9a47' },
+        { at: 1, color: '#5c7a33' },
+      ],
     },
-    codeBackground: '#f2efdf',
+    // 七宝 — interlocking circles (harmony), faint in a deeper tea green.
+    outerPattern: { kind: 'shippo', color: '#3f5722', opacity: 0.1, scale: 132 },
+    codeBackground: '#f3f0e0',
     textColor: MOSS,
     cursorColor: '#4a7c1e',
     showLineNumbers: true,
     lineNumberColor: '#c3c19f',
+    grainAlpha: 0.06,
+    vignette: 0.1,
     cardShadow: true,
   },
   sample: {

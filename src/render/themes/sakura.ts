@@ -35,18 +35,28 @@ export const sakura: Theme = {
   shikiTheme: sakuraBlossom.name,
   customShikiTheme: sakuraBlossom,
   render: {
-    outerBackground: '#f4a9c4',
-    // Soft spring sweep: pale petal pink up top, deepening to blossom pink.
+    outerBackground: '#eaa6c0',
+    // Soft spring sweep: pale petal pink up top, deepening to blossom pink,
+    // holding the mid-tone so the top stays delicate and a corner deepens.
     outerGradient: {
-      from: '#fcdde8',
-      to: '#ef9dbd',
-      angle: 160,
+      from: '#f7d8e3',
+      to: '#df8eb0',
+      angle: 155,
+      stops: [
+        { at: 0, color: '#f7d8e3' },
+        { at: 0.55, color: '#efb6cd' },
+        { at: 1, color: '#df8eb0' },
+      ],
     },
-    codeBackground: '#fff5f8',
+    // 桜小紋 — pale petals scattered over the pink, like falling blossoms.
+    outerPattern: { kind: 'sakura', color: '#ffffff', opacity: 0.18, scale: 158 },
+    codeBackground: '#fff6f9',
     textColor: PLUM,
     cursorColor: '#e0578a',
     showLineNumbers: true,
     lineNumberColor: '#e7bccb',
+    grainAlpha: 0.05,
+    vignette: 0.12,
     cardShadow: true,
   },
   sample: {

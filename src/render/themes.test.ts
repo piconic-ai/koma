@@ -74,6 +74,23 @@ describe('THEMES registry', () => {
     expect(THEMES.sumi.shikiTheme).toBe('koma-sumi')
   })
 
+  test('the 和柄 presets carry a traditional motif and texture (not flat)', () => {
+    const motifs = {
+      sakura: 'sakura',
+      matcha: 'shippo',
+      sumi: 'seigaiha',
+    } as const
+    for (const [id, kind] of Object.entries(motifs)) {
+      const r = THEMES[id as keyof typeof motifs].render
+      expect(r.outerPattern?.kind).toBe(kind)
+      expect(r.outerPattern!.color).toMatch(/^#[0-9a-f]{3,8}$/i)
+      // depth: a multi-stop gradient, film grain and a vignette, not a flat fill.
+      expect(r.outerGradient?.stops?.length).toBeGreaterThan(2)
+      expect(r.grainAlpha ?? 0).toBeGreaterThan(0)
+      expect(r.vignette ?? 0).toBeGreaterThan(0)
+    }
+  })
+
   test('every theme has a homepage URL', () => {
     for (const theme of Object.values(THEMES)) {
       expect(theme.homepage).toMatch(/^https:\/\//)

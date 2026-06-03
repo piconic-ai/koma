@@ -52,6 +52,20 @@ export type RenderOptions = {
   showLineNumbers: boolean
   /** Color of the line-number gutter. */
   lineNumberColor: string
+  /** Optional traditional Japanese motif (和柄) tiled faintly over the outer
+   *  background, before grain and vignette, for a crafted, textured feel
+   *  rather than a flat gradient. Skipped for a `'transparent'` background. */
+  outerPattern?: {
+    /** Motif: 青海波 (waves), 七宝 (interlocking circles), or 桜小紋
+     *  (scattered blossoms). */
+    kind: 'seigaiha' | 'shippo' | 'sakura'
+    /** Stroke/fill color of the motif lines. */
+    color: string
+    /** Motif opacity over the background (default 0.08). */
+    opacity?: number
+    /** Motif size in px — larger is sparser (default 132). */
+    scale?: number
+  }
 }
 
 export const DEFAULT_RENDER_OPTIONS: RenderOptions = {
@@ -120,6 +134,128 @@ function getNoiseTile(): HTMLCanvasElement | OffscreenCanvas | null {
   }
   nctx.putImageData(img, 0, 0)
   noiseTileCache = tile
+  return tile
+}
+
+// A blank tile canvas, or null in environments without a canvas (unit tests).
+function createTileCanvas(w: number, h: number): HTMLCanvasElement | OffscreenCanvas | null {
+  if (typeof document !== 'undefined' && typeof document.createElement === 'function') {
+    const el = document.createElement('canvas')
+    el.width = w
+    el.height = h
+    return el
+  }
+  if (typeof OffscreenCanvas !== 'undefined') return new OffscreenCanvas(w, h)
+  return null
+}
+
+// Draw a five-petal cherry blossom centred at (cx, cy), petals radiating to
+// `r`, with a small notch at each petal tip. Path only — caller sets style.
+function blossomPath(ctx: CanvasRenderingContext2D, cx: number, cy: number, r: number) {
+  ctx.beginPath()
+  for (let k = 0; k < 5; k++) {
+    const a = (k / 5) * Math.PI * 2 - Math.PI / 2
+    const a1 = a - 0.34
+    const a2 = a + 0.34
+    // Two control bulges out to a notched tip, back along the next side.
+    ctx.moveTo(cx, cy)
+    ctx.quadraticCurveTo(
+      cx + Math.cos(a1) * r * 0.95, cy + Math.sin(a1) * r * 0.95,
+      cx + Math.cos(a) * r * 0.86, cy + Math.sin(a) * r * 0.86,
+    )
+    ctx.quadraticCurveTo(
+      cx + Math.cos(a) * r, cy + Math.sin(a) * r,
+      cx + Math.cos(a) * r * 0.86, cy + Math.sin(a) * r * 0.86,
+    )
+    ctx.quadraticCurveTo(
+      cx + Math.cos(a2) * r * 0.95, cy + Math.sin(a2) * r * 0.95,
+      cx, cy,
+    )
+  }
+}
+
+// One tileable repeat of a 和柄 motif, drawn in `color`. Cached per
+// kind+color+scale so the (static) pattern is built once and reused across
+// every export frame. Returns null where no canvas is available.
+const patternTileCache = new Map<string, HTMLCanvasElement | OffscreenCanvas | null>()
+function getPatternTile(
+  kind: 'seigaiha' | 'shippo' | 'sakura',
+  color: string,
+  scale: number,
+): HTMLCanvasElement | OffscreenCanvas | null {
+  const key = `${kind}|${color}|${scale}`
+  const cached = patternTileCache.get(key)
+  if (cached !== undefined) return cached
+
+  // Tile dimensions per motif so a plain `repeat` lines up seamlessly.
+  const tw = kind === 'seigaiha' ? scale : scale
+  const th = kind === 'seigaiha' ? scale : scale
+  const tile = createTileCanvas(tw, th)
+  if (!tile) {
+    patternTileCache.set(key, null)
+    return null
+  }
+  const ctx = tile.getContext('2d') as CanvasRenderingContext2D | null
+  if (!ctx) {
+    patternTileCache.set(key, null)
+    return null
+  }
+
+  ctx.strokeStyle = color
+  ctx.fillStyle = color
+  ctx.lineJoin = 'round'
+  ctx.lineCap = 'round'
+
+  if (kind === 'seigaiha') {
+    // 青海波 — fans of concentric arcs, rows overlapping and offset by half
+    // a step. Draw a neighbourhood so arcs crossing the tile edge wrap.
+    const R = scale * 0.62
+    const sx = scale
+    const sy = scale * 0.5
+    const rings = [1, 0.74, 0.48, 0.22]
+    ctx.lineWidth = Math.max(1.4, scale * 0.016)
+    for (let row = -2; row <= 3; row++) {
+      const offset = (row & 1) ? sx / 2 : 0
+      const cy = row * sy
+      for (let col = -2; col <= 3; col++) {
+        const cx = col * sx + offset
+        for (const f of rings) {
+          ctx.beginPath()
+          ctx.arc(cx, cy, R * f, Math.PI, Math.PI * 2)
+          ctx.stroke()
+        }
+      }
+    }
+  } else if (kind === 'shippo') {
+    // 七宝 — interlocking circles on a grid plus its half-offset, their
+    // overlaps forming the four-petal lens. r = half-diagonal so circles
+    // pass through neighbouring centres.
+    const d = scale
+    const r = (d / 2) * Math.SQRT2
+    ctx.lineWidth = Math.max(1.3, scale * 0.014)
+    const centres: Array<[number, number]> = []
+    for (let i = -1; i <= 2; i++)
+      for (let j = -1; j <= 2; j++) {
+        centres.push([i * d, j * d])
+        centres.push([i * d + d / 2, j * d + d / 2])
+      }
+    for (const [cx, cy] of centres) {
+      ctx.beginPath()
+      ctx.arc(cx, cy, r, 0, Math.PI * 2)
+      ctx.stroke()
+    }
+  } else {
+    // 桜小紋 — scattered blossoms: a larger one centred, smaller ones at the
+    // corners (offset grid) so the field reads dense but irregular.
+    blossomPath(ctx, scale / 2, scale / 2, scale * 0.2)
+    ctx.fill()
+    for (const [cx, cy] of [[0, 0], [scale, 0], [0, scale], [scale, scale]] as const) {
+      blossomPath(ctx, cx, cy, scale * 0.13)
+      ctx.fill()
+    }
+  }
+
+  patternTileCache.set(key, tile)
   return tile
 }
 
@@ -299,6 +435,28 @@ export function renderToCanvas(
   } else {
     c.fillStyle = opts.outerBackground
     c.fillRect(0, 0, opts.width, opts.height)
+  }
+
+  // 和柄 — a faint traditional motif tiled over the background, before grain
+  // and vignette so both texture and depth sit on top of it. Skipped for a
+  // transparent background and where no canvas is available (unit tests).
+  if (
+    opts.outerPattern &&
+    opts.outerBackground !== 'transparent' &&
+    typeof c.createPattern === 'function'
+  ) {
+    const { kind, color, opacity = 0.08, scale = 132 } = opts.outerPattern
+    const tile = getPatternTile(kind, color, scale)
+    if (tile) {
+      const pattern = c.createPattern(tile as CanvasImageSource, 'repeat')
+      if (pattern) {
+        c.save()
+        c.globalAlpha = opacity
+        c.fillStyle = pattern
+        c.fillRect(0, 0, opts.width, opts.height)
+        c.restore()
+      }
+    }
   }
 
   // Film grain over the background — drawn before the code window so it only

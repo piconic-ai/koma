@@ -36,6 +36,7 @@ type OptionalRender = Partial<
   Pick<
     RenderOptions,
     | 'outerGradient'
+    | 'outerPattern'
     | 'vignette'
     | 'showWindowChrome'
     | 'chromeBackground'
