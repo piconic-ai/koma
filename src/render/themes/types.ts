@@ -6,7 +6,7 @@
 import type { Language, ThemeId } from '../../model/types'
 import type { RenderOptions } from '../canvas'
 
-export type ThemeCategory = 'partner' | 'oss'
+export type ThemeCategory = 'partner' | 'oss' | 'wagara'
 
 // The default koma (sample frames) shown for a theme when the user hasn't
 // edited anything yet — code that fits the brand. Frame ids are assigned when

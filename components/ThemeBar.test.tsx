@@ -35,6 +35,7 @@ describe('ThemeBar', () => {
     // flat.)
     expect(ThemeBarSource).toMatch(/THEME_GROUPS\[0\]\.themes\.map\(/)
     expect(ThemeBarSource).toMatch(/THEME_GROUPS\[1\]\.themes\.map\(/)
+    expect(ThemeBarSource).toMatch(/THEME_GROUPS\[2\]\.themes\.map\(/)
     expect(result.find({ componentName: 'SelectItem' })).not.toBeNull()
   })
 
@@ -44,6 +45,10 @@ describe('ThemeBar', () => {
     expect(ThemeBarSource).toMatch(/props\.theme === 'hono' && <HonoLogo/)
     expect(ThemeBarSource).toMatch(/props\.theme === 'barefoot' && <BarefootLogo/)
     expect(ThemeBarSource).toMatch(/HonoLogo.*BarefootLogo.*PiconicLogo/s)
+    // The 和柄 presets each inline their own drawn motif too.
+    expect(ThemeBarSource).toMatch(/props\.theme === 'sakura' && <SakuraLogo/)
+    expect(ThemeBarSource).toMatch(/props\.theme === 'matcha' && <MatchaLogo/)
+    expect(ThemeBarSource).toMatch(/props\.theme === 'sumi' && <SumiLogo/)
   })
 
   test('shows the tagline with the homepage link trailing it', () => {

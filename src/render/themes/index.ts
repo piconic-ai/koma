@@ -9,6 +9,9 @@ import { piconic } from './piconic'
 import { hono } from './hono'
 import { barefoot } from './barefoot'
 import { p2bhaus } from './p2bhaus'
+import { sakura } from './sakura'
+import { matcha } from './matcha'
+import { sumi } from './sumi'
 
 export type { Theme, ThemeCategory, ShikiThemeReg } from './types'
 
@@ -20,6 +23,9 @@ export const THEMES: Record<ThemeId, Theme> = {
   p2bhaus,
   hono,
   barefoot,
+  sakura,
+  matcha,
+  sumi,
 }
 
 const ALL_THEMES = Object.values(THEMES)
@@ -27,10 +33,11 @@ const ALL_THEMES = Object.values(THEMES)
 export type ThemeGroup = { category: ThemeCategory; label: string; themes: Theme[] }
 
 // Picker layout, derived from the registry so every theme lands in a group.
-const CATEGORY_ORDER: ThemeCategory[] = ['partner', 'oss']
+const CATEGORY_ORDER: ThemeCategory[] = ['partner', 'oss', 'wagara']
 const CATEGORY_LABEL: Record<ThemeCategory, string> = {
   partner: 'Partners',
   oss: 'OSS',
+  wagara: '和柄',
 }
 export const THEME_GROUPS: ThemeGroup[] = CATEGORY_ORDER.map(category => ({
   category,

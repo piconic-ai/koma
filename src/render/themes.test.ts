@@ -62,6 +62,18 @@ describe('THEMES registry', () => {
     expect(THEMES.barefoot.shikiTheme).toBe('dracula')
   })
 
+  test('the 和柄 presets each ship their own custom shiki theme', () => {
+    for (const id of ['sakura', 'matcha', 'sumi'] as const) {
+      const theme = THEMES[id]
+      expect(theme.category).toBe('wagara')
+      expect(theme.customShikiTheme).toBeDefined()
+      expect(theme.shikiTheme).toBe(theme.customShikiTheme!.name)
+    }
+    expect(THEMES.sakura.shikiTheme).toBe('koma-sakura')
+    expect(THEMES.matcha.shikiTheme).toBe('koma-matcha')
+    expect(THEMES.sumi.shikiTheme).toBe('koma-sumi')
+  })
+
   test('every theme has a homepage URL', () => {
     for (const theme of Object.values(THEMES)) {
       expect(theme.homepage).toMatch(/^https:\/\//)
@@ -106,8 +118,8 @@ describe('SHIKI_THEMES_TO_LOAD (derived from the registry)', () => {
 })
 
 describe('THEME_GROUPS', () => {
-  test('Partner comes before OSS', () => {
-    expect(THEME_GROUPS.map(g => g.category)).toEqual(['partner', 'oss'])
+  test('Partner, then OSS, then 和柄', () => {
+    expect(THEME_GROUPS.map(g => g.category)).toEqual(['partner', 'oss', 'wagara'])
   })
 
   test('contains every theme exactly once', () => {
@@ -115,11 +127,17 @@ describe('THEME_GROUPS', () => {
     expect(ids).toEqual(Object.keys(THEMES).sort())
   })
 
-  test('Partner holds piconic and p2bhaus, OSS holds hono and barefoot', () => {
+  test('Partner holds piconic and p2bhaus, OSS holds hono and barefoot, 和柄 holds sakura/matcha/sumi', () => {
     const byCategory = Object.fromEntries(
       THEME_GROUPS.map(g => [g.category, g.themes.map(t => t.id)]),
     )
     expect(byCategory.partner).toEqual(['piconic', 'p2bhaus'])
     expect(byCategory.oss).toEqual(['hono', 'barefoot'])
+    expect(byCategory.wagara).toEqual(['sakura', 'matcha', 'sumi'])
+  })
+
+  test('the 和柄 group is labelled 和柄', () => {
+    const wagara = THEME_GROUPS.find(g => g.category === 'wagara')
+    expect(wagara?.label).toBe('和柄')
   })
 })

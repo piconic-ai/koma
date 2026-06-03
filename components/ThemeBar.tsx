@@ -4,7 +4,7 @@ import {
   Select, SelectTrigger,
   SelectContent, SelectItem,
 } from '@/components/ui/select'
-import { HonoLogo, BarefootLogo, PiconicLogo, P2BHausLogo } from '@/components/brand-logos'
+import { HonoLogo, BarefootLogo, PiconicLogo, P2BHausLogo, SakuraLogo, MatchaLogo, SumiLogo } from '@/components/brand-logos'
 import type { ThemeId } from '../src/model/types'
 import { THEME_GROUPS, DEFAULT_THEME_ID, resolveTheme } from '../src/render/themes'
 
@@ -30,10 +30,13 @@ export function ThemeBar(props: ThemeBarProps) {
                 reachable from the trigger's reactive effect scope (it throws
                 "… is not defined" at hydration), and a bare function call in
                 a JSX child wouldn't re-evaluate as props.theme changes. */}
-            {props.theme !== 'hono' && props.theme !== 'barefoot' && props.theme !== 'p2bhaus' && <PiconicLogo className="size-4" />}
+            {props.theme !== 'hono' && props.theme !== 'barefoot' && props.theme !== 'p2bhaus' && props.theme !== 'sakura' && props.theme !== 'matcha' && props.theme !== 'sumi' && <PiconicLogo className="size-4" />}
             {props.theme === 'hono' && <HonoLogo className="size-4" />}
             {props.theme === 'barefoot' && <BarefootLogo className="size-4" />}
             {props.theme === 'p2bhaus' && <P2BHausLogo className="size-4" />}
+            {props.theme === 'sakura' && <SakuraLogo className="size-4" />}
+            {props.theme === 'matcha' && <MatchaLogo className="size-4" />}
+            {props.theme === 'sumi' && <SumiLogo className="size-4" />}
             {resolveTheme(props.theme).label}
           </span>
         </SelectTrigger>
@@ -54,6 +57,9 @@ export function ThemeBar(props: ThemeBarProps) {
                 {t.id === 'p2bhaus' && <P2BHausLogo className="size-4" />}
                 {t.id === 'hono' && <HonoLogo className="size-4" />}
                 {t.id === 'barefoot' && <BarefootLogo className="size-4" />}
+                {t.id === 'sakura' && <SakuraLogo className="size-4" />}
+                {t.id === 'matcha' && <MatchaLogo className="size-4" />}
+                {t.id === 'sumi' && <SumiLogo className="size-4" />}
                 {t.label}
               </span>
             </SelectItem>
@@ -68,6 +74,26 @@ export function ThemeBar(props: ThemeBarProps) {
                 {t.id === 'p2bhaus' && <P2BHausLogo className="size-4" />}
                 {t.id === 'hono' && <HonoLogo className="size-4" />}
                 {t.id === 'barefoot' && <BarefootLogo className="size-4" />}
+                {t.id === 'sakura' && <SakuraLogo className="size-4" />}
+                {t.id === 'matcha' && <MatchaLogo className="size-4" />}
+                {t.id === 'sumi' && <SumiLogo className="size-4" />}
+                {t.label}
+              </span>
+            </SelectItem>
+          ))}
+          <div role="presentation" className="px-2 py-1.5 text-sm font-semibold text-foreground">
+            {THEME_GROUPS[2].label}
+          </div>
+          {THEME_GROUPS[2].themes.map(t => (
+            <SelectItem key={t.id} value={t.id}>
+              <span className="flex items-center gap-2">
+                {t.id === 'piconic' && <PiconicLogo className="size-4" />}
+                {t.id === 'p2bhaus' && <P2BHausLogo className="size-4" />}
+                {t.id === 'hono' && <HonoLogo className="size-4" />}
+                {t.id === 'barefoot' && <BarefootLogo className="size-4" />}
+                {t.id === 'sakura' && <SakuraLogo className="size-4" />}
+                {t.id === 'matcha' && <MatchaLogo className="size-4" />}
+                {t.id === 'sumi' && <SumiLogo className="size-4" />}
                 {t.label}
               </span>
             </SelectItem>

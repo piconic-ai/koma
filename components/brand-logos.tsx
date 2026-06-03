@@ -79,3 +79,61 @@ export function P2BHausLogo({ className = '' }: BrandLogoProps) {
     />
   )
 }
+
+// 和柄 preset marks — drawn motifs (not brands): a cherry blossom, a bowl of
+// whisked matcha, and a sumi-ink brush dot. Tinted to each preset's palette.
+
+export function SakuraLogo({ className = '' }: BrandLogoProps) {
+  // Five-petal cherry blossom, each petal a rounded teardrop with a notched
+  // tip, rotated 72° around the centre.
+  const petal = 'M50 50 C40 30 40 14 50 6 C60 14 60 30 50 50 Z'
+  return (
+    <svg
+      xmlns="http://www.w3.org/2000/svg"
+      viewBox="0 0 100 100"
+      className={`shrink-0 ${className}`}
+      aria-hidden="true"
+    >
+      <g fill="#f48fb1">
+        <path d={petal} />
+        <path d={petal} transform="rotate(72 50 50)" />
+        <path d={petal} transform="rotate(144 50 50)" />
+        <path d={petal} transform="rotate(216 50 50)" />
+        <path d={petal} transform="rotate(288 50 50)" />
+      </g>
+      <circle cx="50" cy="50" r="7" fill="#e0578a" />
+    </svg>
+  )
+}
+
+export function MatchaLogo({ className = '' }: BrandLogoProps) {
+  // A tea bowl holding a disc of whisked matcha.
+  return (
+    <svg
+      xmlns="http://www.w3.org/2000/svg"
+      viewBox="0 0 100 100"
+      className={`shrink-0 ${className}`}
+      aria-hidden="true"
+    >
+      <path d="M18 46 H82 A32 32 0 0 1 18 46 Z" fill="#5f7d36" />
+      <ellipse cx="50" cy="46" rx="32" ry="8" fill="#94ad62" />
+    </svg>
+  )
+}
+
+export function SumiLogo({ className = '' }: BrandLogoProps) {
+  // A single sumi-ink brush dot — an off-round blot, as if pressed onto washi.
+  return (
+    <svg
+      xmlns="http://www.w3.org/2000/svg"
+      viewBox="0 0 100 100"
+      className={`shrink-0 ${className}`}
+      aria-hidden="true"
+    >
+      <path
+        fill="#1b1a17"
+        d="M50 12 C72 12 86 28 86 50 C86 74 70 88 48 88 C26 88 14 70 14 48 C14 26 30 12 50 12 Z"
+      />
+    </svg>
+  )
+}
