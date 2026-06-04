@@ -48,12 +48,15 @@ export const sumi: Theme = {
         { at: 1, color: '#13100a' },
       ],
     },
-    // Faint 青海波 waves washed with scattered 砂子 (gold leaf) on top —
-    // the Kanazawa gold-on-washi feel.
-    outerPattern: [
-      { kind: 'seigaiha', color: '#b6a883', opacity: 0.05, scale: 152 },
-      { kind: 'sunago', color: GOLD, opacity: 0.5, scale: 200 },
-    ],
+    // Organic gold leaf (金雲) drifting from opposite corners, with 砂子
+    // flecks trailing inward — irregular and hand-strewn, not a tiled grid.
+    outerGold: {
+      color: GOLD,
+      corners: ['tl', 'br'],
+      intensity: 1,
+      scale: 0.62,
+      seed: 7,
+    },
     codeBackground: '#19160f',
     textColor: WASHI,
     cursorColor: GOLD,

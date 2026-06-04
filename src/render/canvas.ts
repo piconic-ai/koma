@@ -63,6 +63,24 @@ export type RenderOptions = {
   cardBorderColor?: string
   /** Card border width in px (default 1.5). Needs `cardBorderColor`. */
   cardBorderWidth?: number
+  /** Optional organic gold-leaf clouds (金雲) drawn in the corners — an
+   *  irregular, hand-strewn drift of gold with 砂子 flecks trailing inward,
+   *  not a regular tiled motif. Drawn over grain/vignette so the gold stays
+   *  vivid. Skipped for a `'transparent'` background. */
+  outerGold?: GoldSpec
+}
+
+export type GoldSpec = {
+  /** Gold color. */
+  color: string
+  /** Which corners to anchor clouds in. */
+  corners: Array<'tl' | 'tr' | 'bl' | 'br'>
+  /** Overall strength multiplier (default 1). */
+  intensity?: number
+  /** Cloud reach as a fraction of min(width,height) (default 0.6). */
+  scale?: number
+  /** Seed so the (static) scatter is stable across frames (default 1). */
+  seed?: number
 }
 
 export type PatternSpec = {
@@ -296,6 +314,101 @@ function getPatternTile(
 
   patternTileCache.set(key, tile)
   return tile
+}
+
+function hexToRgb(hex: string): { r: number; g: number; b: number } {
+  let h = hex.replace('#', '')
+  if (h.length === 3) h = h.split('').map(c => c + c).join('')
+  const n = parseInt(h, 16)
+  return { r: (n >> 16) & 255, g: (n >> 8) & 255, b: n & 255 }
+}
+
+// A full-canvas gold-leaf layer (金雲 + 砂子), built once and cached so the
+// scatter is static and cheap across export frames. Each corner gets an
+// organic drift of soft gold stamps — dense near the corner, with an irregular
+// torn edge — and a tail of fine flecks reaching inward. Returns null where no
+// canvas / radial gradients are available (unit tests).
+const goldLayerCache = new Map<string, HTMLCanvasElement | OffscreenCanvas | null>()
+function getGoldLayer(w: number, h: number, g: GoldSpec): HTMLCanvasElement | OffscreenCanvas | null {
+  const intensity = g.intensity ?? 1
+  const scale = g.scale ?? 0.6
+  const seed0 = g.seed ?? 1
+  const key = `${w}x${h}|${g.color}|${g.corners.join('')}|${scale}|${intensity}|${seed0}`
+  const cached = goldLayerCache.get(key)
+  if (cached !== undefined) return cached
+
+  const layer = createTileCanvas(w, h)
+  const ctx = layer?.getContext('2d') as CanvasRenderingContext2D | null
+  if (!layer || !ctx || typeof ctx.createRadialGradient !== 'function') {
+    goldLayerCache.set(key, null)
+    return null
+  }
+
+  const { r, g: gg, b } = hexToRgb(g.color)
+  const rgba = (a: number) => `rgba(${r},${gg},${b},${a})`
+  const reach = Math.min(w, h) * scale
+
+  for (const corner of g.corners) {
+    const ox = corner[1] === 'l' ? 0 : w
+    const oy = corner[0] === 't' ? 0 : h
+    const sx = corner[1] === 'l' ? 1 : -1
+    const sy = corner[0] === 't' ? 1 : -1
+    let seed = (seed0 * 2654435761) ^ (ox * 73856093) ^ (oy * 19349663)
+    const rnd = () => { seed = (seed * 1664525 + 1013904223) >>> 0; return seed / 0xffffffff }
+    // Per-corner irregular boundary: a few summed waves modulate the reach.
+    const ph = [rnd() * 6.28, rnd() * 6.28, rnd() * 6.28]
+    const edge = (ang: number) =>
+      0.6 + 0.22 * Math.sin(ang * 2 + ph[0]) + 0.13 * Math.sin(ang * 5 + ph[1]) + 0.08 * Math.sin(ang * 9 + ph[2])
+
+    // Soft gold stamps — the cloud body, dense → sparse with a torn edge.
+    const stamps = 120
+    for (let i = 0; i < stamps; i++) {
+      const ang = rnd() * (Math.PI / 2)
+      const t = Math.pow(rnd(), 1.7)
+      const dist = t * reach * edge(ang)
+      const px = ox + sx * Math.cos(ang) * dist + (rnd() - 0.5) * reach * 0.05
+      const py = oy + sy * Math.sin(ang) * dist + (rnd() - 0.5) * reach * 0.05
+      const rad = ((1 - t) * 0.18 + 0.03) * reach * (0.5 + rnd())
+      const a = intensity * (0.05 + 0.16 * (1 - t)) * (0.55 + 0.45 * rnd())
+      const grad = ctx.createRadialGradient(px, py, 0, px, py, Math.max(2, rad))
+      grad.addColorStop(0, rgba(a))
+      grad.addColorStop(1, rgba(0))
+      ctx.fillStyle = grad
+      ctx.fillRect(px - rad, py - rad, rad * 2, rad * 2)
+    }
+
+    // 砂子 — fine flecks (plus a few angular flakes) trailing further inward,
+    // thinning with distance so the gold dissolves into the dark.
+    const flecks = 320
+    for (let i = 0; i < flecks; i++) {
+      const ang = rnd() * (Math.PI / 2)
+      const t = Math.pow(rnd(), 1.4)
+      const dist = t * reach * 1.7 * edge(ang)
+      const px = ox + sx * Math.cos(ang) * dist + (rnd() - 0.5) * 24
+      const py = oy + sy * Math.sin(ang) * dist + (rnd() - 0.5) * 24
+      const big = rnd() > 0.9
+      ctx.globalAlpha = intensity * (big ? 0.6 : 0.42) * (1 - t * 0.7) * (0.5 + 0.5 * rnd())
+      ctx.fillStyle = g.color
+      if (big) {
+        const s = 2 + rnd() * 3
+        ctx.beginPath()
+        ctx.moveTo(px, py - s)
+        ctx.lineTo(px + s * 0.8, py)
+        ctx.lineTo(px, py + s)
+        ctx.lineTo(px - s * 0.7, py + s * 0.2)
+        ctx.closePath()
+        ctx.fill()
+      } else {
+        ctx.beginPath()
+        ctx.arc(px, py, 0.6 + rnd() * 1.4, 0, Math.PI * 2)
+        ctx.fill()
+      }
+    }
+    ctx.globalAlpha = 1
+  }
+
+  goldLayerCache.set(key, layer)
+  return layer
 }
 
 // Endpoints of a gradient line across a w×h box for a CSS-style angle
@@ -536,6 +649,17 @@ export function renderToCanvas(
     vg.addColorStop(1, `rgba(0,0,0,${opts.vignette})`)
     c.fillStyle = vg
     c.fillRect(0, 0, opts.width, opts.height)
+  }
+
+  // 金雲 — organic gold-leaf clouds, drawn over the vignette so the gold stays
+  // vivid in the corners. Built once into a cached layer and stamped here.
+  if (
+    opts.outerGold &&
+    opts.outerBackground !== 'transparent' &&
+    typeof c.drawImage === 'function'
+  ) {
+    const layer = getGoldLayer(opts.width, opts.height, opts.outerGold)
+    if (layer) c.drawImage(layer as CanvasImageSource, 0, 0)
   }
 
   // Code window — centered, fixed width

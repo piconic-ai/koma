@@ -249,6 +249,61 @@ describe('renderToCanvas 和柄 pattern', () => {
   })
 })
 
+describe('renderToCanvas 金雲 gold leaf', () => {
+  const spec: Spec = { language: 'ts', frames: [{ id: 'a', code: 'const x = 1' }] }
+
+  test('builds an organic gold layer and stamps it onto the canvas', () => {
+    const seen = { radial: 0, drawImage: 0 }
+    const tileCtx = {
+      fillStyle: '' as unknown, strokeStyle: '', globalAlpha: 1, lineJoin: '', lineCap: '', lineWidth: 0,
+      beginPath() {}, moveTo() {}, lineTo() {}, closePath() {}, arc() {}, fill() {}, fillRect() {},
+      createRadialGradient() { seen.radial++; return { addColorStop() {} } },
+    }
+    const mainCtx = {
+      fillStyle: '' as unknown, font: '', textBaseline: '',
+      clearRect() {}, fillRect() {}, beginPath() {}, moveTo() {}, lineTo() {}, quadraticCurveTo() {},
+      closePath() {}, arc() {}, fill() {}, save() {}, clip() {}, restore() {}, fillText() {},
+      measureText: () => ({ width: 10 }),
+      createLinearGradient: () => ({ addColorStop() {} }),
+      createRadialGradient: () => ({ addColorStop() {} }),
+      drawImage() { seen.drawImage++ },
+    }
+    const canvas = { width: 0, height: 0, getContext: () => mainCtx } as unknown as HTMLCanvasElement
+
+    const g = globalThis as { OffscreenCanvas?: unknown; document?: unknown }
+    const prevOSC = g.OffscreenCanvas
+    const prevDoc = g.document
+    g.document = undefined
+    g.OffscreenCanvas = class {
+      width = 0; height = 0
+      constructor(w: number, h: number) { this.width = w; this.height = h }
+      getContext() { return tileCtx }
+    }
+    try {
+      renderToCanvas(canvas, {
+        ...holdInputs(spec),
+        // unique seed avoids the module-level gold-layer cache.
+        options: { grainAlpha: 0, vignette: 0, outerGold: { color: '#c9a24e', corners: ['tl', 'br'], seed: 4242 } },
+      })
+    } finally {
+      g.OffscreenCanvas = prevOSC
+      g.document = prevDoc
+    }
+    expect(seen.radial).toBeGreaterThan(0) // gold stamps built via radial gradients
+    expect(seen.drawImage).toBe(1) // layer stamped once onto the canvas
+  })
+
+  test('is safely skipped when the context cannot draw images (unit stub)', () => {
+    const { canvas } = makeRecordingCanvas()
+    expect(() =>
+      renderToCanvas(canvas, {
+        ...holdInputs(spec),
+        options: { outerGold: { color: '#c9a24e', corners: ['tl'] } },
+      }),
+    ).not.toThrow()
+  })
+})
+
 describe('renderToCanvas window chrome', () => {
   const spec: Spec = { language: 'ts', frames: [{ id: 'a', code: 'const x = 1' }] }
 
