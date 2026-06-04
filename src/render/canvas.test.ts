@@ -302,6 +302,16 @@ describe('renderToCanvas 金雲 gold leaf', () => {
       }),
     ).not.toThrow()
   })
+
+  test('washi texture is safely skipped without createPattern (unit stub)', () => {
+    const { canvas } = makeRecordingCanvas()
+    expect(() =>
+      renderToCanvas(canvas, {
+        ...holdInputs(spec),
+        options: { washi: { color: '#d8cdb4', alpha: 0.5 } },
+      }),
+    ).not.toThrow()
+  })
 })
 
 describe('renderToCanvas window chrome', () => {

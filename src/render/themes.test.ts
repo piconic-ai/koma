@@ -96,6 +96,9 @@ describe('THEMES registry', () => {
     expect(r.outerGold!.color).toMatch(/^#[0-9a-f]{6}$/i)
     // The gold is heavily restrained so the ink dominates.
     expect(r.outerGold!.intensity ?? 1).toBeLessThanOrEqual(0.4)
+    // Hand-made washi paper texture over ground + card.
+    expect(r.washi?.color).toMatch(/^#[0-9a-f]{6}$/i)
+    expect(r.washi!.cardAlpha ?? 0).toBeGreaterThan(0)
     // Depth from grain + a deep vignette.
     expect(r.grainAlpha ?? 0).toBeGreaterThan(0)
     expect(r.vignette ?? 0).toBeGreaterThan(0)

@@ -5,7 +5,8 @@
 import type { Theme, ShikiThemeReg } from './types'
 
 const WASHI = '#e7e2d6'
-const GOLD = '#bf9f57'
+// A clean, luminous leaf-gold — vivid even when used in the faintest amount.
+const GOLD = '#edc55a'
 
 // Graded sumi greys (墨絵 tonal range) on near-black ink. Keywords carry only a
 // breath of warmth — not gold — so nothing pulls focus from the ink.
@@ -47,25 +48,33 @@ export const sumi: Theme = {
         { at: 1, color: '#100e0a' },
       ],
     },
-    // 金箔 — the faintest gold drift in one far corner only. A whisper of
-    // warmth in the ink, never an accent that competes with it.
+    // 金箔 — the faintest gold drift in one far corner only, but a true,
+    // vivid leaf-gold (with the odd glint) so the little there is reads as
+    // real gold, not a dull wash. Never competes with the ink.
     outerGold: {
       color: GOLD,
       corners: ['br'],
-      intensity: 0.28,
+      intensity: 0.32,
       scale: 0.5,
       seed: 7,
     },
+    // Hand-made washi: fibres + specks over the ground and the card surface.
+    washi: {
+      color: '#d8cdb4',
+      alpha: 0.55,
+      cardAlpha: 0.24,
+      scale: 320,
+    },
     codeBackground: '#161410',
     textColor: WASHI,
-    cursorColor: '#c2b896',
+    cursorColor: GOLD,
     showLineNumbers: true,
     lineNumberColor: '#564f3f',
-    grainAlpha: 0.1,
+    grainAlpha: 0.06,
     vignette: 0.28,
     cardShadow: true,
     // Barely-there warm keyline — felt, not seen.
-    cardBorderColor: 'rgba(184, 150, 78, 0.16)',
+    cardBorderColor: 'rgba(237, 197, 90, 0.18)',
     cardBorderWidth: 1,
   },
   sample: {

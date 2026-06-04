@@ -68,6 +68,22 @@ export type RenderOptions = {
    *  not a regular tiled motif. Drawn over grain/vignette so the gold stays
    *  vivid. Skipped for a `'transparent'` background. */
   outerGold?: GoldSpec
+  /** Optional washi (和紙) paper texture — fine fibres and specks — tiled over
+   *  the outer background and the code card, for a hand-made paper feel beyond
+   *  flat grain. Skipped for a `'transparent'` background. */
+  washi?: WashiSpec
+}
+
+export type WashiSpec = {
+  /** Fibre/speck colour (a light, warm tone reads as paper on a dark ground). */
+  color: string
+  /** Strength over the outer background (default 0.5). */
+  alpha?: number
+  /** Strength over the code card (default `alpha` × 0.6 — subtler so code
+   *  stays legible). */
+  cardAlpha?: number
+  /** Tile size in px — larger repeats less visibly (default 300). */
+  scale?: number
 }
 
 export type GoldSpec = {
@@ -346,6 +362,9 @@ function getGoldLayer(w: number, h: number, g: GoldSpec): HTMLCanvasElement | Of
 
   const { r, g: gg, b } = hexToRgb(g.color)
   const rgba = (a: number) => `rgba(${r},${gg},${b},${a})`
+  // A lighter cast of the gold for the brightest glints (leaf catching light).
+  const lift = (v: number) => Math.round(v + (255 - v) * 0.45)
+  const highlight = `rgb(${lift(r)},${lift(gg)},${lift(b)})`
   const reach = Math.min(w, h) * scale
 
   for (const corner of g.corners) {
@@ -387,8 +406,13 @@ function getGoldLayer(w: number, h: number, g: GoldSpec): HTMLCanvasElement | Of
       const px = ox + sx * Math.cos(ang) * dist + (rnd() - 0.5) * 24
       const py = oy + sy * Math.sin(ang) * dist + (rnd() - 0.5) * 24
       const big = rnd() > 0.9
-      ctx.globalAlpha = intensity * (big ? 0.6 : 0.42) * (1 - t * 0.7) * (0.5 + 0.5 * rnd())
-      ctx.fillStyle = g.color
+      // A few near-corner flecks glint brightly, like leaf catching light, so
+      // the gold reads as vivid metal rather than a dull wash.
+      const glint = !big && t < 0.5 && rnd() > 0.9
+      ctx.globalAlpha = glint
+        ? Math.min(1, intensity * (1.5 + rnd()))
+        : intensity * (big ? 0.6 : 0.42) * (1 - t * 0.7) * (0.5 + 0.5 * rnd())
+      ctx.fillStyle = glint ? highlight : g.color
       if (big) {
         const s = 2 + rnd() * 3
         ctx.beginPath()
@@ -400,7 +424,7 @@ function getGoldLayer(w: number, h: number, g: GoldSpec): HTMLCanvasElement | Of
         ctx.fill()
       } else {
         ctx.beginPath()
-        ctx.arc(px, py, 0.6 + rnd() * 1.4, 0, Math.PI * 2)
+        ctx.arc(px, py, (glint ? 0.5 : 0.6) + rnd() * 1.2, 0, Math.PI * 2)
         ctx.fill()
       }
     }
@@ -409,6 +433,61 @@ function getGoldLayer(w: number, h: number, g: GoldSpec): HTMLCanvasElement | Of
 
   goldLayerCache.set(key, layer)
   return layer
+}
+
+// One tileable repeat of a washi (和紙) paper texture: scattered fine fibres
+// (short, faintly curved strokes) plus light/dark specks, on transparent so it
+// can be laid over any surface. Cached per colour+size. Returns null where no
+// canvas is available (unit tests).
+const washiTileCache = new Map<string, HTMLCanvasElement | OffscreenCanvas | null>()
+function getWashiTile(color: string, scale: number): HTMLCanvasElement | OffscreenCanvas | null {
+  const key = `${color}|${scale}`
+  const cached = washiTileCache.get(key)
+  if (cached !== undefined) return cached
+  const tile = createTileCanvas(scale, scale)
+  const ctx = tile?.getContext('2d') as CanvasRenderingContext2D | null
+  if (!tile || !ctx) {
+    washiTileCache.set(key, null)
+    return null
+  }
+  const { r, g, b } = hexToRgb(color)
+  let seed = 0x6d2b79f5 ^ Math.round(scale)
+  const rnd = () => { seed = (seed * 1664525 + 1013904223) >>> 0; return seed / 0xffffffff }
+  ctx.lineCap = 'round'
+
+  // Fibres — the defining washi texture.
+  const fibres = Math.max(60, Math.round((scale * scale) / 620))
+  for (let i = 0; i < fibres; i++) {
+    const x = rnd() * scale
+    const y = rnd() * scale
+    const ang = rnd() * Math.PI
+    const len = scale * (0.025 + rnd() * 0.1)
+    const a = 0.04 + rnd() * 0.12
+    const x2 = x + Math.cos(ang) * len
+    const y2 = y + Math.sin(ang) * len
+    const mx = (x + x2) / 2 + (rnd() - 0.5) * 5
+    const my = (y + y2) / 2 + (rnd() - 0.5) * 5
+    ctx.strokeStyle = `rgba(${r},${g},${b},${a})`
+    ctx.lineWidth = 0.5 + rnd() * 0.9
+    ctx.beginPath()
+    ctx.moveTo(x, y)
+    ctx.quadraticCurveTo(mx, my, x2, y2)
+    ctx.stroke()
+  }
+  // Specks — a little lint (light) and dust (dark).
+  const specks = Math.max(24, Math.round((scale * scale) / 1300))
+  for (let i = 0; i < specks; i++) {
+    const x = rnd() * scale
+    const y = rnd() * scale
+    const dark = rnd() > 0.62
+    const a = 0.05 + rnd() * 0.12
+    ctx.fillStyle = dark ? `rgba(0,0,0,${a})` : `rgba(${r},${g},${b},${a})`
+    ctx.beginPath()
+    ctx.arc(x, y, 0.5 + rnd() * 1.1, 0, Math.PI * 2)
+    ctx.fill()
+  }
+  washiTileCache.set(key, tile)
+  return tile
 }
 
 // Endpoints of a gradient line across a w×h box for a CSS-style angle
@@ -634,6 +713,26 @@ export function renderToCanvas(
     }
   }
 
+  // Washi paper texture over the outer ground — fibres + specks for a
+  // hand-made paper feel. Drawn before the vignette so it darkens with depth.
+  if (
+    opts.washi &&
+    opts.outerBackground !== 'transparent' &&
+    typeof c.createPattern === 'function'
+  ) {
+    const tile = getWashiTile(opts.washi.color, opts.washi.scale ?? 300)
+    if (tile) {
+      const pattern = c.createPattern(tile as CanvasImageSource, 'repeat')
+      if (pattern) {
+        c.save()
+        c.globalAlpha = opts.washi.alpha ?? 0.5
+        c.fillStyle = pattern
+        c.fillRect(0, 0, opts.width, opts.height)
+        c.restore()
+      }
+    }
+  }
+
   // Vignette — gently darken the corners, center untouched. Adds depth
   // without changing the background's color or gradient.
   if (
@@ -695,6 +794,22 @@ export function renderToCanvas(
   c.save()
   roundRect(c, windowX, windowY, windowW, windowH, opts.cornerRadius)
   c.clip()
+
+  // Washi texture over the card surface too (subtler), so the code sits on
+  // paper rather than a flat fill.
+  if (opts.washi && typeof c.createPattern === 'function') {
+    const tile = getWashiTile(opts.washi.color, opts.washi.scale ?? 300)
+    if (tile) {
+      const pattern = c.createPattern(tile as CanvasImageSource, 'repeat')
+      if (pattern) {
+        c.save()
+        c.globalAlpha = opts.washi.cardAlpha ?? (opts.washi.alpha ?? 0.5) * 0.6
+        c.fillStyle = pattern
+        c.fillRect(windowX, windowY, windowW, windowH)
+        c.restore()
+      }
+    }
+  }
 
   // Chrome
   if (opts.showWindowChrome) {
