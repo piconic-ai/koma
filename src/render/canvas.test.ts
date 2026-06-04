@@ -324,11 +324,13 @@ describe('renderToCanvas 金雲 gold leaf', () => {
   })
 
   test('builds a dry-brush gold layer and stamps it onto the canvas', () => {
-    const seen = { strokes: 0, drawImage: 0 }
+    const seen = { putImageData: 0, drawImage: 0 }
     const tileCtx = {
-      strokeStyle: '', fillStyle: '' as unknown, lineWidth: 0, lineCap: '', globalAlpha: 1,
-      beginPath() {}, moveTo() {}, lineTo() {}, quadraticCurveTo() {}, closePath() {}, arc() {}, fill() {}, fillRect() {},
-      stroke() { seen.strokes++ },
+      fillStyle: '' as unknown, lineWidth: 0, lineCap: '', globalAlpha: 1,
+      beginPath() {}, moveTo() {}, lineTo() {}, quadraticCurveTo() {}, closePath() {}, arc() {}, fill() {}, fillRect() {}, stroke() {},
+      createImageData: (cw: number, ch: number) => ({ data: new Uint8ClampedArray(cw * ch * 4), width: cw, height: ch }),
+      getImageData: (_x: number, _y: number, cw: number, ch: number) => ({ data: new Uint8ClampedArray(cw * ch * 4), width: cw, height: ch }),
+      putImageData() { seen.putImageData++ },
     }
     const mainCtx = {
       fillStyle: '' as unknown, font: '', textBaseline: '',
@@ -358,7 +360,7 @@ describe('renderToCanvas 金雲 gold leaf', () => {
       g.OffscreenCanvas = prevOSC
       g.document = prevDoc
     }
-    expect(seen.strokes).toBeGreaterThan(0) // bristle streaks drawn
+    expect(seen.putImageData).toBe(1) // paper-tooth pixels painted
     expect(seen.drawImage).toBe(1) // layer stamped once
   })
 })

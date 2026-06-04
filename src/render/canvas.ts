@@ -480,7 +480,6 @@ function getGoldBrushLayer(w: number, h: number, g: GoldBrushSpec): HTMLCanvasEl
 
   const { r, g: gg, b } = hexToRgb(g.color)
   const lift = (v: number) => Math.round(v + (255 - v) * 0.5)
-  const highlight = `rgb(${lift(r)},${lift(gg)},${lift(b)})`
 
   const x0 = g.from[0] * w, y0 = g.from[1] * h
   const x1 = g.to[0] * w, y1 = g.to[1] * h
@@ -497,77 +496,89 @@ function getGoldBrushLayer(w: number, h: number, g: GoldBrushSpec): HTMLCanvasEl
   let seed = (seed0 * 2654435761) >>> 0
   const rnd = () => { seed = (seed * 1664525 + 1013904223) >>> 0; return seed / 0xffffffff }
 
-  // Smooth 1-D value noise (+ a little fractal detail) for organic, non-periodic
-  // breakup — real kasure has no repeating wave, so this replaces any sine.
-  const hash = (i: number, s: number) => {
-    let h = (Math.floor(i) * 374761393 + s * 668265263) >>> 0
+  // 2-D value noise (a few octaves) — the "paper tooth". A dry brush deposits
+  // ink on the high points of this field and skips the low points, which is
+  // what gives kasure its organic, non-repeating mottle. No periodic wave.
+  const hash2 = (ix: number, iy: number, s: number) => {
+    let h = (ix * 374761393 + iy * 668265263 + s * 2246822519) >>> 0
     h = ((h ^ (h >>> 13)) * 1274126177) >>> 0
-    return h / 0xffffffff
+    return ((h ^ (h >>> 16)) >>> 0) / 0xffffffff
   }
-  const noise1 = (x: number, s: number) => {
-    const xi = Math.floor(x), xf = x - xi
-    const u = xf * xf * (3 - 2 * xf)
-    return hash(xi, s) * (1 - u) + hash(xi + 1, s) * u
+  const noise2 = (x: number, y: number, s: number) => {
+    const xi = Math.floor(x), yi = Math.floor(y)
+    const xf = x - xi, yf = y - yi
+    const u = xf * xf * (3 - 2 * xf), v = yf * yf * (3 - 2 * yf)
+    const a = hash2(xi, yi, s), bb = hash2(xi + 1, yi, s)
+    const c = hash2(xi, yi + 1, s), dd = hash2(xi + 1, yi + 1, s)
+    return (a * (1 - u) + bb * u) * (1 - v) + (c * (1 - u) + dd * u) * v
   }
-  const fbm = (x: number, s: number) =>
-    (0.6 * noise1(x, s) + 0.3 * noise1(x * 2.3, s + 31) + 0.15 * noise1(x * 4.7, s + 67)) / 1.05
+  const fbm2 = (x: number, y: number, s: number) =>
+    0.6 * noise2(x, y, s) + 0.27 * noise2(x * 2.1, y * 2.1, s + 17) + 0.13 * noise2(x * 4.3, y * 4.3, s + 41)
   const smooth = (e0: number, e1: number, x: number) => {
     const t = Math.min(1, Math.max(0, (x - e0) / (e1 - e0)))
     return t * t * (3 - 2 * t)
   }
+  const clamp01 = (x: number) => (x < 0 ? 0 : x > 1 ? 1 : x)
 
-  const bristles = Math.max(10, Math.round(width / 1.6))
-  const steps = Math.max(120, Math.round(len / 3))
-  ctx.lineCap = 'round'
-  for (let bi = 0; bi < bristles; bi++) {
-    // Bristles cluster with jitter, so the cross-section has irregular gaps and
-    // overlaps rather than an even comb.
-    const off0 = ((bi / (bristles - 1) - 0.5) + (rnd() - 0.5) * 0.24) * width
-    const baseAlpha = opacity * (0.3 + 0.6 * rnd())
-    const lw = 0.6 + rnd() * 1.4
-    const nseed = Math.floor(rnd() * 100000)
-    // Per-bristle ink load: how much it carries (lower thr = wetter) and where
-    // it starts running dry. Some bristles are thirsty and break up early.
-    const inkBase = 0.3 + rnd() * 0.28
-    const runDry = 0.2 + rnd() * 0.45
-    const freq = 3 + rnd() * 4
-    const fiberFreq = 14 + rnd() * 16
-    // Each bristle drifts sideways at its own slope, so the cluster fans and
-    // crosses rather than running as a parallel comb.
-    const drift = (rnd() - 0.5) * width * 0.35
-    ctx.lineWidth = lw
-    let prev: [number, number] | null = null
-    for (let s = 0; s <= steps; s++) {
-      const t = s / steps
-      const taper = smooth(0, 0.07, t) * smooth(0, 0.16, 1 - t)
-      if (taper <= 0.02) { prev = null; continue }
-      // Coverage = a slow noise streak vs a threshold that climbs along the
-      // length as ink runs out (broken kasure toward the tip), AND a fibre gate
-      // whose own threshold drifts with slow noise — so breaks come in irregular
-      // clumps (some stretches solid, others frayed) instead of even dashes.
-      const cov = fbm(t * freq, nseed)
-      const thr = inkBase + 0.5 * smooth(runDry, 1.05, t)
-      const fibre = 0.6 * fbm(t * fiberFreq, nseed + 5) + 0.4 * fbm(t * fiberFreq * 1.7 + 3.1, nseed + 13)
-      const gate = 0.22 + 0.32 * fbm(t * 1.4, nseed + 21) + 0.2 * smooth(runDry, 1.1, t)
-      if (cov <= thr || fibre < gate) { prev = null; continue }
-      const [px, py] = pointAt(t)
-      // Organic lateral wander (noise, not sine) + per-bristle drift + a slight
-      // outward splay so the brush spreads toward the tip.
-      const wander = (fbm(t * 2.2, nseed + 9) - 0.5) * width * 0.14
-      const wob = (off0 + wander + drift * t) * (1 + 0.2 * t)
-      const bx = px + nx * wob, by = py + ny * wob
-      if (prev) {
-        const strength = (cov - thr) / (1 - thr) // soft feathering at coverage edges
-        const a = baseAlpha * taper * (0.35 + 0.65 * strength)
-        ctx.strokeStyle = strength > 0.6 && rnd() > 0.97 ? highlight : `rgba(${r},${gg},${b},${a})`
-        ctx.beginPath()
-        ctx.moveTo(prev[0], prev[1])
-        ctx.lineTo(bx, by)
-        ctx.stroke()
+  // Dry brush is a textured *area*, not a bundle of lines, so we paint into a
+  // pixel buffer: march the band (along × across) and deposit gold wherever the
+  // paper-tooth noise beats an ink threshold that climbs toward the tip.
+  if (typeof ctx.getImageData !== 'function' || typeof ctx.putImageData !== 'function') {
+    goldBrushCache.set(key, null)
+    return null
+  }
+  const img = ctx.createImageData(w, h)
+  const data = img.data
+  const halfW = width / 2
+  // Noise stretched along the stroke (long streaks) and tighter across it
+  // (separate hairs).
+  const alongScale = Math.max(3, len / 90)
+  const acrossScale = Math.max(4, width / 5)
+  const seedA = Math.floor(rnd() * 100000)
+  const seedB = Math.floor(rnd() * 100000)
+  const seedW = Math.floor(rnd() * 100000)
+  const inkBase = 0.34
+
+  const sSteps = Math.ceil(len)
+  for (let si = 0; si <= sSteps; si++) {
+    const t = si / sSteps
+    const [pcx, pcy] = pointAt(t)
+    // Width wavers along the length and tapers at both ends.
+    const ends = smooth(0, 0.05, t) * smooth(0, 0.1, 1 - t)
+    const hw = halfW * (0.65 + 0.55 * fbm2(t * alongScale * 0.5, 7, seedW)) * (0.3 + 0.7 * ends)
+    if (hw < 0.5) continue
+    // Ink runs out toward the tip → the tip frays far more than the root.
+    const depletion = inkBase + 0.42 * smooth(0.2, 1.1, t)
+    const dSteps = Math.ceil(hw * 2)
+    for (let di = 0; di <= dSteps; di++) {
+      const dn = (di / dSteps) * 2 - 1 // -1..1 across the band
+      const d = dn * hw
+      const streak = fbm2(t * alongScale, dn * acrossScale, seedA)
+      const mottle = fbm2(t * alongScale * 2.6 + 5, dn * acrossScale * 1.4 + 5, seedB)
+      const cov = 0.62 * streak + 0.38 * mottle
+      // A little less ink at the very edges so the band frays rather than
+      // ending on a hard line.
+      const edge = 1 - 0.45 * dn * dn
+      const m = cov * edge - depletion
+      if (m <= 0) continue
+      const px = Math.round(pcx + nx * d)
+      const py = Math.round(pcy + ny * d)
+      if (px < 0 || px >= w || py < 0 || py >= h) continue
+      const a = clamp01(m * 2.8) * ends * opacity
+      if (a <= 0.01) continue
+      // Glints where the deposit is densest.
+      const glint = clamp01((cov - 0.8) * 4)
+      const idx = (py * w + px) * 4
+      const na = a * 255
+      if (na > data[idx + 3]) {
+        data[idx] = Math.round(r + (lift(r) - r) * glint)
+        data[idx + 1] = Math.round(gg + (lift(gg) - gg) * glint)
+        data[idx + 2] = Math.round(b + (lift(b) - b) * glint)
+        data[idx + 3] = na
       }
-      prev = [bx, by]
     }
   }
+  ctx.putImageData(img, 0, 0)
 
   goldBrushCache.set(key, layer)
   return layer
