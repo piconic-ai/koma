@@ -530,14 +530,16 @@ function getGoldBrushLayer(w: number, h: number, g: GoldBrushSpec): HTMLCanvasEl
   const img = ctx.createImageData(w, h)
   const data = img.data
   const halfW = width / 2
-  // Noise stretched along the stroke (long streaks) and tighter across it
-  // (separate hairs).
-  const alongScale = Math.max(3, len / 90)
-  const acrossScale = Math.max(4, width / 5)
+  // A flat brush lays down a *textured mass* of ink: hairs (suji) streak along
+  // the drag direction, but the coverage is continuous, not a set of discrete
+  // lines. We build a coverage field — directional streaks + finer grain — and
+  // map it to alpha with a SOFT response, so thin spots go translucent (the
+  // ground shows through) rather than snapping on/off into bars or wires.
+  const acrossScale = Math.max(5, width / 3.5)
+  const alongScale = Math.max(2, len / 90)
   const seedA = Math.floor(rnd() * 100000)
   const seedB = Math.floor(rnd() * 100000)
   const seedW = Math.floor(rnd() * 100000)
-  const inkBase = 0.34
 
   const sSteps = Math.ceil(len)
   for (let si = 0; si <= sSteps; si++) {
@@ -545,29 +547,30 @@ function getGoldBrushLayer(w: number, h: number, g: GoldBrushSpec): HTMLCanvasEl
     const [pcx, pcy] = pointAt(t)
     // Width wavers along the length and tapers at both ends.
     const ends = smooth(0, 0.05, t) * smooth(0, 0.1, 1 - t)
-    const hw = halfW * (0.65 + 0.55 * fbm2(t * alongScale * 0.5, 7, seedW)) * (0.3 + 0.7 * ends)
+    const hw = halfW * (0.7 + 0.5 * fbm2(t * alongScale * 0.5, 7, seedW)) * (0.3 + 0.7 * ends)
     if (hw < 0.5) continue
-    // Ink runs out toward the tip → the tip frays far more than the root.
-    const depletion = inkBase + 0.42 * smooth(0.2, 1.1, t)
+    // The "dry" level rises toward the tip: as ink runs out, only the densest
+    // streaks survive, so the mass frays into fine suji.
+    const dry = 0.26 + 0.4 * smooth(0.1, 1.15, t)
     const dSteps = Math.ceil(hw * 2)
     for (let di = 0; di <= dSteps; di++) {
       const dn = (di / dSteps) * 2 - 1 // -1..1 across the band
       const d = dn * hw
-      const streak = fbm2(t * alongScale, dn * acrossScale, seedA)
-      const mottle = fbm2(t * alongScale * 2.6 + 5, dn * acrossScale * 1.4 + 5, seedB)
-      const cov = 0.62 * streak + 0.38 * mottle
-      // A little less ink at the very edges so the band frays rather than
-      // ending on a hard line.
-      const edge = 1 - 0.45 * dn * dn
-      const m = cov * edge - depletion
-      if (m <= 0) continue
+      // Directional streaks (vary across, drift slowly along) + finer grain
+      // that breaks them up so they read as bristle texture, not wires.
+      const streak = fbm2(t * alongScale * 0.35, dn * acrossScale, seedA)
+      const grain = fbm2(t * alongScale * 1.3 + 5, dn * acrossScale * 1.7 + 9, seedB)
+      const edge = 1 - 0.5 * dn * dn
+      const cov = (0.6 * streak + 0.4 * grain) * edge
+      // Soft ink response: bare below `dry`, opaque a little above it, graded
+      // between — a textured mass with translucent thin spots and holes.
+      const a = smooth(dry, dry + 0.34, cov) * ends * opacity
+      if (a <= 0.01) continue
       const px = Math.round(pcx + nx * d)
       const py = Math.round(pcy + ny * d)
       if (px < 0 || px >= w || py < 0 || py >= h) continue
-      const a = clamp01(m * 2.8) * ends * opacity
-      if (a <= 0.01) continue
-      // Glints where the deposit is densest.
-      const glint = clamp01((cov - 0.8) * 4)
+      // A faint glint only on the densest streaks — never a glossy fill.
+      const glint = clamp01((cov - 0.82) * 3) * 0.5
       const idx = (py * w + px) * 4
       const na = a * 255
       if (na > data[idx + 3]) {
