@@ -88,20 +88,23 @@ describe('THEMES registry', () => {
     }
   })
 
-  test('墨 evokes Kanazawa gold-on-washi: organic gold leaf, a gold keyline and gold accents', () => {
+  test('墨 is ink-first: gold is only a faint whisper, never an accent', () => {
     const r = THEMES.sumi.render
-    // Irregular 金雲 in the corners — not a regular tiled motif.
+    // Irregular 金箔 drift, not a regular tiled motif.
     expect(r.outerPattern).toBeUndefined()
     expect(r.outerGold?.corners.length).toBeGreaterThan(0)
     expect(r.outerGold!.color).toMatch(/^#[0-9a-f]{6}$/i)
-    // Warm washi depth + a gold keyline framing the card.
+    // The gold is heavily restrained so the ink dominates.
+    expect(r.outerGold!.intensity ?? 1).toBeLessThanOrEqual(0.4)
+    // Depth from grain + a deep vignette.
     expect(r.grainAlpha ?? 0).toBeGreaterThan(0)
     expect(r.vignette ?? 0).toBeGreaterThan(0)
-    expect(r.cardBorderColor).toBeDefined()
-    // The ink Shiki theme lifts keywords in antique gold.
+    // Code stays graded ink: the keyword tone is desaturated, not a gold accent.
     const kw = THEMES.sumi.customShikiTheme!.settings as Array<{ scope?: string[]; settings: { foreground?: string } }>
-    const keyword = kw.find(s => s.scope?.includes('keyword'))
-    expect(keyword?.settings.foreground?.toLowerCase()).toBe('#c9a24e')
+    const keyword = kw.find(s => s.scope?.includes('keyword'))?.settings.foreground ?? ''
+    const n = parseInt(keyword.replace('#', ''), 16)
+    const [rr, gg, bb] = [(n >> 16) & 255, (n >> 8) & 255, n & 255]
+    expect(Math.max(rr, gg, bb) - Math.min(rr, gg, bb)).toBeLessThan(70)
   })
 
   test('every theme has a homepage URL', () => {

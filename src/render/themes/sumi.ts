@@ -1,73 +1,72 @@
-// 和柄 — 墨 (Sumi). Sumi ink meets Kanazawa luxury: warm washi-toned charcoal
-// strewn with gold leaf (砂子) over faint waves, a sumi-lacquer code card
-// edged with a gold keyline, and a quiet ink Shiki theme warmed by a hint of
-// antique gold — the feel of a high-end Kanazawa ryokan.
+// 和柄 — 墨 (Sumi). Ink is the whole point: a deep sumi-black ground where the
+// only warmth is the faintest breath of gold (金沢の金箔) drifting in a far
+// corner. The code is graded sumi greys; gold never competes with the ink.
 
 import type { Theme, ShikiThemeReg } from './types'
 
-const WASHI = '#ece6d6'
-const GOLD = '#c9a24e'
+const WASHI = '#e7e2d6'
+const GOLD = '#bf9f57'
 
-// Graded warm greys (sumi-e tonal range) on warm ink, with keywords lifted in
-// a muted antique gold — ほんのり金色, not a loud accent.
+// Graded sumi greys (墨絵 tonal range) on near-black ink. Keywords carry only a
+// breath of warmth — not gold — so nothing pulls focus from the ink.
 const sumiInk: ShikiThemeReg = {
   name: 'koma-sumi',
   type: 'dark',
   fg: WASHI,
-  bg: '#19160f',
+  bg: '#161410',
   settings: [
-    { settings: { foreground: WASHI, background: '#19160f' } },
-    { scope: ['comment'], settings: { foreground: '#736a55', fontStyle: 'italic' } },
-    { scope: ['string', 'constant.other.symbol'], settings: { foreground: '#bcae8e' } },
-    { scope: ['keyword', 'storage', 'storage.type'], settings: { foreground: GOLD, fontStyle: 'bold' } },
-    { scope: ['constant.numeric', 'constant.language'], settings: { foreground: '#d8b977' } },
-    { scope: ['entity.name.function', 'support.function'], settings: { foreground: '#e4cf9d' } },
+    { settings: { foreground: WASHI, background: '#161410' } },
+    { scope: ['comment'], settings: { foreground: '#6a6353', fontStyle: 'italic' } },
+    { scope: ['string', 'constant.other.symbol'], settings: { foreground: '#a9a288' } },
+    { scope: ['keyword', 'storage', 'storage.type'], settings: { foreground: '#a99e80', fontStyle: 'bold' } },
+    { scope: ['constant.numeric', 'constant.language'], settings: { foreground: '#bdb393' } },
+    { scope: ['entity.name.function', 'support.function'], settings: { foreground: '#d7d0bd' } },
     { scope: ['variable.parameter', 'variable'], settings: { foreground: WASHI } },
-    { scope: ['punctuation', 'meta.brace'], settings: { foreground: '#8a7f64' } },
+    { scope: ['punctuation', 'meta.brace'], settings: { foreground: '#7c7460' } },
   ],
 }
 
 export const sumi: Theme = {
   id: 'sumi',
   label: '墨',
-  tagline: '墨 — 金沢の宵、和紙にひと刷きの金。静かな墨と金のプリセット。',
+  tagline: '墨 — 深い墨色に、ひと刷きの金の気配。静かな墨のプリセット。',
   category: 'wagara',
   homepage: 'https://ja.wikipedia.org/wiki/墨',
   shikiTheme: sumiInk.name,
   customShikiTheme: sumiInk,
   render: {
-    outerBackground: '#211d15',
-    // Warm ink-wash sweep, like aged washi under low lantern light.
+    outerBackground: '#1a1813',
+    // Near-black sumi wash with only a hint of warmth — ink, not brown.
     outerGradient: {
-      from: '#3a3326',
-      to: '#13100a',
+      from: '#262219',
+      to: '#100e0a',
       angle: 135,
       stops: [
-        { at: 0, color: '#3a3326' },
-        { at: 0.6, color: '#221e15' },
-        { at: 1, color: '#13100a' },
+        { at: 0, color: '#262219' },
+        { at: 0.55, color: '#181610' },
+        { at: 1, color: '#100e0a' },
       ],
     },
-    // Organic gold leaf (金雲) drifting from opposite corners, with 砂子
-    // flecks trailing inward — irregular and hand-strewn, not a tiled grid.
+    // 金箔 — the faintest gold drift in one far corner only. A whisper of
+    // warmth in the ink, never an accent that competes with it.
     outerGold: {
       color: GOLD,
-      corners: ['tl', 'br'],
-      intensity: 1,
-      scale: 0.62,
+      corners: ['br'],
+      intensity: 0.28,
+      scale: 0.5,
       seed: 7,
     },
-    codeBackground: '#19160f',
+    codeBackground: '#161410',
     textColor: WASHI,
-    cursorColor: GOLD,
+    cursorColor: '#c2b896',
     showLineNumbers: true,
-    lineNumberColor: '#6e5d39',
+    lineNumberColor: '#564f3f',
     grainAlpha: 0.1,
-    vignette: 0.26,
+    vignette: 0.28,
     cardShadow: true,
-    // A thin gold keyline frames the sumi-lacquer card.
-    cardBorderColor: 'rgba(201, 162, 78, 0.45)',
-    cardBorderWidth: 1.5,
+    // Barely-there warm keyline — felt, not seen.
+    cardBorderColor: 'rgba(184, 150, 78, 0.16)',
+    cardBorderWidth: 1,
   },
   sample: {
     language: 'ts',
