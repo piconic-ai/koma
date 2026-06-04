@@ -88,14 +88,16 @@ describe('THEMES registry', () => {
     }
   })
 
-  test('墨 is ink-first: gold is only a faint whisper, never an accent', () => {
+  test('墨 is ink-first: gold is a single brush line, never a pooled area', () => {
     const r = THEMES.sumi.render
-    // Irregular 金箔 drift, not a regular tiled motif.
+    // No tiled motif and no corner gold pool.
     expect(r.outerPattern).toBeUndefined()
-    expect(r.outerGold?.corners.length).toBeGreaterThan(0)
-    expect(r.outerGold!.color).toMatch(/^#[0-9a-f]{6}$/i)
-    // The gold is heavily restrained so the ink dominates.
-    expect(r.outerGold!.intensity ?? 1).toBeLessThanOrEqual(0.4)
+    expect(r.outerGold).toBeUndefined()
+    // Gold is carried as one dry-brush stroke (a line, not a filled corner).
+    expect(r.goldBrush?.color).toMatch(/^#[0-9a-f]{6}$/i)
+    expect(r.goldBrush!.from).toHaveLength(2)
+    expect(r.goldBrush!.to).toHaveLength(2)
+    expect(r.goldBrush!.opacity ?? 1).toBeLessThanOrEqual(0.6)
     // Hand-made washi paper texture over ground + card.
     expect(r.washi?.color).toMatch(/^#[0-9a-f]{6}$/i)
     expect(r.washi!.cardAlpha ?? 0).toBeGreaterThan(0)

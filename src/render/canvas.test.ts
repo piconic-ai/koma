@@ -312,6 +312,55 @@ describe('renderToCanvas 金雲 gold leaf', () => {
       }),
     ).not.toThrow()
   })
+
+  test('gold brush stroke is safely skipped without drawImage (unit stub)', () => {
+    const { canvas } = makeRecordingCanvas()
+    expect(() =>
+      renderToCanvas(canvas, {
+        ...holdInputs(spec),
+        options: { goldBrush: { color: '#edc55a', from: [0, 0], to: [1, 1] } },
+      }),
+    ).not.toThrow()
+  })
+
+  test('builds a dry-brush gold layer and stamps it onto the canvas', () => {
+    const seen = { strokes: 0, drawImage: 0 }
+    const tileCtx = {
+      strokeStyle: '', fillStyle: '' as unknown, lineWidth: 0, lineCap: '', globalAlpha: 1,
+      beginPath() {}, moveTo() {}, lineTo() {}, quadraticCurveTo() {}, closePath() {}, arc() {}, fill() {}, fillRect() {},
+      stroke() { seen.strokes++ },
+    }
+    const mainCtx = {
+      fillStyle: '' as unknown, font: '', textBaseline: '',
+      clearRect() {}, fillRect() {}, beginPath() {}, moveTo() {}, lineTo() {}, quadraticCurveTo() {},
+      closePath() {}, arc() {}, fill() {}, save() {}, clip() {}, restore() {}, fillText() {},
+      measureText: () => ({ width: 10 }),
+      createLinearGradient: () => ({ addColorStop() {} }),
+      drawImage() { seen.drawImage++ },
+    }
+    const canvas = { width: 0, height: 0, getContext: () => mainCtx } as unknown as HTMLCanvasElement
+    const g = globalThis as { OffscreenCanvas?: unknown; document?: unknown }
+    const prevOSC = g.OffscreenCanvas
+    const prevDoc = g.document
+    g.document = undefined
+    g.OffscreenCanvas = class {
+      width = 0; height = 0
+      constructor(w: number, h: number) { this.width = w; this.height = h }
+      getContext() { return tileCtx }
+    }
+    try {
+      renderToCanvas(canvas, {
+        ...holdInputs(spec),
+        // unique seed avoids the module-level brush-layer cache.
+        options: { grainAlpha: 0, vignette: 0, goldBrush: { color: '#edc55a', from: [0.04, 0.16], to: [0.92, 0.86], seed: 9191 } },
+      })
+    } finally {
+      g.OffscreenCanvas = prevOSC
+      g.document = prevDoc
+    }
+    expect(seen.strokes).toBeGreaterThan(0) // bristle streaks drawn
+    expect(seen.drawImage).toBe(1) // layer stamped once
+  })
 })
 
 describe('renderToCanvas window chrome', () => {

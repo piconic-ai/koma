@@ -38,6 +38,7 @@ type OptionalRender = Partial<
     | 'outerGradient'
     | 'outerPattern'
     | 'outerGold'
+    | 'goldBrush'
     | 'washi'
     | 'vignette'
     | 'showWindowChrome'

@@ -48,15 +48,17 @@ export const sumi: Theme = {
         { at: 1, color: '#100e0a' },
       ],
     },
-    // 金箔 — the faintest gold drift in one far corner only, but a true,
-    // vivid leaf-gold (with the odd glint) so the little there is reads as
-    // real gold, not a dull wash. Never competes with the ink.
-    outerGold: {
+    // 金の刷毛 — a single dry-brush stroke of true, vivid leaf-gold swept
+    // diagonally across the ground (mostly behind the card, glimpsed in the
+    // margins). Gold carried as a line, never pooled in a corner.
+    goldBrush: {
       color: GOLD,
-      corners: ['br'],
-      intensity: 0.32,
-      scale: 0.5,
-      seed: 7,
+      from: [-0.04, 0.1],
+      to: [1.04, 0.92],
+      width: 40,
+      opacity: 0.62,
+      curve: 0.06,
+      seed: 11,
     },
     // Hand-made washi: fibres + specks over the ground and the card surface.
     washi: {

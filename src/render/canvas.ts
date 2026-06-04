@@ -68,10 +68,32 @@ export type RenderOptions = {
    *  not a regular tiled motif. Drawn over grain/vignette so the gold stays
    *  vivid. Skipped for a `'transparent'` background. */
   outerGold?: GoldSpec
+  /** Optional single dry-brush gold stroke (金の刷毛) swept across the
+   *  background — gold carried as a kasure (broken-ink) line, not a filled
+   *  area. Drawn over grain/vignette so it stays vivid. Skipped for a
+   *  `'transparent'` background. */
+  goldBrush?: GoldBrushSpec
   /** Optional washi (和紙) paper texture — fine fibres and specks — tiled over
    *  the outer background and the code card, for a hand-made paper feel beyond
    *  flat grain. Skipped for a `'transparent'` background. */
   washi?: WashiSpec
+}
+
+export type GoldBrushSpec = {
+  /** Gold color. */
+  color: string
+  /** Stroke start, as fractions of the canvas (can sit slightly off-canvas). */
+  from: [number, number]
+  /** Stroke end, as fractions of the canvas. */
+  to: [number, number]
+  /** Brush width in px (default min(w,h) × 0.06). */
+  width?: number
+  /** Overall opacity (default 0.5). */
+  opacity?: number
+  /** Perpendicular bow as a fraction of length, for an organic curve (default 0.05). */
+  curve?: number
+  /** Seed so the (static) kasure breakup is stable across frames (default 1). */
+  seed?: number
 }
 
 export type WashiSpec = {
@@ -435,6 +457,84 @@ function getGoldLayer(w: number, h: number, g: GoldSpec): HTMLCanvasElement | Of
   return layer
 }
 
+// A full-canvas layer with a single dry-brush gold stroke (金の刷毛): many fine
+// bristle streaks along a gently bowed path, broken up (kasure) and tapered at
+// the ends, with the odd bright glint. Built once and cached. Returns null
+// where no canvas is available (unit tests).
+const goldBrushCache = new Map<string, HTMLCanvasElement | OffscreenCanvas | null>()
+function getGoldBrushLayer(w: number, h: number, g: GoldBrushSpec): HTMLCanvasElement | OffscreenCanvas | null {
+  const opacity = g.opacity ?? 0.5
+  const curve = g.curve ?? 0.05
+  const seed0 = g.seed ?? 1
+  const width = g.width ?? Math.min(w, h) * 0.06
+  const key = `${w}x${h}|${g.color}|${g.from.join(',')}|${g.to.join(',')}|${width}|${opacity}|${curve}|${seed0}`
+  const cached = goldBrushCache.get(key)
+  if (cached !== undefined) return cached
+
+  const layer = createTileCanvas(w, h)
+  const ctx = layer?.getContext('2d') as CanvasRenderingContext2D | null
+  if (!layer || !ctx) {
+    goldBrushCache.set(key, null)
+    return null
+  }
+
+  const { r, g: gg, b } = hexToRgb(g.color)
+  const lift = (v: number) => Math.round(v + (255 - v) * 0.5)
+  const highlight = `rgb(${lift(r)},${lift(gg)},${lift(b)})`
+
+  const x0 = g.from[0] * w, y0 = g.from[1] * h
+  const x1 = g.to[0] * w, y1 = g.to[1] * h
+  const dx = x1 - x0, dy = y1 - y0
+  const len = Math.hypot(dx, dy) || 1
+  const nx = -dy / len, ny = dx / len // unit perpendicular
+  const cx = (x0 + x1) / 2 + nx * curve * len
+  const cy = (y0 + y1) / 2 + ny * curve * len
+  const pointAt = (t: number): [number, number] => {
+    const mt = 1 - t
+    return [mt * mt * x0 + 2 * mt * t * cx + t * t * x1, mt * mt * y0 + 2 * mt * t * cy + t * t * y1]
+  }
+
+  let seed = (seed0 * 2654435761) >>> 0
+  const rnd = () => { seed = (seed * 1664525 + 1013904223) >>> 0; return seed / 0xffffffff }
+
+  const bristles = Math.max(8, Math.round(width / 2))
+  const steps = Math.max(80, Math.round(len / 4))
+  ctx.lineCap = 'round'
+  for (let bi = 0; bi < bristles; bi++) {
+    const off = (bi / (bristles - 1) - 0.5) * width
+    const baseAlpha = opacity * (0.25 + 0.65 * rnd())
+    const lw = 0.5 + rnd() * 1.3
+    const freq = 4 + rnd() * 6
+    const phase = rnd() * 6.28
+    const gap = 0.28 + rnd() * 0.3
+    ctx.lineWidth = lw
+    let prev: [number, number] | null = null
+    for (let s = 0; s <= steps; s++) {
+      const t = s / steps
+      // Streaky coverage (slow wave) with sparse pinholes → dry-brush kasure.
+      const streak = 0.5 + 0.5 * Math.sin(t * freq + phase)
+      const taper = Math.min(1, t / 0.1) * Math.min(1, (1 - t) / 0.14)
+      const on = streak > gap && taper > 0.08 && rnd() > 0.07
+      if (!on) { prev = null; continue }
+      const [px, py] = pointAt(t)
+      const wob = off + Math.sin(t * 8 + bi) * width * 0.05
+      const bx = px + nx * wob, by = py + ny * wob
+      if (prev) {
+        const a = baseAlpha * taper * (0.45 + 0.55 * streak)
+        ctx.strokeStyle = rnd() > 0.985 ? highlight : `rgba(${r},${gg},${b},${a})`
+        ctx.beginPath()
+        ctx.moveTo(prev[0], prev[1])
+        ctx.lineTo(bx, by)
+        ctx.stroke()
+      }
+      prev = [bx, by]
+    }
+  }
+
+  goldBrushCache.set(key, layer)
+  return layer
+}
+
 // One tileable repeat of a washi (和紙) paper texture: scattered fine fibres
 // (short, faintly curved strokes) plus light/dark specks, on transparent so it
 // can be laid over any surface. Cached per colour+size. Returns null where no
@@ -758,6 +858,16 @@ export function renderToCanvas(
     typeof c.drawImage === 'function'
   ) {
     const layer = getGoldLayer(opts.width, opts.height, opts.outerGold)
+    if (layer) c.drawImage(layer as CanvasImageSource, 0, 0)
+  }
+
+  // 金の刷毛 — a single dry-brush gold stroke, also over the vignette.
+  if (
+    opts.goldBrush &&
+    opts.outerBackground !== 'transparent' &&
+    typeof c.drawImage === 'function'
+  ) {
+    const layer = getGoldBrushLayer(opts.width, opts.height, opts.goldBrush)
     if (layer) c.drawImage(layer as CanvasImageSource, 0, 0)
   }
 
