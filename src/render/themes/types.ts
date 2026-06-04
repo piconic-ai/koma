@@ -45,6 +45,8 @@ type OptionalRender = Partial<
     | 'lineNumberColor'
     | 'grainAlpha'
     | 'cardShadow'
+    | 'cardBorderColor'
+    | 'cardBorderWidth'
     | 'fontFamily'
   >
 >

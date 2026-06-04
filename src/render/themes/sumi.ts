@@ -1,60 +1,70 @@
-// 和柄 — 墨 (Sumi). An ink-wash preset: deep charcoal outer over a sumi-black
-// code card. Ships its own dark Shiki theme in graded greys — like brush ink
-// on paper, monochrome but with quiet tonal range rather than flat mono.
+// 和柄 — 墨 (Sumi). Sumi ink meets Kanazawa luxury: warm washi-toned charcoal
+// strewn with gold leaf (砂子) over faint waves, a sumi-lacquer code card
+// edged with a gold keyline, and a quiet ink Shiki theme warmed by a hint of
+// antique gold — the feel of a high-end Kanazawa ryokan.
 
 import type { Theme, ShikiThemeReg } from './types'
 
-const WASHI = '#ece7db'
+const WASHI = '#ece6d6'
+const GOLD = '#c9a24e'
 
-// Graded greys (sumi-e tonal range) on deep ink — quiet, no hue.
+// Graded warm greys (sumi-e tonal range) on warm ink, with keywords lifted in
+// a muted antique gold — ほんのり金色, not a loud accent.
 const sumiInk: ShikiThemeReg = {
   name: 'koma-sumi',
   type: 'dark',
   fg: WASHI,
-  bg: '#1b1a17',
+  bg: '#19160f',
   settings: [
-    { settings: { foreground: WASHI, background: '#1b1a17' } },
-    { scope: ['comment'], settings: { foreground: '#6d6657', fontStyle: 'italic' } },
-    { scope: ['string', 'constant.other.symbol'], settings: { foreground: '#c7c1b2' } },
-    { scope: ['keyword', 'storage', 'storage.type'], settings: { foreground: '#a8a293', fontStyle: 'bold' } },
-    { scope: ['constant.numeric', 'constant.language'], settings: { foreground: '#d8d2c3' } },
-    { scope: ['entity.name.function', 'support.function'], settings: { foreground: '#f2ede1' } },
+    { settings: { foreground: WASHI, background: '#19160f' } },
+    { scope: ['comment'], settings: { foreground: '#736a55', fontStyle: 'italic' } },
+    { scope: ['string', 'constant.other.symbol'], settings: { foreground: '#bcae8e' } },
+    { scope: ['keyword', 'storage', 'storage.type'], settings: { foreground: GOLD, fontStyle: 'bold' } },
+    { scope: ['constant.numeric', 'constant.language'], settings: { foreground: '#d8b977' } },
+    { scope: ['entity.name.function', 'support.function'], settings: { foreground: '#e4cf9d' } },
     { scope: ['variable.parameter', 'variable'], settings: { foreground: WASHI } },
-    { scope: ['punctuation', 'meta.brace'], settings: { foreground: '#8a8475' } },
+    { scope: ['punctuation', 'meta.brace'], settings: { foreground: '#8a7f64' } },
   ],
 }
 
 export const sumi: Theme = {
   id: 'sumi',
   label: '墨',
-  tagline: '墨 — 墨絵のような、静かなモノクロのプリセット。',
+  tagline: '墨 — 金沢の宵、和紙にひと刷きの金。静かな墨と金のプリセット。',
   category: 'wagara',
   homepage: 'https://ja.wikipedia.org/wiki/墨',
   shikiTheme: sumiInk.name,
   customShikiTheme: sumiInk,
   render: {
-    outerBackground: '#262420',
-    // Ink-wash sweep: a lighter sumi grey draining into deep ink.
+    outerBackground: '#211d15',
+    // Warm ink-wash sweep, like aged washi under low lantern light.
     outerGradient: {
-      from: '#3a352f',
-      to: '#131210',
+      from: '#3a3326',
+      to: '#13100a',
       angle: 135,
       stops: [
-        { at: 0, color: '#3a352f' },
-        { at: 0.6, color: '#23211d' },
-        { at: 1, color: '#131210' },
+        { at: 0, color: '#3a3326' },
+        { at: 0.6, color: '#221e15' },
+        { at: 1, color: '#13100a' },
       ],
     },
-    // 青海波 — pale ink waves, like a sumi-e wash over the dark ground.
-    outerPattern: { kind: 'seigaiha', color: '#c4bbab', opacity: 0.07, scale: 152 },
-    codeBackground: '#1b1a17',
+    // Faint 青海波 waves washed with scattered 砂子 (gold leaf) on top —
+    // the Kanazawa gold-on-washi feel.
+    outerPattern: [
+      { kind: 'seigaiha', color: '#b6a883', opacity: 0.05, scale: 152 },
+      { kind: 'sunago', color: GOLD, opacity: 0.5, scale: 200 },
+    ],
+    codeBackground: '#19160f',
     textColor: WASHI,
-    cursorColor: WASHI,
+    cursorColor: GOLD,
     showLineNumbers: true,
-    lineNumberColor: '#55514a',
-    grainAlpha: 0.08,
-    vignette: 0.22,
+    lineNumberColor: '#6e5d39',
+    grainAlpha: 0.1,
+    vignette: 0.26,
     cardShadow: true,
+    // A thin gold keyline frames the sumi-lacquer card.
+    cardBorderColor: 'rgba(201, 162, 78, 0.45)',
+    cardBorderWidth: 1.5,
   },
   sample: {
     language: 'ts',

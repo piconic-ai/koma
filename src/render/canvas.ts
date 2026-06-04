@@ -52,20 +52,29 @@ export type RenderOptions = {
   showLineNumbers: boolean
   /** Color of the line-number gutter. */
   lineNumberColor: string
-  /** Optional traditional Japanese motif (和柄) tiled faintly over the outer
-   *  background, before grain and vignette, for a crafted, textured feel
-   *  rather than a flat gradient. Skipped for a `'transparent'` background. */
-  outerPattern?: {
-    /** Motif: 青海波 (waves), 七宝 (interlocking circles), or 桜小紋
-     *  (scattered blossoms). */
-    kind: 'seigaiha' | 'shippo' | 'sakura'
-    /** Stroke/fill color of the motif lines. */
-    color: string
-    /** Motif opacity over the background (default 0.08). */
-    opacity?: number
-    /** Motif size in px — larger is sparser (default 132). */
-    scale?: number
-  }
+  /** Optional traditional Japanese motif(s) (和柄) tiled faintly over the
+   *  outer background, before grain and vignette, for a crafted, textured
+   *  feel rather than a flat gradient. An array layers motifs in order (e.g.
+   *  waves under scattered gold leaf). Skipped for a `'transparent'`
+   *  background. */
+  outerPattern?: PatternSpec | PatternSpec[]
+  /** Optional hairline border drawn on the code card's edge — e.g. a faint
+   *  gold keyline for a lacquered, premium frame. */
+  cardBorderColor?: string
+  /** Card border width in px (default 1.5). Needs `cardBorderColor`. */
+  cardBorderWidth?: number
+}
+
+export type PatternSpec = {
+  /** Motif: 青海波 (waves), 七宝 (interlocking circles), 桜小紋 (scattered
+   *  blossoms), or 砂子 (scattered gold-leaf flecks). */
+  kind: 'seigaiha' | 'shippo' | 'sakura' | 'sunago'
+  /** Stroke/fill color of the motif. */
+  color: string
+  /** Motif opacity over the background (default 0.08). */
+  opacity?: number
+  /** Motif size in px — larger is sparser (default 132). */
+  scale?: number
 }
 
 export const DEFAULT_RENDER_OPTIONS: RenderOptions = {
@@ -179,7 +188,7 @@ function blossomPath(ctx: CanvasRenderingContext2D, cx: number, cy: number, r: n
 // every export frame. Returns null where no canvas is available.
 const patternTileCache = new Map<string, HTMLCanvasElement | OffscreenCanvas | null>()
 function getPatternTile(
-  kind: 'seigaiha' | 'shippo' | 'sakura',
+  kind: PatternSpec['kind'],
   color: string,
   scale: number,
 ): HTMLCanvasElement | OffscreenCanvas | null {
@@ -244,6 +253,36 @@ function getPatternTile(
       ctx.arc(cx, cy, r, 0, Math.PI * 2)
       ctx.stroke()
     }
+  } else if (kind === 'sunago') {
+    // 砂子 — scattered gold-leaf flecks (as on Kanazawa washi/lacquer): mostly
+    // fine dust with a few larger flakes, placed deterministically so the
+    // grain is static across frames. Per-fleck alpha varies for depth.
+    let seed = 0x9e3779b9 ^ Math.round(scale)
+    const rnd = () => { seed = (seed * 1664525 + 1013904223) >>> 0; return seed / 0xffffffff }
+    const count = Math.max(18, Math.round((scale * scale) / 520))
+    for (let i = 0; i < count; i++) {
+      const x = rnd() * scale
+      const y = rnd() * scale
+      const big = rnd() > 0.86
+      ctx.globalAlpha = big ? 0.55 + rnd() * 0.35 : 0.18 + rnd() * 0.4
+      if (big) {
+        // A tiny angular flake of gold leaf.
+        const s = scale * (0.016 + rnd() * 0.018)
+        ctx.beginPath()
+        ctx.moveTo(x, y - s)
+        ctx.lineTo(x + s * 0.8, y)
+        ctx.lineTo(x, y + s)
+        ctx.lineTo(x - s * 0.7, y + s * 0.2)
+        ctx.closePath()
+        ctx.fill()
+      } else {
+        const r = scale * (0.004 + rnd() * 0.007)
+        ctx.beginPath()
+        ctx.arc(x, y, r, 0, Math.PI * 2)
+        ctx.fill()
+      }
+    }
+    ctx.globalAlpha = 1
   } else {
     // 桜小紋 — scattered blossoms: a larger one centred, smaller ones at the
     // corners (offset grid) so the field reads dense but irregular.
@@ -445,9 +484,10 @@ export function renderToCanvas(
     opts.outerBackground !== 'transparent' &&
     typeof c.createPattern === 'function'
   ) {
-    const { kind, color, opacity = 0.08, scale = 132 } = opts.outerPattern
-    const tile = getPatternTile(kind, color, scale)
-    if (tile) {
+    const layers = Array.isArray(opts.outerPattern) ? opts.outerPattern : [opts.outerPattern]
+    for (const { kind, color, opacity = 0.08, scale = 132 } of layers) {
+      const tile = getPatternTile(kind, color, scale)
+      if (!tile) continue
       const pattern = c.createPattern(tile as CanvasImageSource, 'repeat')
       if (pattern) {
         c.save()
@@ -516,6 +556,16 @@ export function renderToCanvas(
   roundRect(c, windowX, windowY, windowW, windowH, opts.cornerRadius)
   c.fill()
   c.restore()
+
+  // Optional hairline keyline on the card edge (e.g. a faint gold frame).
+  if (opts.cardBorderColor) {
+    c.save()
+    c.strokeStyle = opts.cardBorderColor
+    c.lineWidth = opts.cardBorderWidth ?? 1.5
+    roundRect(c, windowX, windowY, windowW, windowH, opts.cornerRadius)
+    c.stroke()
+    c.restore()
+  }
 
   // Clip to the rounded rect so chrome + text don't bleed
   c.save()

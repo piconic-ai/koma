@@ -75,20 +75,30 @@ describe('THEMES registry', () => {
   })
 
   test('the 和柄 presets carry a traditional motif and texture (not flat)', () => {
-    const motifs = {
-      sakura: 'sakura',
-      matcha: 'shippo',
-      sumi: 'seigaiha',
-    } as const
+    const motifs = { sakura: 'sakura', matcha: 'shippo', sumi: 'seigaiha' } as const
     for (const [id, kind] of Object.entries(motifs)) {
       const r = THEMES[id as keyof typeof motifs].render
-      expect(r.outerPattern?.kind).toBe(kind)
-      expect(r.outerPattern!.color).toMatch(/^#[0-9a-f]{3,8}$/i)
+      const layers = Array.isArray(r.outerPattern) ? r.outerPattern : [r.outerPattern!]
+      expect(layers.some(l => l.kind === kind)).toBe(true)
+      for (const l of layers) expect(l.color).toMatch(/^#[0-9a-f]{3,8}$/i)
       // depth: a multi-stop gradient, film grain and a vignette, not a flat fill.
       expect(r.outerGradient?.stops?.length).toBeGreaterThan(2)
       expect(r.grainAlpha ?? 0).toBeGreaterThan(0)
       expect(r.vignette ?? 0).toBeGreaterThan(0)
     }
+  })
+
+  test('墨 evokes Kanazawa gold-on-washi: gold leaf, a gold keyline and gold accents', () => {
+    const r = THEMES.sumi.render
+    const layers = Array.isArray(r.outerPattern) ? r.outerPattern : [r.outerPattern!]
+    // 砂子 — scattered gold leaf — layered over the waves.
+    expect(layers.some(l => l.kind === 'sunago')).toBe(true)
+    // A gold keyline frames the card.
+    expect(r.cardBorderColor).toBeDefined()
+    // The ink Shiki theme lifts keywords in antique gold.
+    const kw = THEMES.sumi.customShikiTheme!.settings as Array<{ scope?: string[]; settings: { foreground?: string } }>
+    const keyword = kw.find(s => s.scope?.includes('keyword'))
+    expect(keyword?.settings.foreground?.toLowerCase()).toBe('#c9a24e')
   })
 
   test('every theme has a homepage URL', () => {
