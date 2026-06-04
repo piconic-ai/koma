@@ -497,31 +497,69 @@ function getGoldBrushLayer(w: number, h: number, g: GoldBrushSpec): HTMLCanvasEl
   let seed = (seed0 * 2654435761) >>> 0
   const rnd = () => { seed = (seed * 1664525 + 1013904223) >>> 0; return seed / 0xffffffff }
 
-  const bristles = Math.max(8, Math.round(width / 2))
-  const steps = Math.max(80, Math.round(len / 4))
+  // Smooth 1-D value noise (+ a little fractal detail) for organic, non-periodic
+  // breakup — real kasure has no repeating wave, so this replaces any sine.
+  const hash = (i: number, s: number) => {
+    let h = (Math.floor(i) * 374761393 + s * 668265263) >>> 0
+    h = ((h ^ (h >>> 13)) * 1274126177) >>> 0
+    return h / 0xffffffff
+  }
+  const noise1 = (x: number, s: number) => {
+    const xi = Math.floor(x), xf = x - xi
+    const u = xf * xf * (3 - 2 * xf)
+    return hash(xi, s) * (1 - u) + hash(xi + 1, s) * u
+  }
+  const fbm = (x: number, s: number) =>
+    (0.6 * noise1(x, s) + 0.3 * noise1(x * 2.3, s + 31) + 0.15 * noise1(x * 4.7, s + 67)) / 1.05
+  const smooth = (e0: number, e1: number, x: number) => {
+    const t = Math.min(1, Math.max(0, (x - e0) / (e1 - e0)))
+    return t * t * (3 - 2 * t)
+  }
+
+  const bristles = Math.max(10, Math.round(width / 1.6))
+  const steps = Math.max(120, Math.round(len / 3))
   ctx.lineCap = 'round'
   for (let bi = 0; bi < bristles; bi++) {
-    const off = (bi / (bristles - 1) - 0.5) * width
-    const baseAlpha = opacity * (0.25 + 0.65 * rnd())
-    const lw = 0.5 + rnd() * 1.3
-    const freq = 4 + rnd() * 6
-    const phase = rnd() * 6.28
-    const gap = 0.28 + rnd() * 0.3
+    // Bristles cluster with jitter, so the cross-section has irregular gaps and
+    // overlaps rather than an even comb.
+    const off0 = ((bi / (bristles - 1) - 0.5) + (rnd() - 0.5) * 0.24) * width
+    const baseAlpha = opacity * (0.3 + 0.6 * rnd())
+    const lw = 0.6 + rnd() * 1.4
+    const nseed = Math.floor(rnd() * 100000)
+    // Per-bristle ink load: how much it carries (lower thr = wetter) and where
+    // it starts running dry. Some bristles are thirsty and break up early.
+    const inkBase = 0.3 + rnd() * 0.28
+    const runDry = 0.2 + rnd() * 0.45
+    const freq = 3 + rnd() * 4
+    const fiberFreq = 14 + rnd() * 16
+    // Each bristle drifts sideways at its own slope, so the cluster fans and
+    // crosses rather than running as a parallel comb.
+    const drift = (rnd() - 0.5) * width * 0.35
     ctx.lineWidth = lw
     let prev: [number, number] | null = null
     for (let s = 0; s <= steps; s++) {
       const t = s / steps
-      // Streaky coverage (slow wave) with sparse pinholes → dry-brush kasure.
-      const streak = 0.5 + 0.5 * Math.sin(t * freq + phase)
-      const taper = Math.min(1, t / 0.1) * Math.min(1, (1 - t) / 0.14)
-      const on = streak > gap && taper > 0.08 && rnd() > 0.07
-      if (!on) { prev = null; continue }
+      const taper = smooth(0, 0.07, t) * smooth(0, 0.16, 1 - t)
+      if (taper <= 0.02) { prev = null; continue }
+      // Coverage = a slow noise streak vs a threshold that climbs along the
+      // length as ink runs out (broken kasure toward the tip), AND a fibre gate
+      // whose own threshold drifts with slow noise — so breaks come in irregular
+      // clumps (some stretches solid, others frayed) instead of even dashes.
+      const cov = fbm(t * freq, nseed)
+      const thr = inkBase + 0.5 * smooth(runDry, 1.05, t)
+      const fibre = 0.6 * fbm(t * fiberFreq, nseed + 5) + 0.4 * fbm(t * fiberFreq * 1.7 + 3.1, nseed + 13)
+      const gate = 0.22 + 0.32 * fbm(t * 1.4, nseed + 21) + 0.2 * smooth(runDry, 1.1, t)
+      if (cov <= thr || fibre < gate) { prev = null; continue }
       const [px, py] = pointAt(t)
-      const wob = off + Math.sin(t * 8 + bi) * width * 0.05
+      // Organic lateral wander (noise, not sine) + per-bristle drift + a slight
+      // outward splay so the brush spreads toward the tip.
+      const wander = (fbm(t * 2.2, nseed + 9) - 0.5) * width * 0.14
+      const wob = (off0 + wander + drift * t) * (1 + 0.2 * t)
       const bx = px + nx * wob, by = py + ny * wob
       if (prev) {
-        const a = baseAlpha * taper * (0.45 + 0.55 * streak)
-        ctx.strokeStyle = rnd() > 0.985 ? highlight : `rgba(${r},${gg},${b},${a})`
+        const strength = (cov - thr) / (1 - thr) // soft feathering at coverage edges
+        const a = baseAlpha * taper * (0.35 + 0.65 * strength)
+        ctx.strokeStyle = strength > 0.6 && rnd() > 0.97 ? highlight : `rgba(${r},${gg},${b},${a})`
         ctx.beginPath()
         ctx.moveTo(prev[0], prev[1])
         ctx.lineTo(bx, by)
