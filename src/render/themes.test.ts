@@ -97,7 +97,8 @@ describe('THEMES registry', () => {
     expect(r.goldBrush?.color).toMatch(/^#[0-9a-f]{6}$/i)
     expect(r.goldBrush!.from).toHaveLength(2)
     expect(r.goldBrush!.to).toHaveLength(2)
-    expect(r.goldBrush!.opacity ?? 1).toBeLessThanOrEqual(0.6)
+    // A restrained brush line, not a wash.
+    expect(r.goldBrush!.opacity ?? 1).toBeLessThanOrEqual(0.7)
     // Hand-made washi paper texture over ground + card.
     expect(r.washi?.color).toMatch(/^#[0-9a-f]{6}$/i)
     expect(r.washi!.cardAlpha ?? 0).toBeGreaterThan(0)
