@@ -239,8 +239,7 @@ export function Player(props: PlayerProps) {
     setElapsedMs(acc)
   }
 
-  const frameCount = createMemo(() => props.spec.frames.length)
-  const currentFrameIndex = createMemo(() => {
+  const currentFrameIndex = () => {
     const s = stage()
     if (s.kind === 'hold') {
       const idx = props.spec.frames.findIndex(f => f.id === s.frame.id)
@@ -258,8 +257,8 @@ export function Player(props: PlayerProps) {
       acc += seg.durationMs
       segIdx = i
     }
-    return Math.min(frameCount() - 1, Math.floor((segIdx + 1) / 2))
-  })
+    return Math.min(props.spec.frames.length - 1, Math.floor((segIdx + 1) / 2))
+  }
 
   return (
     <div
