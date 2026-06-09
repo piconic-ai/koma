@@ -48,12 +48,12 @@ export function App({ initialSpec }: AppProps) {
   let footerEl: HTMLElement | null = null
 
   const editorWidth = createMemo(() => spec().width ?? 1080)
-  const contentMaxWidth = () => Math.round(editorWidth() * 0.64)
-  const editorStyle = () => `max-width:${contentMaxWidth()}px`
+  const contentMaxWidth = createMemo(() => Math.round(editorWidth() * 0.64))
 
   // The editor highlights with the active preset's code style, so the editing
   // surface matches the previewed code window.
-  const theme = createMemo(() => resolveTheme(spec().theme))
+  const themeId = createMemo(() => spec().theme)
+  const theme = createMemo(() => resolveTheme(themeId()))
 
   // Display-only sizing of the preview. By default the canvas fits the editor
   // column width (see .koma-canvas). Once the user drags the resize handle we
@@ -202,7 +202,7 @@ export function App({ initialSpec }: AppProps) {
           className="koma-editors-handle koma-editors-handle--left"
           onPointerDown={(e: PointerEvent) => handleEdgeDrag(e, 'left')}
         />
-        <section className="koma-editors" aria-label="Frame editors" style={editorStyle()}>
+        <section className="koma-editors" aria-label="Frame editors" style={`max-width:${contentMaxWidth()}px`}>
           {spec().frames.map((frame, i) => (
             <FrameEditor
               key={frame.id}
@@ -252,7 +252,7 @@ export function App({ initialSpec }: AppProps) {
         />
         <div className="koma-preview-head" style={`max-width:${contentMaxWidth()}px`}>
           <ThemeBar
-            theme={spec().theme}
+            theme={themeId()}
             onThemeChange={applyTheme}
           />
           <button
