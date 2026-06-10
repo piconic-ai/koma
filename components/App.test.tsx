@@ -112,4 +112,114 @@ describe('App', () => {
     expect(AppSource).toContain('void spec().width')
     expect(AppSource).toContain('encodeToHash(spec())')
   })
+
+  // ── Theme switching ───────────────────────────────────
+
+  test('derives themeId and theme as memos from spec', () => {
+    expect(result.memos).toContain('themeId')
+    expect(result.memos).toContain('theme')
+    expect(AppSource).toContain('spec().theme')
+    expect(AppSource).toContain('resolveTheme(themeId())')
+  })
+
+  test('applyTheme swaps to sampleSpec on a pristine spec', () => {
+    expect(AppSource).toContain('sampleSpec(id)')
+    expect(AppSource).toMatch(/if\s*\(edited\(\)\)/)
+  })
+
+  test('applyTheme only changes theme (not code) on an edited spec', () => {
+    expect(AppSource).toContain('setTheme(s, id)')
+  })
+
+  test('tracks edited state and marks it on user interaction', () => {
+    expect(result.signals).toContain('edited')
+    expect(AppSource).toContain('markEdited()')
+  })
+
+  test('passes theme shikiTheme and render colors to FrameEditor', () => {
+    expect(AppSource).toContain('shikiTheme={theme().shikiTheme}')
+    expect(AppSource).toContain('editorBg={theme().render.codeBackground}')
+    expect(AppSource).toContain('editorFg={theme().render.textColor}')
+    expect(AppSource).toContain('editorCaret={theme().render.cursorColor}')
+  })
+
+  test('passes themeId and applyTheme to ThemeBar', () => {
+    expect(AppSource).toContain('theme={themeId()}')
+    expect(AppSource).toContain('onThemeChange={applyTheme}')
+  })
+
+  test('persists theme changes to the URL hash', () => {
+    expect(AppSource).toContain('void spec().theme')
+  })
+
+  // ── Language changes ──────────────────────────────────
+
+  test('resolves frame language via frameLanguage helper', () => {
+    expect(AppSource).toContain('frameLanguage(frame, spec())')
+  })
+
+  test('passes resolved language to each FrameEditor', () => {
+    expect(AppSource).toContain('language={frameLanguage(frame, spec())}')
+  })
+
+  test('language changes update the spec via updateFrame', () => {
+    expect(AppSource).toMatch(/onLanguage=\{.*updateFrame\(s, frame\.id, \{ language \}\)/)
+  })
+
+  test('code changes update the spec and mark it edited', () => {
+    expect(AppSource).toMatch(/onCode=\{.*markEdited\(\).*updateFrame\(s, frame\.id, \{ code \}\)/)
+  })
+
+  // ── Frame management ──────────────────────────────────
+
+  test('renders an add-frame button', () => {
+    const addBtn = result.findAll({ tag: 'button' }).find(n =>
+      n.aria['label'] === 'Add frame',
+    )
+    expect(addBtn).not.toBeUndefined()
+    expect(addBtn!.events).toContain('click')
+  })
+
+  test('add-frame calls addFrame and marks edited', () => {
+    expect(AppSource).toMatch(/markEdited\(\).*addFrame\(s\)/)
+  })
+
+  test('remove-frame calls removeFrame and marks edited', () => {
+    expect(AppSource).toMatch(/markEdited\(\).*removeFrame\(s, frame\.id\)/)
+  })
+
+  test('maps spec.frames to FrameEditor components with index and total', () => {
+    expect(AppSource).toContain('index={i}')
+    expect(AppSource).toContain('total={spec().frames.length}')
+    expect(AppSource).toContain('key={frame.id}')
+  })
+
+  test('tracks selectedFrameId for frame selection', () => {
+    expect(result.signals).toContain('selectedFrameId')
+    expect(AppSource).toContain('selected={selectedFrameId() === frame.id}')
+    expect(AppSource).toContain('onSelect={setSelectedFrameId}')
+  })
+
+  // ── Preview expand/collapse ───────────────────────────
+
+  test('tracks previewExpanded state', () => {
+    expect(result.signals).toContain('previewExpanded')
+  })
+
+  test('auto-expands the preview on playback start', () => {
+    expect(AppSource).toContain('koma:timeupdate')
+    expect(AppSource).toContain('setPreviewExpanded(true)')
+  })
+
+  test('renders a toggle button to expand/collapse the preview', () => {
+    const toggleBtn = result.findAll({ tag: 'button' }).find(n =>
+      n.classes.includes('koma-preview-toggle'),
+    )
+    expect(toggleBtn).not.toBeUndefined()
+    expect(toggleBtn!.events).toContain('click')
+  })
+
+  test('exposes data-collapsed on the dock when preview is collapsed', () => {
+    expect(AppSource).toContain('data-collapsed')
+  })
 })

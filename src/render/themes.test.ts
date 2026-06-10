@@ -1,5 +1,5 @@
 import { describe, expect, test } from 'bun:test'
-import { THEMES, THEME_GROUPS, DEFAULT_THEME_ID, resolveTheme, randomThemeId, SHIKI_THEMES_TO_LOAD } from './themes'
+import { THEMES, THEME_GROUPS, DEFAULT_THEME_ID, resolveTheme, randomThemeId, sampleSpec, SHIKI_THEMES_TO_LOAD } from './themes'
 
 describe('resolveTheme', () => {
   test('returns the default theme for undefined', () => {
@@ -102,6 +102,46 @@ describe('SHIKI_THEMES_TO_LOAD (derived from the registry)', () => {
       t => typeof t !== 'string' && t.name === 'koma-mono-light',
     )
     expect(custom).toBeDefined()
+  })
+})
+
+describe('sampleSpec', () => {
+  test('returns a spec with the theme set', () => {
+    const spec = sampleSpec('hono')
+    expect(spec.theme).toBe('hono')
+  })
+
+  test('uses the theme sample language', () => {
+    for (const [id, theme] of Object.entries(THEMES)) {
+      const spec = sampleSpec(id)
+      expect(spec.language).toBe(theme.sample.language)
+    }
+  })
+
+  test('creates frames from the theme sample with sequential ids', () => {
+    for (const [id, theme] of Object.entries(THEMES)) {
+      const spec = sampleSpec(id)
+      expect(spec.frames).toHaveLength(theme.sample.frames.length)
+      spec.frames.forEach((f, i) => {
+        expect(f.id).toBe(`f${i + 1}`)
+        expect(f.code).toBe(theme.sample.frames[i].code)
+      })
+    }
+  })
+
+  test('falls back to the default theme for undefined or unknown ids', () => {
+    const fromUndefined = sampleSpec(undefined)
+    const fromUnknown = sampleSpec('nonexistent')
+    expect(fromUndefined.theme).toBe(DEFAULT_THEME_ID)
+    expect(fromUnknown.theme).toBe(DEFAULT_THEME_ID)
+  })
+
+  test('every theme produces non-empty frames', () => {
+    for (const id of Object.keys(THEMES)) {
+      const spec = sampleSpec(id)
+      expect(spec.frames.length).toBeGreaterThan(0)
+      spec.frames.forEach(f => expect(f.code.length).toBeGreaterThan(0))
+    }
   })
 })
 
