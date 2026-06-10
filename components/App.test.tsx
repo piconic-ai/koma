@@ -16,13 +16,13 @@ describe('App', () => {
     expect(result.componentName).toBe('App')
   })
 
+  // ── Preview height resize ─────────────────────────────
+
   test('tracks the preview height in a signal', () => {
     expect(result.signals.some(s => /previewHeight/i.test(s))).toBe(true)
   })
 
   test('defaults to fit-to-column and flags the dock once resized', () => {
-    // Default display fits the editor column width; dragging the handle flips
-    // previewResized, which toggles data-resized to switch sizing modes.
     expect(result.signals.some(s => /previewResized/i.test(s))).toBe(true)
     expect(AppSource).toContain('data-resized')
     expect(AppSource).toContain('setPreviewResized(true)')
@@ -37,15 +37,79 @@ describe('App', () => {
   })
 
   test('exposes the preview height to the canvas via a CSS variable', () => {
-    // The dock publishes --preview-height; the canvas caps maxHeight on it so
-    // the aspect ratio is preserved while the height shrinks.
     expect(AppSource).toContain('--preview-height')
   })
 
   test('clamps the dragged height between a floor and the full-dock-width height', () => {
-    // Lower floor of 120px; upper bound lets the preview grow until it spans
-    // the full dock width, so it can be enlarged past the editor column.
     expect(AppSource).toMatch(/Math\.max\(120,\s*Math\.min\(maxHeight/)
     expect(AppSource).toContain('fullWidthHeight')
+  })
+
+  // ── Editor width resize ───────────────────────────────
+
+  test('derives editorWidth as a memo from spec().width with a 1080 default', () => {
+    expect(result.memos).toContain('editorWidth')
+    expect(AppSource).toContain('spec().width ?? 1080')
+  })
+
+  test('derives contentMaxWidth as a memo at 64% of editorWidth', () => {
+    expect(result.memos).toContain('contentMaxWidth')
+    expect(AppSource).toContain('editorWidth() * 0.64')
+  })
+
+  test('renders left and right editor resize handles with pointer-down handlers', () => {
+    const handles = result.findAll({ tag: 'div' }).filter(n =>
+      n.classes.includes('koma-editors-handle'),
+    )
+    expect(handles.length).toBe(2)
+    const left = handles.find(n => n.classes.includes('koma-editors-handle--left'))
+    const right = handles.find(n => n.classes.includes('koma-editors-handle--right'))
+    expect(left).not.toBeUndefined()
+    expect(right).not.toBeUndefined()
+    expect(left!.events).toContain('pointerdown')
+    expect(right!.events).toContain('pointerdown')
+  })
+
+  test('clamps editor width to 640–1920 range in 10px increments', () => {
+    expect(AppSource).toMatch(/Math\.max\(640,\s*Math\.min\(1920/)
+    expect(AppSource).toMatch(/Math\.round\(raw\s*\/\s*10\)\s*\*\s*10/)
+  })
+
+  test('edge drag uses 2:1 cursor-to-width ratio for both sides', () => {
+    expect(AppSource).toContain('dx * 2')
+    expect(AppSource).toMatch(/side === 'right' \? ev\.clientX - startX : startX - ev\.clientX/)
+  })
+
+  test('applies contentMaxWidth as max-width on the editors section', () => {
+    const editors = result.find({ tag: 'section' })
+    expect(editors).not.toBeNull()
+    expect(editors!.aria['label']).toBe('Frame editors')
+    expect(AppSource).toContain('max-width:${contentMaxWidth()}px')
+  })
+
+  test('applies contentMaxWidth to preview head and preview aside', () => {
+    const styledDivs = result.findAll({ tag: 'div' }).filter(n =>
+      n.classes.includes('koma-preview-head'),
+    )
+    expect(styledDivs.length).toBeGreaterThanOrEqual(1)
+    const asides = result.findAll({ tag: 'aside' }).filter(n =>
+      n.classes.includes('koma-preview'),
+    )
+    expect(asides.length).toBe(1)
+  })
+
+  test('passes spec (including width) to the Player', () => {
+    expect(AppSource).toContain('spec={spec()}')
+  })
+
+  test('edge drag updates spec.width which propagates through editorWidth → contentMaxWidth', () => {
+    expect(AppSource).toContain("setSpec(s => ({ ...s, width: clamped as CanvasWidth }))")
+  })
+
+  // ── Width persistence ─────────────────────────────────
+
+  test('persists spec.width changes to the URL hash', () => {
+    expect(AppSource).toContain('void spec().width')
+    expect(AppSource).toContain('encodeToHash(spec())')
   })
 })
