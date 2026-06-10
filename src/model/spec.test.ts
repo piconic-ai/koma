@@ -8,6 +8,7 @@ import {
   moveFrame,
   removeFrame,
   setLanguage,
+  setTheme,
   updateFrame,
 } from './spec'
 import type { Spec } from './types'
@@ -174,6 +175,22 @@ describe('setLanguage', () => {
     const next = setLanguage(a, 'py')
     expect(next.language).toBe('py')
     expect(next.frames).toBe(a.frames)
+  })
+})
+
+describe('setTheme', () => {
+  test('sets the theme without touching frames or language', () => {
+    const a = emptySpec('ts')
+    const next = setTheme(a, 'hono')
+    expect(next.theme).toBe('hono')
+    expect(next.language).toBe('ts')
+    expect(next.frames).toBe(a.frames)
+  })
+
+  test('replaces an existing theme', () => {
+    const a = { ...emptySpec(), theme: 'piconic' as const }
+    const next = setTheme(a, 'barefoot')
+    expect(next.theme).toBe('barefoot')
   })
 })
 

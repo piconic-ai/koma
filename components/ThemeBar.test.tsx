@@ -47,14 +47,36 @@ describe('ThemeBar', () => {
   })
 
   test('shows the tagline with the homepage link trailing it', () => {
-    // The link went missing when the picker moved out of the header hover tip;
-    // it lives here now, trailing the tagline inside the description.
     expect(ThemeBarSource).toContain('koma-theme-desc')
     expect(ThemeBarSource).toMatch(/resolveTheme\(props\.theme\)\.tagline/)
     expect(ThemeBarSource).toMatch(/resolveTheme\(props\.theme\)\.homepage/)
     const link = result.find({ tag: 'a' })
     expect(link).not.toBeNull()
-    // The link is the last child of the description, i.e. it trails the tagline.
     expect(ThemeBarSource.indexOf('.tagline')).toBeLessThan(ThemeBarSource.indexOf('koma-theme-link'))
+  })
+
+  // ── Theme Select behavior ─────────────────────────────
+
+  test('defaults to DEFAULT_THEME_ID when props.theme is unset', () => {
+    expect(ThemeBarSource).toContain("props.theme ?? DEFAULT_THEME_ID")
+  })
+
+  test('resolves theme label reactively from props.theme', () => {
+    expect(ThemeBarSource).toContain('resolveTheme(props.theme).label')
+  })
+
+  test('homepage link opens in a new tab', () => {
+    const link = result.find({ tag: 'a' })
+    expect(link).not.toBeNull()
+    expect(link!.props['target']).toBe('_blank')
+    expect(link!.props['rel']).toContain('noreferrer')
+  })
+
+  test('casts the Select string value to ThemeId on change', () => {
+    expect(ThemeBarSource).toContain('v as ThemeId')
+  })
+
+  test('accepts an optional style prop for width alignment', () => {
+    expect(ThemeBarSource).toContain("props.style ?? ''")
   })
 })
