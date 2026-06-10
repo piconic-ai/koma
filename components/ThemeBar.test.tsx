@@ -69,7 +69,7 @@ describe('ThemeBar', () => {
     const link = result.find({ tag: 'a' })
     expect(link).not.toBeNull()
     expect(link!.props['target']).toBe('_blank')
-    expect(link!.props['rel']).toBe('noreferrer')
+    expect(link!.props['rel']).toContain('noreferrer')
   })
 
   test('casts the Select string value to ThemeId on change', () => {

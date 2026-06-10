@@ -35,8 +35,10 @@ describe('TimelineBar', () => {
 
   test('transition segment carries a resize handle hook and a grip', () => {
     expect(TimelineBarSource).toContain('data-trans-handle')
-    expect(byClass('koma-timeline-transition-grip').length).toBeGreaterThanOrEqual(0)
-    expect(TimelineBarSource).toContain('koma-timeline-transition-grip')
+    const grips = result.findAll({ tag: 'span' }).filter(n =>
+      n.classes.includes('koma-timeline-transition-grip'),
+    )
+    expect(grips.length).toBeGreaterThanOrEqual(1)
   })
 
   test('transition width is driven by its share of the total', () => {
