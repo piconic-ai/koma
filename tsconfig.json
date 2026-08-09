@@ -25,12 +25,13 @@
     "noEmit": true,
     "baseUrl": ".",
     "paths": {
-      // Server components (no 'use client') aren't emitted to dist by
-      // `bf build`, so the path map falls back to the source so
-      // imports of those components still resolve.
-      "@/components/*": ["./public/components/*", "./components/*"]
+      // Compiled SSR templates first, so wrangler resolves the marked
+      // template (hydration markers + script collection) that
+      // `vite build` wrote to `dist/components/`. The source tree is
+      // the fallback for anything not emitted there.
+      "@/components/*": ["./dist/components/*", "./components/*"]
     }
   },
-  "include": ["**/*.ts", "**/*.tsx", "public/components/**/*.tsx"],
-  "exclude": ["node_modules"]
+  "include": ["**/*.ts", "**/*.tsx"],
+  "exclude": ["node_modules", "dist/components"]
 }

@@ -48,13 +48,13 @@ export default defineConfig({
     },
   },
   content: {
-    filesystem: ['components/**/*.tsx', 'public/components/**/*.tsx', 'server.tsx', 'renderer.tsx'],
+    filesystem: ['components/**/*.tsx', 'dist/components/**/*.tsx', 'server.tsx', 'renderer.tsx'],
   },
   // The unocss CLI doesn't read content.filesystem, so duplicate the
   // patterns here for `unocss` / `unocss --watch` invocations.
   cli: {
     entry: {
-      patterns: ['components/**/*.tsx', 'public/components/**/*.tsx', 'server.tsx', 'renderer.tsx'],
+      patterns: ['components/**/*.tsx', 'dist/components/**/*.tsx', 'server.tsx', 'renderer.tsx'],
       outFile: 'public/uno.css',
     },
   },

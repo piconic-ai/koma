@@ -17,11 +17,11 @@ type ExportModule = {
 }
 
 let exportModulePromise: Promise<ExportModule> | null = null
+// Dynamic, so Rollup code-splits the export pipeline into its own chunk
+// and the browser only fetches it on the first Export click.
 const loadExport = (): Promise<ExportModule> => {
   if (!exportModulePromise) {
-    // eslint-disable-next-line @typescript-eslint/ban-ts-comment
-    // @ts-ignore -- URL resolved by the browser, served as a static asset
-    exportModulePromise = import(/* @vite-ignore */ '/components/koma-export.js')
+    exportModulePromise = import('../src/export/index')
   }
   return exportModulePromise
 }

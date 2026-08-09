@@ -1,18 +1,14 @@
-// Pre-bundled export entrypoint.
+// On-demand export entrypoint.
 //
-// This file is pre-bundled by `scripts/build-export-bundle.mjs` and
-// served as `/components/koma-export.js`. AppHeader dynamically imports
-// the bundle the first time the user clicks Export, so the heavy export
-// pipeline (canvas rendering, zip writer, lazily-fetched mp4-muxer,
-// gifenc and shiki) stays out of the eagerly-loaded component bundles.
-//
-// This also sidestepped bf's transitive inliner dup-identifier bug
-// (piconic-ai/barefootjs#1542, fixed in bf 0.4.0). Even with that fix,
-// keep the pre-bundle: a static import would inline the whole pipeline
-// into AppHeader and load it on every page visit, not on demand.
+// AppHeader reaches this module through a dynamic `import()`, which Rollup
+// code-splits into its own chunk. That keeps the heavy export pipeline
+// (canvas rendering, zip writer, lazily-fetched mp4-muxer, gifenc and
+// shiki) out of the eagerly-loaded island bundles — a static import would
+// fold the whole pipeline into AppHeader and ship it on every page visit
+// rather than on the first Export click.
 //
 // The pipeline is split across sibling modules (shared/mp4/gif/geometry)
-// that esbuild bundles back together via this entrypoint.
+// that Rollup pulls back together through this entrypoint.
 
 import { type Spec } from '../model/types'
 import { exportGif } from './gif'
