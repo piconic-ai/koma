@@ -1,7 +1,5 @@
 import { jsxRenderer } from 'hono/jsx-renderer'
-import { BfImportMap } from '@barefootjs/hono/app'
 import { BfScripts } from '@barefootjs/hono/scripts'
-import manifest from './public/components/manifest.json'
 
 declare module 'hono' {
   interface ContextRenderer {
@@ -9,8 +7,11 @@ declare module 'hono' {
   }
 }
 
-const componentsBase = '/components'
-
+// No import map, and no `base`/`manifest` props on `<BfScripts />`: under
+// the Vite build every island's compiled entry imports `@barefootjs/client`
+// as an ordinary bundled specifier (Rollup folds it into one shared chunk,
+// so there is a single runtime instance), and `HonoAdapter.generate()`
+// bakes each component's Vite-resolved script URL in at codegen time.
 export const renderer = jsxRenderer(({ children, title }) => (
   <html lang="en">
     <head>
@@ -36,11 +37,10 @@ export const renderer = jsxRenderer(({ children, title }) => (
       <link rel="stylesheet" href="/tokens.css" />
       <link rel="stylesheet" href="/styles.css" />
       <link rel="stylesheet" href="/uno.css" />
-      <BfImportMap base={componentsBase} />
     </head>
     <body>
       {children}
-      <BfScripts base={componentsBase} manifest={manifest} />
+      <BfScripts />
     </body>
   </html>
 ))

@@ -4,22 +4,22 @@
   "private": true,
   "type": "module",
   "scripts": {
-    "dev": "bun run build:export && concurrently -k -n build,uno,server -c blue,magenta,green \"bunx @barefootjs/cli build --watch\" \"unocss --watch\" \"bunx wrangler dev --live-reload\"",
-    "build": "bunx @barefootjs/cli build && unocss && bun run build:export",
+    "dev": "vite build && unocss && concurrently -k -n vite,uno,server -c blue,magenta,green \"vite dev\" \"unocss --watch\" \"bunx wrangler dev --live-reload\"",
+    "build": "vite build && unocss",
     "deploy": "bun run build && bunx wrangler deploy",
-    "watch": "concurrently -k -n build,uno -c blue,magenta \"bunx @barefootjs/cli build --watch\" \"unocss --watch\"",
-    "build:export": "bun scripts/build-export-bundle.mjs",
+    "watch": "concurrently -k -n vite,uno -c blue,magenta \"vite dev\" \"unocss --watch\"",
     "test": "bun test"
   },
   "dependencies": {
-    "@barefootjs/cli": "0.11.0",
-    "@barefootjs/client": "0.11.0",
-    "@barefootjs/hono": "0.11.0",
-    "@barefootjs/jsx": "0.11.0",
+    "@barefootjs/cli": "0.31.4",
+    "@barefootjs/client": "0.31.4",
+    "@barefootjs/hono": "0.31.4",
+    "@barefootjs/jsx": "0.31.4",
     "hono": "^4.6.0"
   },
   "devDependencies": {
-    "@barefootjs/test": "0.11.0",
+    "@barefootjs/test": "0.31.4",
+    "@barefootjs/vite": "0.31.4",
     "@cloudflare/workers-types": "^4.20250101.0",
     "@types/bun": "latest",
     "@unocss/cli": "^66.0.0",
@@ -27,6 +27,7 @@
     "concurrently": "^9.0.0",
     "shiki": "^4.1.0",
     "typescript": "^5.6.0",
-    "unocss": "^66.0.0"
+    "unocss": "^66.0.0",
+    "vite": "^6.0.0"
   }
 }
