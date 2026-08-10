@@ -11,15 +11,15 @@
     "test": "bun test"
   },
   "dependencies": {
-    "@barefootjs/cli": "0.31.4",
-    "@barefootjs/client": "0.31.4",
-    "@barefootjs/hono": "0.31.4",
-    "@barefootjs/jsx": "0.31.4",
+    "@barefootjs/cli": "0.31.5",
+    "@barefootjs/client": "0.31.5",
+    "@barefootjs/hono": "0.31.5",
+    "@barefootjs/jsx": "0.31.5",
     "hono": "^4.6.0"
   },
   "devDependencies": {
-    "@barefootjs/test": "0.31.4",
-    "@barefootjs/vite": "0.31.4",
+    "@barefootjs/test": "0.31.5",
+    "@barefootjs/vite": "0.31.5",
     "@cloudflare/workers-types": "^4.20250101.0",
     "@types/bun": "latest",
     "@unocss/cli": "^66.0.0",
