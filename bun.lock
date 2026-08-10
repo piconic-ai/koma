@@ -4,15 +4,15 @@
     "": {
       "name": "koma",
       "dependencies": {
-        "@barefootjs/cli": "0.31.4",
-        "@barefootjs/client": "0.31.4",
-        "@barefootjs/hono": "0.31.4",
-        "@barefootjs/jsx": "0.31.4",
+        "@barefootjs/cli": "0.31.5",
+        "@barefootjs/client": "0.31.5",
+        "@barefootjs/hono": "0.31.5",
+        "@barefootjs/jsx": "0.31.5",
         "hono": "^4.6.0",
       },
       "devDependencies": {
-        "@barefootjs/test": "0.31.4",
-        "@barefootjs/vite": "0.31.4",
+        "@barefootjs/test": "0.31.5",
+        "@barefootjs/vite": "0.31.5",
         "@cloudflare/workers-types": "^4.20250101.0",
         "@types/bun": "latest",
         "@unocss/cli": "^66.0.0",
@@ -28,19 +28,19 @@
   "packages": {
     "@antfu/install-pkg": ["@antfu/install-pkg@1.1.0", "", { "dependencies": { "package-manager-detector": "^1.3.0", "tinyexec": "^1.0.1" } }, "sha512-MGQsmw10ZyI+EJo45CdSER4zEb+p31LpDAFp2Z3gkSd1yqVZGi0Ebx++YTEMonJy4oChEMLsxZ64j8FH6sSqtQ=="],
 
-    "@barefootjs/cli": ["@barefootjs/cli@0.31.4", "", { "dependencies": { "@barefootjs/client": "0.31.4", "@barefootjs/shared": "0.31.4", "esbuild": "^0.25.0", "typescript": "^5.0.0", "vite": "^6.0.0" }, "bin": { "bf": "dist/index.js" } }, "sha512-mbQA6KM0SjLgzc3w59svVpzB0HETAzV8GllceuNZRF3hOBXwKF2MiQOw1bMxdiazRqA+KBdpyb9Pzt5p2Iwq3w=="],
+    "@barefootjs/cli": ["@barefootjs/cli@0.31.5", "", { "dependencies": { "@barefootjs/client": "0.31.5", "@barefootjs/shared": "0.31.5", "esbuild": "^0.25.0", "typescript": "^5.0.0", "vite": "^6.0.0" }, "bin": { "bf": "dist/index.js" } }, "sha512-bGYmhDFuQI/a9XE7kvy322H/f9W+2kuYte+JdPC7UNnAn8eokFx6fYyud3QGHYZ3KJrCdkXHIMnNq9bcuXq3FQ=="],
 
-    "@barefootjs/client": ["@barefootjs/client@0.31.4", "", { "dependencies": { "@barefootjs/shared": "0.31.4" }, "peerDependencies": { "@barefootjs/jsx": ">=0.2.0" }, "optionalPeers": ["@barefootjs/jsx"] }, "sha512-ptq1dBnhTesMonTaLLKt09VPJwUtxbI8HBkJS4TWBf9QfvM59Ke6pXsHD5hL5iwljJk0GjyWGeMl/Uf4F84bRw=="],
+    "@barefootjs/client": ["@barefootjs/client@0.31.5", "", { "dependencies": { "@barefootjs/shared": "0.31.5" }, "peerDependencies": { "@barefootjs/jsx": ">=0.2.0" }, "optionalPeers": ["@barefootjs/jsx"] }, "sha512-IP7fav8Dhn0f1TOQpRPVV30UIdXMTKGpm/POK0dTRHb0r+nCrkMAoIjqsZFnqgN9j3VP0H369XI7m53QunkQvw=="],
 
-    "@barefootjs/hono": ["@barefootjs/hono@0.31.4", "", { "peerDependencies": { "@barefootjs/client": ">=0.2.0", "@barefootjs/jsx": ">=0.2.0", "@barefootjs/shared": ">=0.2.0", "@barefootjs/vite": ">=0.2.0", "hono": "^4.0.0", "vite": "^6.0.0" }, "optionalPeers": ["@barefootjs/vite", "vite"] }, "sha512-zQIxNWZz5Rh/YYMWOo+OraBqSZPe3PLbpHKtDVpA9i9vGM7y/2Tgh5OpexS+IONDc0UzZWPRG0JQdP53dUvjHw=="],
+    "@barefootjs/hono": ["@barefootjs/hono@0.31.5", "", { "peerDependencies": { "@barefootjs/client": ">=0.2.0", "@barefootjs/jsx": ">=0.2.0", "@barefootjs/shared": ">=0.2.0", "@barefootjs/vite": ">=0.2.0", "hono": "^4.0.0", "vite": "^6.0.0" }, "optionalPeers": ["@barefootjs/vite", "vite"] }, "sha512-G0Hme/BXarKl/0ozRIxrSpkPHKYAp8jH8O9tyYelS23Jjzi4ePwCHJBX1Uf+I8ayROBH/brtPsBVjvTuO0purg=="],
 
-    "@barefootjs/jsx": ["@barefootjs/jsx@0.31.4", "", { "dependencies": { "@barefootjs/shared": "0.31.4" }, "peerDependencies": { "@barefootjs/client": ">=0.2.0", "typescript": "^5.0.0" } }, "sha512-ATbm2ZqU+km9qSZcmFhsNIblfb2aTv9v4kbNQIv0+1S+DCZcGmcubzpacm6XPz+RfrqSxsIH0C6TCy7xONJspA=="],
+    "@barefootjs/jsx": ["@barefootjs/jsx@0.31.5", "", { "dependencies": { "@barefootjs/shared": "0.31.5" }, "peerDependencies": { "@barefootjs/client": ">=0.2.0", "typescript": "^5.0.0" } }, "sha512-8bgw18xFOZJYZaJox4tj2XNUDAS5mounfvCOUpsh34MPYZYHMiFpu8Ti5QpMN7byZ+oSnza5/h4wazdatkDAIQ=="],
 
-    "@barefootjs/shared": ["@barefootjs/shared@0.31.4", "", {}, "sha512-jbL6OnAGwKRqbaomQQ9VF33zPG+r7mNcLEWV1IEOV+CmYmJAlmMYCm6M608pI0gEQ+TLOSOhF0IMoYmPO2znqg=="],
+    "@barefootjs/shared": ["@barefootjs/shared@0.31.5", "", {}, "sha512-qxlAf6AVc+LL9psGZyOg7HHBE4wx5WlbzJUMVIvmWBTWu2hTSlxoGyDSc0pKSxTpNRv6BW84rVbKp119jMMIkg=="],
 
-    "@barefootjs/test": ["@barefootjs/test@0.31.4", "", { "dependencies": { "@barefootjs/jsx": "0.31.4" } }, "sha512-aPst2ax05kI4aw6HC2njcsYgQOHt2D1C6lp49hobujotivOR2Wd/+KbX7EDIxOMMwbBgH1RI+4Ddk228WGTzzg=="],
+    "@barefootjs/test": ["@barefootjs/test@0.31.5", "", { "dependencies": { "@barefootjs/jsx": "0.31.5" } }, "sha512-E0iElBfJXAOuNROgn/03NttEHA6HCi5uNJf0ZSPCv2WF9q3qX75rnsAt2/ZJYSMRcUKc+Ra2+V2FgA2+UaIHqA=="],
 
-    "@barefootjs/vite": ["@barefootjs/vite@0.31.4", "", { "dependencies": { "@barefootjs/shared": "0.31.4" }, "peerDependencies": { "@barefootjs/jsx": ">=0.2.0", "vite": "^6.0.0" } }, "sha512-fDqESdQQGebHKz7VEk0lkcUbqsGam544CbppUuIKRX5BOK6G1GKaiuMijanUvBg1DL0Rowdf+y/JQ0ORYA95iA=="],
+    "@barefootjs/vite": ["@barefootjs/vite@0.31.5", "", { "dependencies": { "@barefootjs/shared": "0.31.5" }, "peerDependencies": { "@barefootjs/jsx": ">=0.2.0", "vite": "^6.0.0" } }, "sha512-rx9BnGxFQZ/Uph3qhS9Y1OalBteFHjd6PB92KGQP8UBzDNMrWxUNqggZEP75oBAZtrq71UGNiDNl00XBfGmjfw=="],
 
     "@cloudflare/workers-types": ["@cloudflare/workers-types@4.20260524.1", "", {}, "sha512-9o939wce6hAlfNAIG4W58bySW7twgkqgPkxmSNrk/DV0eEexjTPyqChGdsQeKZEXJAjxSUFklaebMYJWg1GM0g=="],
 
