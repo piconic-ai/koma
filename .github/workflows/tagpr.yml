@@ -47,4 +47,9 @@ jobs:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           ref: ${{ needs.tagpr.outputs.tag }}
+          # A shallow checkout of just the tag doesn't give git the `release`
+          # branch's current commit object, so on the second+ release git
+          # can't verify the push is a fast-forward and rejects it ("fetch
+          # first") even though it always is one. Full history fixes it.
+          fetch-depth: 0
       - run: git push origin HEAD:refs/heads/release
