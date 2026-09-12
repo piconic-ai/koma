@@ -1,6 +1,6 @@
 {
   "name": "koma",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "description": "Code, frame by frame",
   "private": true,
   "type": "module",
