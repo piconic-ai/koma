@@ -1,5 +1,11 @@
 # Changelog
 
+## [v0.1.1](https://github.com/piconic-ai/koma/compare/v0.1.0...v0.1.1) - 2026-09-12
+
+- Fix release branch push: fully qualify the destination ref by @kfly8 in https://github.com/piconic-ai/koma/pull/60
+- Enable preview_urls so non-production builds get a URL by @kfly8 in https://github.com/piconic-ai/koma/pull/62
+- Advance the release branch via GitHub API, not git push by @kfly8 in https://github.com/piconic-ai/koma/pull/63
+
 ## [v0.1.0](https://github.com/piconic-ai/koma/commits/v0.1.0) - 2026-09-12
 
 - Phase 1: Spec model and frame utilities by @kfly8 in https://github.com/piconic-ai/koma/pull/1
