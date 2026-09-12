@@ -6,9 +6,17 @@ name: tagpr
 # デプロイは Cloudflare Workers Builds（Cloudflare 側の Git 連携。Production
 # branch = release）に任せている。Workers Builds は「push トリガー」しか
 # 持たずタグ限定デプロイができないので、release ブランチをタグが打たれた
-# 時だけ GITHUB_TOKEN で進める（このリポジトリへの push だけなので追加の
-# シークレットは不要）。通常の main push（リリースPRの追従更新のみ）では
+# 時だけ GitHub API（GITHUB_TOKEN）で進める（このリポジトリへの操作だけなので
+# 追加のシークレットは不要）。通常の main push（リリースPRの追従更新のみ）では
 # タグが出ないので release は動かず、デプロイも走らない。
+#
+# git push ではなく GitHub API（PATCH .../git/refs/heads/release,
+# force=false）で進める: チェックアウトを一切せずサーバー側に
+# fast-forward 判定をさせるので、ローカルの浅いcloneが持っていない過去の
+# コミットのせいで正当な push が「fetch first」で拒否される問題が起きず、
+# かつ非fast-forwardなら force=false のおかげでちゃんと弾かれる（force
+# push で安全弁を失うことも、fetch-depth: 0 でリポジトリが育つほど重く
+# なることもない）。
 
 on:
   push:
@@ -43,8 +51,20 @@ jobs:
     needs: tagpr
     if: needs.tagpr.outputs.tag != ''
     runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    env:
+      GH_TOKEN: ${{ github.token }}
+      TAG: ${{ needs.tagpr.outputs.tag }}
     steps:
-      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
-        with:
-          ref: ${{ needs.tagpr.outputs.tag }}
-      - run: git push origin HEAD:refs/heads/release
+      - name: Advance release to this tag (fast-forward only, no checkout needed)
+        run: |
+          set -euo pipefail
+          sha=$(gh api "repos/$GITHUB_REPOSITORY/commits/$TAG" --jq .sha)
+          if gh api "repos/$GITHUB_REPOSITORY/git/ref/heads/release" >/dev/null 2>&1; then
+            gh api -X PATCH "repos/$GITHUB_REPOSITORY/git/refs/heads/release" \
+              -f sha="$sha" -F force=false
+          else
+            gh api -X POST "repos/$GITHUB_REPOSITORY/git/refs" \
+              -f ref=refs/heads/release -f sha="$sha"
+          fi
