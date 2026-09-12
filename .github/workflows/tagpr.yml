@@ -1,10 +1,14 @@
 name: tagpr
 
 # main が進むたびに tagpr がリリースPR（package.json のバージョンbump +
-# CHANGELOG更新）を自動で用意・追従させる。このPRのマージがタグを打ち、
-# 直後に deploy.yml を workflow_call で呼んで本番（koma.piconic.ai）へ。
-# 通常の main push（リリースPRの追従更新のみ）ではタグが出ないので
-# デプロイは走らない。
+# CHANGELOG更新）を自動で用意・追従させる。このPRのマージがタグを打つ。
+#
+# デプロイは Cloudflare Workers Builds（Cloudflare 側の Git 連携。Production
+# branch = release）に任せている。Workers Builds は「push トリガー」しか
+# 持たずタグ限定デプロイができないので、release ブランチをタグが打たれた
+# 時だけ GITHUB_TOKEN で進める（このリポジトリへの push だけなので追加の
+# シークレットは不要）。通常の main push（リリースPRの追従更新のみ）では
+# タグが出ないので release は動かず、デプロイも走らない。
 
 on:
   push:
@@ -34,9 +38,13 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
-  deploy-production:
-    name: Deploy (production)
+  advance-release-branch:
+    name: Advance release branch
     needs: tagpr
     if: needs.tagpr.outputs.tag != ''
-    uses: ./.github/workflows/deploy.yml
-    secrets: inherit
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          ref: ${{ needs.tagpr.outputs.tag }}
+      - run: git push origin HEAD:release
