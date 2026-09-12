@@ -1,5 +1,11 @@
 name: tagpr
 
+# main が進むたびに tagpr がリリースPR（package.json のバージョンbump +
+# CHANGELOG更新）を自動で用意・追従させる。このPRのマージがタグを打ち、
+# 直後に deploy.yml を workflow_call で呼んで本番（koma.piconic.ai）へ。
+# 通常の main push（リリースPRの追従更新のみ）ではタグが出ないので
+# デプロイは走らない。
+
 on:
   push:
     branches: ["main"]
@@ -9,13 +15,28 @@ permissions:
   pull-requests: write
   issues: read
 
+concurrency:
+  group: release-tagpr
+  cancel-in-progress: false
+
 jobs:
   tagpr:
     runs-on: ubuntu-latest
+    outputs:
+      tag: ${{ steps.tagpr.outputs.tag }}
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           persist-credentials: false
-      - uses: Songmu/tagpr@7ebae2dcc300132baa7cc9dd108c8923b07fc366 # v1.20.3
+          fetch-depth: 0
+      - id: tagpr
+        uses: Songmu/tagpr@7ebae2dcc300132baa7cc9dd108c8923b07fc366 # v1.20.3
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+  deploy-production:
+    name: Deploy (production)
+    needs: tagpr
+    if: needs.tagpr.outputs.tag != ''
+    uses: ./.github/workflows/deploy.yml
+    secrets: inherit
