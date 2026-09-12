@@ -1,0 +1,50 @@
+name: tagpr
+
+# main が進むたびに tagpr がリリースPR（package.json のバージョンbump +
+# CHANGELOG更新）を自動で用意・追従させる。このPRのマージがタグを打つ。
+#
+# デプロイは Cloudflare Workers Builds（Cloudflare 側の Git 連携。Production
+# branch = release）に任せている。Workers Builds は「push トリガー」しか
+# 持たずタグ限定デプロイができないので、release ブランチをタグが打たれた
+# 時だけ GITHUB_TOKEN で進める（このリポジトリへの push だけなので追加の
+# シークレットは不要）。通常の main push（リリースPRの追従更新のみ）では
+# タグが出ないので release は動かず、デプロイも走らない。
+
+on:
+  push:
+    branches: ["main"]
+
+permissions:
+  contents: write
+  pull-requests: write
+  issues: read
+
+concurrency:
+  group: release-tagpr
+  cancel-in-progress: false
+
+jobs:
+  tagpr:
+    runs-on: ubuntu-latest
+    outputs:
+      tag: ${{ steps.tagpr.outputs.tag }}
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+          fetch-depth: 0
+      - id: tagpr
+        uses: Songmu/tagpr@7ebae2dcc300132baa7cc9dd108c8923b07fc366 # v1.20.3
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+  advance-release-branch:
+    name: Advance release branch
+    needs: tagpr
+    if: needs.tagpr.outputs.tag != ''
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          ref: ${{ needs.tagpr.outputs.tag }}
+      - run: git push origin HEAD:release
