@@ -6,7 +6,8 @@
   "packageRules": [
     {
       "groupName": "barefootjs",
-      "matchPackageNames": ["@barefootjs/**"]
+      "matchPackageNames": ["@barefootjs/**"],
+      "schedule": ["at any time"]
     }
   ]
 }
