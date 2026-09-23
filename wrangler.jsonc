@@ -8,9 +8,9 @@
   // else — SSR, API routes, etc.
   "workers_dev": false,
   // preview_urls defaults to workers_dev (false here), so it needs to be
-  // opted back in explicitly — otherwise a non-production-branch build
-  // (Cloudflare Workers Builds, "Builds for non-production branches") or a
-  // `wrangler versions upload` never gets a *.workers.dev URL to view at all.
+  // opted back in explicitly — otherwise branch Previews
+  // (<branch>-koma.<subdomain>.workers.dev) and version URLs never get a
+  // *.workers.dev URL to view at all.
   "preview_urls": true,
   "assets": {
     "directory": "./public"
@@ -19,5 +19,24 @@
   // Cloudflare auto-provisions the CNAME and TLS certificate.
   "routes": [
     { "pattern": "koma.piconic.ai", "custom_domain": true }
-  ]
+  ],
+  // Keep console.log/error and invocation logs in Workers Logs (Cloudflare
+  // dashboard → koma Worker → Observability) for production, so errors can
+  // be traced after the fact without keeping `wrangler tail` attached.
+  "observability": { "enabled": true },
+  // Worker Previews: every push to a branch other than `release` makes (or
+  // updates) that branch's Preview via Cloudflare Workers Builds, whose
+  // Preview command runs `bunx wrangler preview`. Previews never become the
+  // production deployment. They inherit nothing from the settings above —
+  // bindings/vars a Preview needs must be declared here (there are none yet).
+  "previews": {
+    // Per-Preview logs and traces: Cloudflare dashboard → koma Worker →
+    // Previews → <branch> → Observability. (`wrangler tail` can't target
+    // Previews.)
+    "observability": {
+      "enabled": true,
+      "logs": { "enabled": true, "invocation_logs": true },
+      "traces": { "enabled": true, "head_sampling_rate": 1 }
+    }
+  }
 }
