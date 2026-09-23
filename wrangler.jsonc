@@ -26,7 +26,7 @@
   "observability": { "enabled": true },
   // Worker Previews: every push to a branch other than `release` makes (or
   // updates) that branch's Preview via Cloudflare Workers Builds, whose
-  // Preview command runs `npx wrangler preview`. Previews never become the
+  // Preview command runs `bunx wrangler preview`. Previews never become the
   // production deployment. They inherit nothing from the settings above —
   // bindings/vars a Preview needs must be declared here (there are none yet).
   "previews": {
