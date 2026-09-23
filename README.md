@@ -19,6 +19,14 @@ Other scripts:
 - `bun test` — run the test suite
 - `bun run deploy` — build and deploy to Cloudflare Workers
 
+Production (`koma.piconic.ai`) deploys when a tagpr release PR is merged
+(see `.github/workflows/tagpr.yml`). Every other branch gets its own
+[Worker Preview](https://developers.cloudflare.com/workers/previews/) on
+push, at `https://<branch-name>-koma.<subdomain>.workers.dev`, with its own
+logs under the Preview's Observability tab (Cloudflare dashboard → koma
+Worker → Previews). Previews are configured by the `previews` block in
+`wrangler.jsonc`.
+
 ## Contact
 
 Questions or feedback? Reach out to kobaken:
